@@ -83,6 +83,68 @@ def _medidas_batem(a, b, tol=1.6):
     return all(abs(x-y) <= tol for x,y in zip(sorted(a), sorted(b)))
 
 
+def corrigir_componentes_por_dxf(P, linhas, qtd, fontes, tol=1.6, limite=50.0):
+    """Corrige metadado dimensional comprovadamente divergente do volume físico no DXF.
+
+    Alguns XMLs do Promob mantêm a profundidade anterior de um painel após a geometria
+    ser redimensionada. A correção só ocorre quando: (1) a espessura e uma dimensão
+    estrutural batem; (2) a peça DXF é a única candidata ainda não usada; e (3) nenhum
+    outro item XML pendente disputa essa candidata. Assim não se aumenta a tolerância
+    geral nem se oculta peça ausente.
+    """
+    novas = list(linhas)
+    usados = set()
+    pendentes = []
+    for n, (desc, dm) in enumerate(linhas):
+        if not eh_componente(desc):
+            continue
+        alvo = sorted(parse_dim(dm))
+        necessidade = (qtd or {}).get((desc, dm), 1)
+        exatos = [p for p in P if p['i'] not in usados and _medidas_batem(p['dim'], alvo, tol)]
+        for p in exatos[:necessidade]:
+            usados.add(p['i'])
+        if len(exatos) < necessidade:
+            pendentes.append((n, desc, dm, alvo, necessidade - len(exatos)))
+    propostas = []
+    for n, desc, dm, alvo, falta in pendentes:
+        if falta != 1 or not re.match(r'\s*(painel|tampon|vista|fecham)', desc, re.I):
+            continue
+        candidatos = []
+        for p in P:
+            if p['i'] in usados:
+                continue
+            d = sorted(p['dim'])
+            dif = [abs(a-b) for a,b in zip(d, alvo)]
+            # O caso reconciliável é uma expansão física mantida com a medida
+            # anterior no metadado XML. Peças menores de módulos vizinhos não entram.
+            if dif[0] <= tol and dif[2] <= tol and alvo[1] + tol < d[1] <= alvo[1] + limite:
+                candidatos.append(p)
+        if len(candidatos) == 1:
+            propostas.append((n, desc, dm, candidatos[0]))
+    disputados = {p['i'] for _,_,_,p in propostas if sum(q['i'] == p['i'] for *_,q in propostas) > 1}
+    for n, desc, dm, p in propostas:
+        if p['i'] in disputados:
+            continue
+        # Mantém a ordem semântica LxAxP do XML e troca somente a medida
+        # divergente pela dimensão física comprovada no DXF.
+        orig = list(parse_dim(dm)); fis = list(p['dim']); usados_fis = set()
+        for i, v in enumerate(orig):
+            j = next((j for j, x in enumerate(fis) if j not in usados_fis and abs(x-v) <= tol), None)
+            if j is not None:
+                usados_fis.add(j)
+            else:
+                orig[i] = next(x for j, x in enumerate(fis) if j not in usados_fis)
+        novo_dm = 'x'.join(str(int(round(v))) if abs(v-round(v)) < 0.01 else ('%.1f' % v).replace('.', ',') for v in orig)
+        chave_antiga = (desc, dm); chave_nova = (desc, novo_dm)
+        novas[n] = chave_nova
+        qtd[chave_nova] = qtd.pop(chave_antiga)
+        if chave_antiga in fontes:
+            fontes[chave_nova] = fontes.pop(chave_antiga)
+        usados.add(p['i'])
+        print('LEITURA XML/DXF: dimensão física corrigida | %s | XML=%s DXF=%s' % (desc, dm, novo_dm))
+    return novas
+
+
 def _cands_fonte(P, n, desc, dm, fonte):
     """Alternativas comprovadas pelas peças filhas do XML e coordenadas reais do DXF.
 

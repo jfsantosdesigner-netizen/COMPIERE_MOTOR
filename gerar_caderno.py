@@ -134,6 +134,10 @@ if not os.path.exists(pj) and _hx: open(pj + '.md5', 'w').write(_hx)
 if not os.path.exists(pj):
     subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
 P = geo.carregar(pj)
+# XMLs do Promob podem conservar a profundidade anterior de um painel após
+# redimensionamento. Só reconciliamos quando o DXF oferece uma correspondência
+# física única; a tolerância normal e o bloqueio de integridade permanecem.
+linhas = geo.corrigir_componentes_por_dxf(P, linhas, QT, FONTES_XML)
 
 import math
 def _n(a, b, c):
