@@ -158,6 +158,103 @@ def _page_generic(ns, esp, n, titulo=None):
         _restore_wall(ns,reps,wid,old)
     return p
 
+def _contexto_gaveta_divisor(ns, itens):
+    """Localiza a gaveta montada ou o menor módulo que contém o divisor."""
+    bb=[min(i["bb"][k] for i in itens) for k in range(3)]+[max(i["bb"][k+3] for i in itens) for k in range(3)]
+    centro=[(bb[k]+bb[k+3])/2 for k in range(3)]
+    ids={id(i) for i in itens}
+    candidatos=[]
+    for grupo in ns.get("GAVETAS",[]) or []:
+        if not grupo or any(id(i) in ids for i in grupo):
+            continue
+        b=[min(i["bb"][k] for i in grupo) for k in range(3)]+[max(i["bb"][k+3] for i in grupo) for k in range(3)]
+        if all(b[k]-40 <= centro[k] <= b[k+3]+40 for k in range(3)):
+            candidatos.append((0,(b[3]-b[0])*(b[4]-b[1]),grupo))
+    for i in ns.get("inst",[]):
+        if id(i) in ids or i.get("tipo")!="mod":
+            continue
+        b=i["bb"]
+        if all(b[k]-40 <= centro[k] <= b[k+3]+40 for k in range(3)):
+            candidatos.append((1,(b[3]-b[0])*(b[4]-b[1])*(b[5]-b[2]),[i]))
+    if candidatos:
+        hospedeiros=min(candidatos,key=lambda c:(c[0],c[1]))[2]
+    else:
+        # Só peças vizinhas à gaveta, nunca uma parede inteira do ambiente.
+        hospedeiros=[i for i in ns.get("inst",[]) if id(i) not in ids and
+            all(i["bb"][k] <= bb[k+3]+80 and i["bb"][k+3] >= bb[k]-80 for k in range(3))]
+    context=[]
+    divisor_p={pi for i in itens for pi in i["pecas"]}
+    for i in hospedeiros:
+        pecas=[]
+        for pi in i["pecas"]:
+            if pi in divisor_p:
+                continue
+            b=ns["P"][pi]["bb"]
+            # Retira tampo/prateleira acima da gaveta para revelar a aplicação interna.
+            if b[5]-b[2] <= 40 and b[2] >= bb[5]-5:
+                continue
+            pecas.append(pi)
+        if pecas:
+            copia=dict(i); copia["pecas"]=pecas
+            bbs=[ns["P"][pi]["bb"] for pi in pecas]
+            copia["bb"]=[min(b[k] for b in bbs) for k in range(3)]+[max(b[k+3] for b in bbs) for k in range(3)]
+            context.append(copia)
+    print("DIVISOR - REFERENCIA:",[(i.get("desc",""),i.get("dim","")) for i in context])
+    return context
+
+def _page_divisor(ns, esp, n):
+    """Reutiliza o 3D e a vista superior cotada da prancha normal de divisor."""
+    from types import FunctionType
+    fz=ns["fz"]; area=ns["AREA_IN"]
+    itens=esp.itens
+    contexto=_contexto_gaveta_divisor(ns,itens)
+    wid,old=_temporary_wall(ns,itens,"DIVISOR")
+    env=dict(ns["_prancha_peca"].__globals__)
+    env.update(ns)
+    env["n"]=n-1; env["_nl"]=0; env["letras"]=(f"ESP_DIVISOR_{n}",)
+    resultado={}
+    def nova(doc,numero,titulo):
+        p=_nova_prancha_especial(ns,numero,titulo)
+        resultado["pagina"]=p
+        return p
+    def numerar(ordenados,letra):
+        ns["_numerar"](ordenados,letra,agrupar=True)
+        return _linhas(ordenados)
+    def tabela(p,linhas,x,y):
+        yb=ns["tabela"](p,linhas,x,y)
+        resultado["yb"]=yb
+        return yb
+    def render(p,rect,pids,**kw):
+        # A referência é desenhada abaixo, usando apenas a gaveta hospedeira.
+        if kw.get("sem_portas"):
+            return
+        return ns["render3d"](p,rect,pids,**kw)
+    env.update(nova_prancha=nova,_numerar=numerar,tabela=tabela,render3d=render)
+    try:
+        fn=FunctionType(ns["_prancha_peca"].__code__,env)
+        fn(itens,"DIVISOR DE GAVETA - DETALHAMENTO","DIVISOR")
+        p=resultado["pagina"]; yb=resultado["yb"]
+        h=area.y1-yb-12
+        ref=fz.Rect(area.x0,yb+12+h*.58+6,area.x0+248,area.y1)
+        # Fundo neutro no móvel hospedeiro para destacar o divisor real.
+        cores={}
+        for i in contexto:
+            for pi in i["pecas"]:
+                cores[pi]=ns["P"][pi].get("rgb")
+                ns["P"][pi]["rgb"]=(.85,.85,.85)
+        try:
+            ns["render3d"](p,fz.Rect(ref.x0+3,ref.y0+14,ref.x1-3,ref.y1-3),
+                [wid],itens=itens+contexto,ang=30,elev=45,dmin=2200,
+                margem=40,isolado=True,sem_portas=True)
+        finally:
+            for pi,rgb in cores.items():
+                if rgb is None: ns["P"][pi].pop("rgb",None)
+                else: ns["P"][pi]["rgb"]=rgb
+        return p
+    finally:
+        _restore_wall(ns,itens,wid,old)
+
+
 def _page_painel(ns, esp, n, cotas=False):
     fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
     titulo=("PAINEL - COTAS" if cotas else "PAINEL - LISTAGEM")
@@ -364,7 +461,9 @@ def gerar(ns, especiais):
         if not esp.itens:
             continue
         inicio=n+1
-        if esp.familia==Familia.PAINEL:
+        if esp.familia==Familia.DIVISOR_TALHER:
+            n+=1; _page_divisor(ns,esp,n)
+        elif esp.familia==Familia.PAINEL:
             n+=1; _page_painel(ns,esp,n,False)
             n+=1; _page_painel(ns,esp,n,True)
         elif esp.familia==Familia.PAINEL_RIPADO:
