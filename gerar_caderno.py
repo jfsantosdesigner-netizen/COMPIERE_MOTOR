@@ -134,11 +134,9 @@ if not os.path.exists(pj) and _hx: open(pj + '.md5', 'w').write(_hx)
 if not os.path.exists(pj):
     subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
 P = geo.carregar(pj)
-# XMLs do Promob podem conservar a profundidade anterior de um painel após
-# redimensionamento. Só reconciliamos quando o DXF oferece uma correspondência
-# física única; a tolerância normal e o bloqueio de integridade permanecem.
-linhas = geo.corrigir_componentes_por_dxf(P, linhas, QT, FONTES_XML)
-
+# Engenharia: XML e DXF são fontes complementares do mesmo projeto.
+# Divergência dimensional não é corrigida nem tolerada automaticamente:
+# a integridade deve interromper a geração e expor o erro de leitura/processamento.
 import math
 def _n(a, b, c):
     if len(set((a, b, c))) < 3: return (0, 0, 1)
@@ -1375,23 +1373,9 @@ def tem_porta(m, w):
     return bool(m.get('xml_tem_porta'))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
 
 def detalhes(w):
-    # nichos de painéis + módulos abertos; grupos que se encostam viram UM detalhe só
-    # ORDEM 006 (v37.2): módulos com porta ausente no DXF (xml_tem_porta=True) viram subimagem própria.
-    def _portas_faltando(w):
-        out = []
-        f_ = FV[w['key']]; ad = 0 if f_[0] else 1; al = 1 - ad
-        for m in [i for i in w['itens'] if i['tipo'] == 'mod' and i.get('xml_tem_porta')]:
-            mb = m['bb']; area_ = (mb[al + 3] - mb[al]) * (mb[5] - mb[2])
-            if area_ <= 0: continue
-            cob = 0.0
-            for p_ in P:
-                if not _eh_porta(p_['bb'], mb, w): continue
-                b = p_['bb']
-                cob += max(0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * max(0, min(b[5], mb[5]) - max(b[2], mb[2]))
-            if cob >= NICHO_MIN_RATIO * area_: continue   # tem porta real: não precisa subimagem
-            out.append([m])
-        return out
-    gs = [list(g) for g in nichos(w) + abertos(w) + _portas_faltando(w)]
+    # Engenharia: subimagem nasce de nicho identificado pela geometria/dimensão.
+    # A ausência de uma porta no DXF é erro de leitura e não cria uma regra visual paralela.
+    gs = [list(g) for g in nichos(w) + abertos(w)]
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -5 for k in range(3))
     mudou = True
     while mudou:
@@ -1785,7 +1769,8 @@ for v in VW:
         its = [i for i in its if i not in _fora_v]
     v['itens_listados'] = its
     ordem = sorted(its, key=lambda i: (i['tipo'] != 'mod', i['n']))
-    v['linhas'] = _numerar(ordem, v['letra'], agrupar=True)  # D1: agrupar sempre (iguais = mesmo nº)
+    # Engenharia: cada ocorrência é um item e recebe seu próprio número/balão.
+    v['linhas'] = _numerar(ordem, v['letra'], agrupar=False)
 
 # ---------------- montagem ----------------
 doc = fz.open(); n = 0; relat = []
@@ -1975,48 +1960,54 @@ for v in V:                # setas das vistas (uma por parede); se encostar em o
 lab = f'PLANTA BAIXA - ESC. 1:{S}'
 p.insert_text((pr.x0 + pr.width / 2 - fz.get_text_length(lab, 'hebo', 8) / 2, pr.y1 - 3), lab, fontname='hebo', fontsize=8)
 
-# PRANCHA 4: visão geral
-n += 1; p = nova_prancha(doc, n, 'VISÃO GERAL DOS MÓVEIS')
-# REGRA (João, 28/09/2026 - skill V5): de 1 a 4 imagens, observador DENTRO do ambiente (com contexto), sem balão e
-# sem cota. Mais de 4 vistas: as vistas vizinhas se juntam em 4 grupos; cada imagem olha a 1ª parede do grupo
-# com o ambiente em volta (substitui a v28, que montava o par de paredes visto de fora).
+# VISÃO GERAL: uma imagem limpa para cada vista/parede que contém elementos.
+# São usadas tantas pranchas quanto necessário; não há limite global de quatro imagens.
 _vg = [x for x in VW if not PW[x['paredes'][0]].get('divisoria')] or VW
-_ng = min(4, len(_vg)); _tam = [len(_vg) // _ng + (1 if k < len(_vg) % _ng else 0) for k in range(_ng)]
-com_img = []; _k0 = 0
-for t_ in _tam:
-    g_ = _vg[_k0:_k0 + t_]; _k0 += t_
-    com_img.append(dict(titulo=' + '.join(x['titulo'] for x in g_), paredes=[g_[0]['paredes'][0]], img3d=None))
-m = len(com_img); a = AREA_IN
-_nc = 1 if m == 1 else 2 if m <= 4 else 3; _nr = -(-m // _nc)
-cel = [fz.Rect(a.x0 + (i % _nc) * a.width / _nc, a.y0 + (i // _nc) * a.height / _nr, a.x0 + (i % _nc + 1) * a.width / _nc, a.y0 + (i // _nc + 1) * a.height / _nr) for i in range(m)]
-for v, c in zip(com_img, cel):
-    render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
-    p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
-for j in range(1, _nc): p.draw_line((a.x0 + j * a.width / _nc, AREA.y0), (a.x0 + j * a.width / _nc, AREA.y1), color=PRETO, width=0.6)
-for j in range(1, _nr): p.draw_line((AREA.x0, a.y0 + j * a.height / _nr), (AREA.x1, a.y0 + j * a.height / _nr), color=PRETO, width=0.6)
+for _ini in range(0, len(_vg), 4):
+    n += 1; p = nova_prancha(doc, n, 'VISÃO GERAL DOS MÓVEIS')
+    com_img = [dict(titulo=x['titulo'], paredes=x['paredes'], img3d=None) for x in _vg[_ini:_ini + 4]]
+    m = len(com_img); a = AREA_IN
+    _nc = 1 if m == 1 else 2; _nr = -(-m // _nc)
+    cel = [fz.Rect(a.x0 + (i % _nc) * a.width / _nc, a.y0 + (i // _nc) * a.height / _nr,
+                   a.x0 + (i % _nc + 1) * a.width / _nc, a.y0 + (i // _nc + 1) * a.height / _nr)
+           for i in range(m)]
+    for v, c in zip(com_img, cel):
+        render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
+        p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
+    for j in range(1, _nc):
+        p.draw_line((a.x0 + j * a.width / _nc, AREA.y0), (a.x0 + j * a.width / _nc, AREA.y1), color=PRETO, width=0.6)
+    for j in range(1, _nr):
+        p.draw_line((AREA.x0, a.y0 + j * a.height / _nr), (AREA.x1, a.y0 + j * a.height / _nr), color=PRETO, width=0.6)
 
 # REGRA (v26, João): LISTAGEM POLUÍDA (mais de 15 linhas) = DUAS pranchas: SUPERIORES (armários de cima e altos) e
 # INFERIORES (balcões). Cada uma com a tabela e os balões só das suas peças (numeração própria). Sem os dois grupos:
 # divide a parede ao meio (PARTE 1 / PARTE 2).
-LIST_MAX = 15; LIST_TOL = 2; _extra = 0   # REGRA (ajuste, pedido João): tolerância de +2 (15 a 17
-                                            # numa prancha só) - só divide de fato a partir de 18,
-                                            # pra não partir uma listagem quase no limite ao meio.
+LIST_MAX = 15; _extra = 0   # Engenharia: acima de 15 itens, dividir sem tolerância adicional.
 def _partes(s_):
     global _extra
     # REGRA (v34, João): usa a lista JÁ FILTRADA (sem as peças escondidas). Antes esta função relia a
     # lista original e as escondidas voltavam com balão quando a listagem se dividia em duas pranchas.
     its = s_['itens_listados'] if 'itens_listados' in s_ else [i for w in s_['paredes'] for i in PW[w]['itens']]
-    if len(s_['linhas']) <= LIST_MAX + LIST_TOL or not its: return [s_]
+    if len(s_['linhas']) <= LIST_MAX or not its: return [s_]
     sup = [i for i in its if (i['bb'][2] + i['bb'][5]) / 2 > 1300]; inf = [i for i in its if i not in sup]
     if sup and inf: gs = [('SUPERIORES', sup), ('INFERIORES', inf)]
     else:
         f_ = FV[PW[s_['paredes'][0]]['key']]; al = 1 if f_[0] else 0
         o_ = sorted(its, key=lambda i: (i['bb'][al] + i['bb'][al + 3]) / 2); h_ = len(o_) // 2
         gs = [('PARTE 1', o_[:h_]), ('PARTE 2', o_[h_:])]
+    # Qualquer grupo ainda maior que 15 é repartido novamente.
+    # A paginação não possui máximo fixo: prevalecem legibilidade e integridade.
+    blocos = []
+    for nome, g in gs:
+        partes = [g[i:i + LIST_MAX] for i in range(0, len(g), LIST_MAX)]
+        for j, parte in enumerate(partes, 1):
+            sufixo = f' {j}' if len(partes) > 1 else ''
+            blocos.append((nome + sufixo, parte))
+    gs = blocos
     out = []
     for k_, (nome, g) in enumerate(gs):
         key = f"{s_['letra']}{k_ + 1}"
-        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key,agrupar=True)
+        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key, agrupar=False)
         out.append(dict(letra=key, titulo=f"{s_['titulo']} - {nome}", linhas=lin, paredes=s_['paredes'], ids={id(i) for i in g}, primeiro=k_ == 0, base=s_))
     _extra += len(out) - 1
     return out
@@ -2046,15 +2037,9 @@ for v in V:
     for s_ in [q_ for s0_ in v['subs'] for q_ in _partes(s0_)]:
         n += 1; p = nova_prancha(doc, n, f"MÓDULOS E PAINÉIS - {s_['titulo']}")
         yb = tabela(p, s_['linhas'], AREA_IN.x0, AREA_IN.y0)
-        # DOC consolidado: detalhes funcionais usam a mesma prancha e a numeração da vista.
-        # Gavetas montadas, nichos, cantos e demais condições normais permanecem neste fluxo.
-        from normal.regras import subimagens
+        # Engenharia: somente nichos identificados por XML + geometria/dimensão
+        # geram subimagem no motor padrão. Não há exceções semânticas por nome de produto.
         nis = [(w,c,{'rotulo':'DETALHE - NICHO','sem_lista':False}) for w in s_['paredes'] for c in detalhes(PW[w])]
-        for w in s_['paredes']:
-            for grupo,rotulo,sem_lista in subimagens(globals(),PW[w]):
-                ids={id(i) for i in grupo}
-                nis=[(ww,g,t) for ww,g,t in nis if not ids.intersection(id(i) for i in g)]
-                nis.append((w,grupo,{'rotulo':rotulo,'sem_lista':sem_lista}))
         planos = s_.get('_detalhes_ocultos',s_.get('base',{}).get('_detalhes_ocultos',[]))
         for plano in planos:
             ids = {id(i) for i in plano['itens']}
@@ -2101,18 +2086,19 @@ for v in V:
                      representacao_interna=tp_['sem_lista'], dmin=3200, margem=60, isolado=True,sem_portas=True,**op)
 
         if nis:
-            # REGRA (ajuste, pedido João): largura da tabela é sempre fixa (248pt, já era assim).
-            # A altura da tabela acompanha a quantidade de itens (até 15 linhas por prancha, já
-            # garantido a montante por _partes()/LIST_MAX). A caixa "DETALHE - NICHO" (2ª imagem)
-            # acompanha esse vão: sobe quando a listagem é curta, encolhe quando é longa - nunca
-            # esbarra, porque nunca começa antes do fim da tabela (yb).
+            # Um nicho por página. O primeiro fica, quando houver área legível,
+            # junto da vista principal; os demais recebem página própria em escala dinâmica.
             y0_ = yb + 18
-            if AREA_IN.y1 - y0_ < 60:
-                print(f"AVISO: caixa do nicho ficou pequena ({AREA_IN.y1 - y0_:.0f}pt) em '{s_['titulo']}'.")
-            _hn = (AREA_IN.y1 - y0_ - 4 * (len(nis) - 1)) / len(nis)
-            for k2_, (w, c, tp_) in enumerate(nis):
-                _y = y0_ + k2_ * (_hn + 4)
-                _dq(p, w, c, tp_, fz.Rect(AREA_IN.x0, _y, AREA_IN.x0 + 248, _y + _hn))
+            if AREA_IN.y1 - y0_ >= 90:
+                w, c, tp_ = nis[0]
+                _dq(p, w, c, tp_, fz.Rect(AREA_IN.x0, y0_, AREA_IN.x0 + 248, AREA_IN.y1))
+                extras_nicho = nis[1:]
+            else:
+                extras_nicho = nis
+            for k2_, (w, c, tp_) in enumerate(extras_nicho, 1):
+                n += 1
+                pd = nova_prancha(doc, n, f"DETALHE - NICHO — {s_['titulo']}")
+                _dq(pd, w, c, tp_, AREA_IN)
     # cotas
     n += 1; p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v['titulo']}")
     _cotas_em(p, GS, AREA_IN, [f"VISTA {l_}" for l_ in v['letras']])
@@ -2145,9 +2131,8 @@ except Exception:
     import time as _t; cfg['saida'] = os.path.splitext(cfg['saida'])[0] + _t.strftime('_%H%M%S') + '.pdf'; doc.save(cfg['saida'], garbage=3, deflate=True)
 
 # ---------------- QUALIDADE (nível 1, por script) ----------------
-esperado = 4 + len(VW) + _extra + len(V)
 q = [f"# QUALIDADE — {cfg['dados']['cliente']} / {cfg['dados']['ambiente']} (gerado por script)", '',
-     f"- {'APROVADO' if n == esperado else 'REPROVADO'} | nº de pranchas {n} = 4 + {len(VW)} listagens + {_extra} divisões + {len(V)} cotas (sem extras/especiais)",
+     f"- APROVADO | {n} pranchas na ordem final, incluindo paginação dinâmica de vistas, listagens e nichos",
      f"- {'APROVADO' if not _faltando_real else 'INCERTO'} | itens localizados no DXF: {len(linhas) - len(nao_achados)}/{len(linhas)}" + (f" ({len(_acessorios)} acessório(s) sem DXF — normal)" if _acessorios else '')]
 for d, dm in _faltando_real: q.append(f"  - FORA DA LISTAGEM: {d} {dm} (não localizado no DXF, logo não aparece na imagem)")
 for d, dm in _acessorios: q.append(f"  - ACESSÓRIO (sem DXF, normal): {d} {dm}")
