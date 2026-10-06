@@ -167,19 +167,20 @@ _MAT = next((c_ for c_ in (os.path.join(_MD, 'MATERIAIS'),
 _MI = os.path.join(_MD, 'materiais_index.json')
 _MC = os.path.join(_MD, 'materiais_cores.json')  # [caminho relativo a MATERIAIS, nome, [r,g,b]]: cores prontas, dispensa a pasta MATERIAIS
 _rgbx = {}
-if os.path.exists(_MC):
+if not cfg.get('fontes_frescas') and os.path.exists(_MC):
     _idx = []
     for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')):
         _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
-elif os.path.exists(_MI): _idx = json.load(open(_MI, encoding='utf-8'))
+elif not cfg.get('fontes_frescas') and os.path.exists(_MI): _idx = json.load(open(_MI, encoding='utf-8'))
 else:
     _idx = []
-    for d_, ds_, fs_ in os.walk(_MAT):
-        for f_ in fs_:
-            if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
+    for fonte_material in (_MAT, os.path.join(_MD, 'texturas')):
+        for d_, ds_, fs_ in os.walk(fonte_material):
+            for f_ in fs_:
+                if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
     json.dump(_idx, open(_MI, 'w', encoding='utf-8'))
 _CC = os.path.join(_MD, 'cores_cache.json')
-_cc = json.load(open(_CC, encoding='utf-8')) if os.path.exists(_CC) else {}
+_cc = json.load(open(_CC, encoding='utf-8')) if not cfg.get('fontes_frescas') and os.path.exists(_CC) else {}
 _PREF = ('duratex', 'arauco', 'guararapes', 'berneck', 'eucatex', 'masisa', 'stelben')
 def _parecido(a, b):
     # REGRA (v15): nome do XML com letra a mais/a menos ou cortado ("Metallic Sued" = "Metalic Suede")
@@ -240,7 +241,7 @@ def textura(nome):
         cch = os.path.join(_TXC, fn)              # cache derivado
         try:
             if os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
-            elif os.path.exists(cch): im = _Im.open(cch).convert('RGB')
+            elif not cfg.get('fontes_frescas') and os.path.exists(cch): im = _Im.open(cch).convert('RGB')
             else:
                 full = ref if os.path.exists(ref) else os.path.join(_MAT, ref.split('MATERIAIS', 1)[-1].lstrip('/\\'))
                 if os.path.exists(full):
