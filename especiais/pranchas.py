@@ -288,8 +288,8 @@ def _divisoria_orientacoes(ns, esp):
         key_lateral=("y" if key_frente.startswith("x") else "x")+sinal
     return (("FRONTAL",key_frente),("LATERAL",key_lateral))
 
-def _render_divisoria_face(ns, page, rect, itens, key, elev=4):
-    """Renderiza a divisória COMPLETA de frente para a face escolhida."""
+def _render_divisoria_face(ns, page, rect, itens, key, elev=0):
+    """Conjunto completo, câmera frontal centralizada e nivelada, sem inclinação vertical."""
     wid,old=_temporary_wall_key(ns,itens,"DIV_RENDER",key)
     try:
         ns["render3d"](page,rect,[wid],itens=itens,ang=0,elev=elev,
@@ -314,30 +314,24 @@ def _page_divisoria_listagem(ns,esp,n,rotulo,key):
     p.insert_text((r.x0+6,r.y0+12),f"VISTA {rotulo}",
                   fontname="hebo",fontsize=8,color=ns["RED"])
     _render_divisoria_face(ns,p,fz.Rect(r.x0+4,r.y0+16,r.x1-4,r.y1-4),
-                           esp.itens,key,elev=4)
+                           esp.itens,key,elev=0)
     return p
 
-def _page_divisoria_cotas(ns,esp,n,rotulo,key):
-    """2D da face + subimagem 3D isolada exatamente na mesma orientação."""
-    fz=ns["fz"]; area=ns["AREA_IN"]
-    p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - COTAS {rotulo}")
-
-    # Subimagem 3D do móvel sozinho, vista na MESMA orientação da cota 2D.
-    r3=fz.Rect(area.x0,area.y0,area.x0+218,area.y0+175)
-    p.draw_rect(r3,color=ns["PRETO"],width=.5)
-    p.insert_text((r3.x0+5,r3.y0+11),f"3D {rotulo} - MÓVEL ISOLADO",
-                  fontname="hebo",fontsize=7.5,color=ns["RED"])
-    _render_divisoria_face(ns,p,fz.Rect(r3.x0+3,r3.y0+14,r3.x1-3,r3.y1-3),
-                           esp.itens,key,elev=4)
-
-    # Elevação 2D principal da mesma face.
-    rcota=fz.Rect(area.x0+228,area.y0,area.x1,area.y1)
-    wid,old=_temporary_wall_key(ns,esp.itens,"DIV_COTA",key)
-    try:
-        G=ns["geom_parede"](ns["PW"][wid])
-        ns["_cotas_em"](p,[G],rcota,[f"VISTA {rotulo}"])
-    finally:
-        _restore_wall(ns,esp.itens,wid,old)
+def _page_divisoria_cotas(ns,esp,n,orientacoes):
+    """Frontal e lateral em uma folha 2D, sem subimagem, como nas vistas normais."""
+    area=ns["AREA_IN"]
+    p=_nova_prancha_especial(ns,n,"DIVISÓRIA - COTAS FRONTAL E LATERAL")
+    geometrias=[]
+    rotulos=[]
+    for rotulo,key in orientacoes:
+        wid,old=_temporary_wall_key(ns,esp.itens,"DIV_COTA",key)
+        try:
+            geometrias.append(ns["geom_parede"](ns["PW"][wid]))
+            rotulos.append(f"VISTA {rotulo}")
+        finally:
+            _restore_wall(ns,esp.itens,wid,old)
+    # A própria ferramenta normal define escala comum e divide as duas colunas.
+    ns["_cotas_em"](p,geometrias,area,rotulos)
     return p
 
 def _page_sequencia_divisoria(ns,esp,n):
@@ -375,11 +369,10 @@ def gerar(ns, especiais):
             n+=1; _page_ripado_2(ns,esp,n)
         elif esp.familia==Familia.DIVISORIA:
             orientacoes=_divisoria_orientacoes(ns,esp)
-            # Divisória em L: duas faces de listagem e duas faces de cotas.
+            # Duas listagens 3D e uma folha 2D com frontal/lateral lado a lado.
             for rotulo,key in orientacoes:
                 n+=1; _page_divisoria_listagem(ns,esp,n,rotulo,key)
-            for rotulo,key in orientacoes:
-                n+=1; _page_divisoria_cotas(ns,esp,n,rotulo,key)
+            n+=1; _page_divisoria_cotas(ns,esp,n,orientacoes)
             n+=1; _page_sequencia_divisoria(ns,esp,n)
         else:
             n+=1; _page_generic(ns,esp,n)
