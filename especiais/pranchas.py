@@ -385,36 +385,136 @@ def _divisoria_orientacoes(ns, esp):
         key_lateral=("y" if key_frente.startswith("x") else "x")+sinal
     return (("FRONTAL",key_frente),("LATERAL",key_lateral))
 
+def _divisoria_itens_por_face(esp, orientacoes):
+    """Distribui as peças pelos planos estruturais das duas pernas do L."""
+    grupos={rotulo:[] for rotulo,key in orientacoes}
+    eixos=[0 if key.startswith("x") else 1 for rotulo,key in orientacoes]
+    suportes=[[],[]]
+    for item in esp.itens:
+        b=item["bb"]; dx=b[3]-b[0]; dy=b[4]-b[1]; dz=b[5]-b[2]
+        if dz<=40 and max(dx,dy)>1.5*max(1,min(dx,dy)):
+            # Travessas horizontais identificam a perna, não a seção da ripa.
+            ax_normal=0 if dy>dx else 1
+            if ax_normal in eixos:
+                suportes[eixos.index(ax_normal)].append(item)
+    planos=[]
+    for indice,ax in enumerate(eixos):
+        base=suportes[indice]
+        if not base:
+            base=[i for i in esp.itens if
+                (i["bb"][4]-i["bb"][1] > i["bb"][3]-i["bb"][0]) == (ax==0)] or esp.itens
+        valores=sorted((i["bb"][ax]+i["bb"][ax+3])/2 for i in base)
+        planos.append(valores[len(valores)//2])
+    for item in esp.itens:
+        b=item["bb"]
+        dist=[abs((b[ax]+b[ax+3])/2-pl) for ax,pl in zip(eixos,planos)]
+        # A peça pertence ao plano de montagem, inclusive ripas profundas.
+        if abs(dist[0]-dist[1])<=.5:
+            larguras=[b[4]-b[1] if ax==0 else b[3]-b[0] for ax in eixos]
+            indice=0 if larguras[0]>=larguras[1] else 1
+        else:
+            indice=0 if dist[0]<dist[1] else 1
+        grupos[orientacoes[indice][0]].append(item)
+    ids=[{id(i) for i in grupos[rotulo]} for rotulo,key in orientacoes]
+    assert not ids[0]&ids[1], "Peça repetida entre frontal e lateral"
+    assert ids[0]|ids[1]=={id(i) for i in esp.itens}, "Peça sem face"
+    for rotulo,key in orientacoes:
+        print("DIVISORIA - FACE:",rotulo,"PECAS",len(grupos[rotulo]))
+    return grupos
+
+def _baloes_divisoria(ns, page, rect, itens, letra, posicoes):
+    """Um balão por ocorrência, sem sobreposição e dentro do quadro."""
+    fz=ns["fz"]; ocupados=[]
+    for item in itens:
+        numero=item.get("num_"+letra)
+        if id(item) not in posicoes or not numero:
+            raise ValueError("Peça da listagem sem posição de balão")
+        cx,cy=posicoes[id(item)]
+        texto=str(numero); largura=fz.get_text_length(texto,"hebo",7)+4
+        candidatos=[(cx,cy)]
+        for raio in (10,18,28,40,56,76,100,130):
+            for k in range(24):
+                ang=2*math.pi*k/24
+                candidatos.append((cx+raio*math.cos(ang),cy+raio*math.sin(ang)))
+        escolhido=None
+        for bx,by in candidatos:
+            r=fz.Rect(bx-largura/2,by-5.5,bx+largura/2,by+5.5)
+            folga=fz.Rect(r.x0-1.5,r.y0-1.5,r.x1+1.5,r.y1+1.5)
+            if rect.contains(folga) and not any(folga.intersects(o) for o in ocupados):
+                escolhido=(bx,by,r,folga)
+                break
+        if escolhido is None:
+            # Última alternativa: espaço livre no quadro, mantendo chamada à peça.
+            for by in range(int(rect.y0)+10,int(rect.y1)-8,16):
+                for bx in range(int(rect.x0)+12,int(rect.x1)-10,20):
+                    r=fz.Rect(bx-largura/2,by-5.5,bx+largura/2,by+5.5)
+                    folga=fz.Rect(r.x0-1.5,r.y0-1.5,r.x1+1.5,r.y1+1.5)
+                    if rect.contains(folga) and not any(folga.intersects(o) for o in ocupados):
+                        escolhido=(bx,by,r,folga); break
+                if escolhido: break
+        if escolhido is None:
+            raise ValueError("Sem espaço para balões: dividir a listagem")
+        bx,by,r,folga=escolhido
+        if abs(bx-cx)>1 or abs(by-cy)>1:
+            page.draw_line((cx,cy),(bx,by),color=ns["PRETO"],width=.35)
+            page.draw_circle((cx,cy),.9,color=ns["PRETO"],fill=ns["PRETO"])
+        page.draw_rect(r,color=ns["PRETO"],fill=(1,1,0),width=.4)
+        page.insert_text((r.x0+2,by+2.5),texto,fontname="hebo",fontsize=7)
+        ocupados.append(folga)
+    print("DIVISORIA - BALOES:",letra,len(ocupados))
+    return len(ocupados)
+
 def _render_divisoria_face(ns, page, rect, itens, key, elev=0, letra=None):
-    """Conjunto completo, câmera frontal centralizada e nivelada, sem inclinação vertical."""
+    """Face isolada, câmera nivelada e balões por peça com posição rastreável."""
     wid,old=_temporary_wall_key(ns,itens,"DIV_RENDER",key)
+    posicoes={}
+    class PaginaRender:
+        def __getattr__(self,nome):
+            return getattr(page,nome)
+        def draw_rect(self,*args,**kw):
+            if kw.get("fill")==(1,1,0): return
+            return page.draw_rect(*args,**kw)
+        def insert_text(self,*args,**kw):
+            if kw.get("fontname")=="hebo" and kw.get("fontsize")==7: return
+            return page.insert_text(*args,**kw)
+        def draw_line(self,*args,**kw):
+            if kw.get("width")==.35: return
+            return page.draw_line(*args,**kw)
+        def draw_circle(self,*args,**kw):
+            if len(args)>1 and args[1]==.9: return
+            return page.draw_circle(*args,**kw)
     try:
-        ns["render3d"](page,rect,[wid],letra=letra,itens=itens,ang=0,elev=elev,
-                       dmin=3200,margem=35,isolado=True)
+        # Impede a regra antiga de reduzir todos os iguais a um balão só.
+        ns["PW"][wid]["divisoria"]=False
+        alvo=PaginaRender() if letra else page
+        ns["render3d"](alvo,rect,[wid],letra=letra,itens=itens,ang=0,elev=elev,
+                       dmin=3200,margem=35,isolado=True,posicoes=posicoes)
+        if letra:
+            _baloes_divisoria(ns,page,rect,itens,letra,posicoes)
     finally:
         _restore_wall(ns,itens,wid,old)
 
-def _page_divisoria_listagem(ns,esp,n,rotulo,key):
-    """Uma prancha de listagem por face da divisória em L."""
+def _page_divisoria_listagem(ns,esp,n,rotulo,key,itens):
+    """Listagem e imagem somente das peças pertencentes à face indicada."""
     fz=ns["fz"]; area=ns["AREA_IN"]
     p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - LISTAGEM {rotulo}")
     # Mesma ordem da tabela: itens iguais recebem o mesmo número pelo motor normal.
     letra=f"ESP_DIV_{n}_{rotulo}"
-    ns["_numerar"](esp.itens,letra,agrupar=True)
-    yb=ns["tabela"](p,_linhas(esp.itens),area.x0,area.y0)
+    ns["_numerar"](itens,letra,agrupar=True)
+    yb=ns["tabela"](p,_linhas(itens),area.x0,area.y0)
 
     # Subimagem de localização no ambiente.
     rc=fz.Rect(area.x0,yb+8,area.x0+248,area.y1)
     if rc.height > 45:
         _contextos(ns,p,rc,esp.itens)
 
-    # Imagem principal: conjunto inteiro. Não usar _representativos() em divisória.
+    # Imagem principal: montagem completa da face, com todas as ocorrências.
     r=fz.Rect(area.x0+258,area.y0,area.x1,area.y1)
     p.draw_rect(r,color=ns["PRETO"],width=.5)
     p.insert_text((r.x0+6,r.y0+12),f"VISTA {rotulo}",
                   fontname="hebo",fontsize=8,color=ns["RED"])
     _render_divisoria_face(ns,p,fz.Rect(r.x0+4,r.y0+16,r.x1-4,r.y1-4),
-                           esp.itens,key,elev=0,letra=letra)
+                           itens,key,elev=0,letra=letra)
     return p
 
 def _page_divisoria_cotas(ns,esp,n,orientacoes):
@@ -471,9 +571,11 @@ def gerar(ns, especiais):
             n+=1; _page_ripado_2(ns,esp,n)
         elif esp.familia==Familia.DIVISORIA:
             orientacoes=_divisoria_orientacoes(ns,esp)
-            # Duas listagens 3D e uma folha 2D com frontal/lateral lado a lado.
+            grupos=_divisoria_itens_por_face(esp,orientacoes)
+            # Peças exclusivas por face; as cotas continuam na mesma folha.
             for rotulo,key in orientacoes:
-                n+=1; _page_divisoria_listagem(ns,esp,n,rotulo,key)
+                if grupos[rotulo]:
+                    n+=1; _page_divisoria_listagem(ns,esp,n,rotulo,key,grupos[rotulo])
             n+=1; _page_divisoria_cotas(ns,esp,n,orientacoes)
             n+=1; _page_sequencia_divisoria(ns,esp,n)
         else:
