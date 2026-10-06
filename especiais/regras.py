@@ -46,7 +46,7 @@ class RegraVisual:
 REGRAS_VISUAIS = {
     Familia.PAINEL: RegraVisual(frente_tras=True, qtd_pranchas=2),
     Familia.PAINEL_RIPADO: RegraVisual(qtd_pranchas=2),
-    Familia.DIVISORIA: RegraVisual(qtd_pranchas=3),
+    Familia.DIVISORIA: RegraVisual(qtd_pranchas=5),
     Familia.CAMA: RegraVisual(qtd_pranchas=5),
 }
 
@@ -143,8 +143,11 @@ REGRAS_FUNCIONAIS = {
         "nao_separar_por_conjunto_fisico": True,
     },
     "divisoria": {
-        "prancha_listagem": True,
-        "prancha_cotas": True,
+        "listagem_frontal": True,
+        "listagem_lateral": True,
+        "cotas_frontal": True,
+        "cotas_lateral": True,
+        "subimagem_3d_mesma_orientacao_da_cota": True,
         "prancha_sequencia_quatro_etapas": True,
         "sequencia_depende_engenharia_real": True,
     },

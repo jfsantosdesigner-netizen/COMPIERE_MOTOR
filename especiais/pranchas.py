@@ -244,6 +244,102 @@ def _page_ripado_2(ns,esp,n):
     p.insert_text((cx-30,cy+10),"RIPAS / LED",fontname="helv",fontsize=6.5)
     return p
 
+def _temporary_wall_key(ns, itens, tag, key):
+    """Parede virtual orientada para uma face específica da divisória."""
+    pw=ns["PW"]
+    ws=_walls(ns,itens)
+    src=pw[ws[0]] if ws else next(iter(pw.values()))
+    safe=key.replace("+","P").replace("-","M")
+    wid=f"__ESP_{tag}_{safe}_{abs(hash(tuple(id(i) for i in itens)))%1000000}"
+    pw[wid]=dict(key=key, plano=src.get("plano",0), itens=itens, id=wid, divisoria=True)
+    antigos=[i.get("parede") for i in itens]
+    for i in itens:
+        i["parede"]=wid
+    return wid,antigos
+
+def _divisoria_orientacoes(ns, esp):
+    """Define as duas faces ortogonais da divisória em L: frontal e lateral."""
+    pw=ns["PW"]; itens=esp.itens
+    ws=_walls(ns,itens)
+    w0=next((w for w in ws if pw.get(w,{}).get("divisoria")), ws[0] if ws else None)
+    key_frente=pw[w0]["key"] if w0 else "x+"
+
+    ax_frente=0 if key_frente.startswith("x") else 1
+    ax_lateral=1-ax_frente
+
+    U=list(itens[0]["bb"])
+    for it in itens[1:]:
+        b=it["bb"]
+        U=[min(U[k],b[k]) for k in range(3)] + [max(U[k+3],b[k+3]) for k in range(3)]
+    meio=(U[ax_lateral]+U[ax_lateral+3])/2
+
+    # Escolhe o lado lateral olhando do ambiente para a divisória.
+    ids={id(i) for i in itens}
+    outros=[i for i in ns.get("inst",[]) if id(i) not in ids]
+    if outros:
+        centro=sum((i["bb"][ax_lateral]+i["bb"][ax_lateral+3])/2 for i in outros)/len(outros)
+    else:
+        centro=meio-1
+    sinal="+" if centro < meio else "-"
+    key_lateral=("x" if ax_lateral==0 else "y")+sinal
+
+    # Segurança: frontal e lateral sempre precisam usar eixos diferentes.
+    if key_lateral[0] == key_frente[0]:
+        key_lateral=("y" if key_frente.startswith("x") else "x")+sinal
+    return (("FRONTAL",key_frente),("LATERAL",key_lateral))
+
+def _render_divisoria_face(ns, page, rect, itens, key, elev=4):
+    """Renderiza a divisória COMPLETA de frente para a face escolhida."""
+    wid,old=_temporary_wall_key(ns,itens,"DIV_RENDER",key)
+    try:
+        ns["render3d"](page,rect,[wid],itens=itens,ang=0,elev=elev,
+                       dmin=3200,margem=35,isolado=True)
+    finally:
+        _restore_wall(ns,itens,wid,old)
+
+def _page_divisoria_listagem(ns,esp,n,rotulo,key):
+    """Uma prancha de listagem por face da divisória em L."""
+    fz=ns["fz"]; area=ns["AREA_IN"]
+    p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - LISTAGEM {rotulo}")
+    yb=ns["tabela"](p,_linhas(esp.itens),area.x0,area.y0)
+
+    # Subimagem de localização no ambiente.
+    rc=fz.Rect(area.x0,yb+8,area.x0+248,area.y1)
+    if rc.height > 45:
+        _contextos(ns,p,rc,esp.itens)
+
+    # Imagem principal: conjunto inteiro. Não usar _representativos() em divisória.
+    r=fz.Rect(area.x0+258,area.y0,area.x1,area.y1)
+    p.draw_rect(r,color=ns["PRETO"],width=.5)
+    p.insert_text((r.x0+6,r.y0+12),f"VISTA {rotulo}",
+                  fontname="hebo",fontsize=8,color=ns["RED"])
+    _render_divisoria_face(ns,p,fz.Rect(r.x0+4,r.y0+16,r.x1-4,r.y1-4),
+                           esp.itens,key,elev=4)
+    return p
+
+def _page_divisoria_cotas(ns,esp,n,rotulo,key):
+    """2D da face + subimagem 3D isolada exatamente na mesma orientação."""
+    fz=ns["fz"]; area=ns["AREA_IN"]
+    p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - COTAS {rotulo}")
+
+    # Subimagem 3D do móvel sozinho, vista na MESMA orientação da cota 2D.
+    r3=fz.Rect(area.x0,area.y0,area.x0+218,area.y0+175)
+    p.draw_rect(r3,color=ns["PRETO"],width=.5)
+    p.insert_text((r3.x0+5,r3.y0+11),f"3D {rotulo} - MÓVEL ISOLADO",
+                  fontname="hebo",fontsize=7.5,color=ns["RED"])
+    _render_divisoria_face(ns,p,fz.Rect(r3.x0+3,r3.y0+14,r3.x1-3,r3.y1-3),
+                           esp.itens,key,elev=4)
+
+    # Elevação 2D principal da mesma face.
+    rcota=fz.Rect(area.x0+228,area.y0,area.x1,area.y1)
+    wid,old=_temporary_wall_key(ns,esp.itens,"DIV_COTA",key)
+    try:
+        G=ns["geom_parede"](ns["PW"][wid])
+        ns["_cotas_em"](p,[G],rcota,[f"VISTA {rotulo}"])
+    finally:
+        _restore_wall(ns,esp.itens,wid,old)
+    return p
+
 def _page_sequencia_divisoria(ns,esp,n):
     fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
     p=_nova_prancha_especial(ns,n,"DIVISÓRIA - SEQUÊNCIA DE MONTAGEM")
@@ -278,8 +374,12 @@ def gerar(ns, especiais):
             n+=1; _page_ripado_1(ns,esp,n)
             n+=1; _page_ripado_2(ns,esp,n)
         elif esp.familia==Familia.DIVISORIA:
-            n+=1; _page_generic(ns,esp,n,"DIVISÓRIA - LISTAGEM")
-            n+=1; _page_generic(ns,esp,n,"DIVISÓRIA - COTAS")
+            orientacoes=_divisoria_orientacoes(ns,esp)
+            # Divisória em L: duas faces de listagem e duas faces de cotas.
+            for rotulo,key in orientacoes:
+                n+=1; _page_divisoria_listagem(ns,esp,n,rotulo,key)
+            for rotulo,key in orientacoes:
+                n+=1; _page_divisoria_cotas(ns,esp,n,rotulo,key)
             n+=1; _page_sequencia_divisoria(ns,esp,n)
         else:
             n+=1; _page_generic(ns,esp,n)

@@ -239,7 +239,7 @@ def _classificar(it, sinais):
 
 def _folhas(fam):
     if fam == Familia.DIVISORIA:
-        return 3
+        return 5
     if fam == Familia.CAMA:
         return 5
     if fam in (Familia.PAINEL, Familia.PAINEL_RIPADO):
