@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections import Counter
 import math, re
 from .regras import Familia
+from .visual import analisar, renderizar
 
 def _nova_prancha_especial(ns, n, titulo):
     """Cria especial a partir de uma prancha normal já gerada pelo próprio motor."""
@@ -84,19 +85,53 @@ def _walls(ns, itens):
         ws = [next(iter(pw))]
     return ws
 
-def _contextos(ns, page, rect, itens):
-    """Subimagens mostrando todos os locais/parede onde o especial aparece."""
-    fz = ns["fz"]; render3d = ns["render3d"]
-    ws = _walls(ns, itens)
-    if not ws:
-        return
-    n = len(ws)
-    h = rect.height / n
-    for k, w in enumerate(ws):
-        r = fz.Rect(rect.x0, rect.y0+k*h, rect.x1, rect.y0+(k+1)*h)
-        page.draw_rect(r, color=ns["PRETO"], width=.45)
-        page.insert_text((r.x0+4, r.y0+10), "ONDE FICA", fontname="hebo", fontsize=7.5, color=ns["RED"])
-        render3d(page, fz.Rect(r.x0+2,r.y0+13,r.x1-2,r.y1-2), [w], contexto=True)
+def _desenhar_referencia(ns,page,rect,itens,contexto=None,interno=False):
+    """Destaca o especial no hospedeiro real, com chamada de localização."""
+    fz=ns['fz']; ws=_walls(ns,itens)
+    if not ws or not itens or rect.height<30: return
+    page.draw_rect(rect,color=ns['PRETO'],width=.45)
+    page.insert_text((rect.x0+4,rect.y0+10),'ONDE FICA',fontname='hebo',fontsize=7.5,color=ns['RED'])
+    r=fz.Rect(rect.x0+3,rect.y0+14,rect.x1-3,rect.y1-3)
+    if contexto is None:
+        contexto=_contexto_gaveta_divisor(ns,itens,interno=interno)
+    cores={}
+    alvos={pi for i in itens for pi in i['pecas']}
+    vizinhos=contexto if contexto else [i for i in ns['PW'][ws[0]]['itens'] if id(i) not in {id(j) for j in itens}]
+    for i in vizinhos:
+        for pi in i['pecas']:
+            if pi in alvos or pi in cores: continue
+            obj=ns['P'][pi]
+            cores[pi]=(obj.get('rgb'),obj.get('mat'))
+            obj['rgb']=(.85,.85,.85); obj['mat']=None
+    try:
+        if contexto:
+            _,pontos,caixas=renderizar(ns,page,r,[ws[0]],itens=itens+contexto,
+                ang=30 if interno else 0,elev=35 if interno else 0,
+                sem_portas=interno,dmin=3200,isolado=True)
+        else:
+            _,pontos,caixas=renderizar(ns,page,r,[ws[0]],contexto=True,
+                isolado=False,ang=0,elev=0)
+        boxes=[fz.Rect(caixas[id(i)]) for i in itens if id(i) in caixas]
+        if boxes:
+            b=fz.Rect(boxes[0])
+            for box in boxes[1:]: b|=box
+            b=fz.Rect(max(r.x0,b.x0-2),max(r.y0,b.y0-2),min(r.x1,b.x1+2),min(r.y1,b.y1+2))
+            page.draw_rect(b,color=ns['RED'],width=.8)
+    finally:
+        for pi,(rgb,mat) in cores.items():
+            obj=ns['P'][pi]
+            if rgb is None: obj.pop('rgb',None)
+            else: obj['rgb']=rgb
+            if mat is None: obj.pop('mat',None)
+            else: obj['mat']=mat
+
+def _contextos(ns,page,rect,itens,interno=False):
+    ws=_walls(ns,itens)
+    if not ws or rect.height<35: return
+    fz=ns['fz']; h=rect.height/len(ws)
+    for k,w in enumerate(ws):
+        grupo=[i for i in itens if i.get('parede')==w] or itens
+        _desenhar_referencia(ns,page,fz.Rect(rect.x0,rect.y0+k*h,rect.x1,rect.y0+(k+1)*h),grupo,interno=interno)
 
 def _temporary_wall(ns, itens, tag):
     """Parede temporária para reutilizar geom_parede/_cotas_em sem tocar nas paredes reais."""
@@ -118,53 +153,36 @@ def _restore_wall(ns, itens, wid, antigos):
             i["parede"] = old
     ns["PW"].pop(wid, None)
 
-def _representativos(itens):
-    """Se ocorrências iguais estiverem espalhadas, desenha uma só; tabela preserva variações."""
-    if len(itens) <= 1:
-        return itens
-    dims = [i["bb"] for i in itens]
-    span = [max(b[k+3] for b in dims)-min(b[k] for b in dims) for k in range(3)]
-    one = dims[0]
-    own = [one[k+3]-one[k] for k in range(3)]
-    if max(span) > max(own)*2.5:
-        return [itens[0]]
-    return itens
-
-def _page_generic(ns, esp, n, titulo=None):
-    fz=ns["fz"]; doc=ns["doc"]; area=ns["AREA_IN"]
-    p=_nova_prancha_especial(ns,n,titulo or TITULOS.get(esp.familia,"DETALHAMENTO ESPECIAL"))
-    linhas=_linhas(esp.itens, esp.familia==Familia.PAINEL_RIPADO)
-    yb=ns["tabela"](p,linhas,area.x0,area.y0)
-    # subimagem do ambiente, sempre lateral esquerda
-    rc=fz.Rect(area.x0,yb+10,area.x0+248,area.y1)
-    _contextos(ns,p,rc,esp.itens)
-    # imagem principal isolada em cima à direita
+def _page_generic(ns,esp,n,titulo=None):
+    fz=ns['fz']; area=ns['AREA_IN']; itens=esp.itens
+    p=_nova_prancha_especial(ns,n,titulo or TITULOS.get(esp.familia,'DETALHAMENTO ESPECIAL'))
     rmain=fz.Rect(area.x0+258,area.y0,area.x1,area.y0+area.height*.52)
-    p.draw_rect(rmain,color=ns["PRETO"],width=.5)
-    reps=_representativos(esp.itens)
-    ws=_walls(ns,reps)
-    if ws:
-        ns["render3d"](p,fz.Rect(rmain.x0+2,rmain.y0+2,rmain.x1-2,rmain.y1-2),[ws[0]],
-                       itens=reps,ang=25,elev=12,dmin=2200,margem=60,isolado=True)
-    # cotas reutilizam o motor atual
+    ri=fz.Rect(rmain.x0+3,rmain.y0+3,rmain.x1-3,rmain.y1-3)
+    vis=_analisar_face(ns,ri,itens)
+    letra=f'ESP_{n}_{esp.familia.value}'
+    ns['_numerar'](vis,letra,agrupar=True)
+    yb=ns['tabela'](p,_linhas(vis),area.x0,area.y0)
+    interno=esp.familia in (Familia.SAPATEIRA,Familia.FRUTEIRA,Familia.PORTA_TEMPERO_INCLINADO,
+                           Familia.GAVETA_ESPECIAL,Familia.FUNDO_FALSO,Familia.PAINEL_TECNICO)
+    _contextos(ns,p,fz.Rect(area.x0,yb+10,area.x0+248,area.y1),itens,interno=interno)
+    p.draw_rect(rmain,color=ns['PRETO'],width=.5)
+    _render_divisoria_face(ns,p,ri,itens,letra=letra,listados=vis)
     rcota=fz.Rect(area.x0+258,area.y0+area.height*.56,area.x1,area.y1)
-    wid,old=_temporary_wall(ns,reps,esp.familia.value)
+    wid,old=_temporary_wall(ns,itens,esp.familia.value)
     try:
-        G=ns["geom_parede"](ns["PW"][wid])
-        ns["_cotas_em"](p,[G],rcota,["DETALHE"])
-    except Exception as e:
-        p.insert_text((rcota.x0+8,rcota.y0+20),f"COTAS: verificar geometria ({type(e).__name__})",fontname="helv",fontsize=8)
+        G=ns['geom_parede'](ns['PW'][wid])
+        ns['_cotas_em'](p,[G],rcota,['DETALHE'])
     finally:
-        _restore_wall(ns,reps,wid,old)
+        _restore_wall(ns,itens,wid,old)
     return p
 
-def _contexto_gaveta_divisor(ns, itens):
+def _contexto_gaveta_divisor(ns, itens, interno=True):
     """Localiza a gaveta montada ou o menor módulo que contém o divisor."""
     bb=[min(i["bb"][k] for i in itens) for k in range(3)]+[max(i["bb"][k+3] for i in itens) for k in range(3)]
     centro=[(bb[k]+bb[k+3])/2 for k in range(3)]
     ids={id(i) for i in itens}
     candidatos=[]
-    for grupo in ns.get("GAVETAS",[]) or []:
+    for grupo in (ns.get("GAVETAS",[]) or []) if interno else []:
         if not grupo or any(id(i) in ids for i in grupo):
             continue
         b=[min(i["bb"][k] for i in grupo) for k in range(3)]+[max(i["bb"][k+3] for i in grupo) for k in range(3)]
@@ -191,7 +209,7 @@ def _contexto_gaveta_divisor(ns, itens):
                 continue
             b=ns["P"][pi]["bb"]
             # Retira tampo/prateleira acima da gaveta para revelar a aplicação interna.
-            if b[5]-b[2] <= 40 and b[2] >= bb[5]-5:
+            if interno and b[5]-b[2] <= 40 and b[2] >= bb[5]-5:
                 continue
             pecas.append(pi)
         if pecas:
@@ -199,7 +217,7 @@ def _contexto_gaveta_divisor(ns, itens):
             bbs=[ns["P"][pi]["bb"] for pi in pecas]
             copia["bb"]=[min(b[k] for b in bbs) for k in range(3)]+[max(b[k+3] for b in bbs) for k in range(3)]
             context.append(copia)
-    print("DIVISOR - REFERENCIA:",[(i.get("desc",""),i.get("dim","")) for i in context])
+    print("ESPECIAL - HOSPEDEIRO:",[(i.get("desc",""),i.get("dim","")) for i in context])
     return context
 
 def _page_divisor(ns, esp, n):
@@ -218,8 +236,20 @@ def _page_divisor(ns, esp, n):
         resultado["pagina"]=p
         return p
     def numerar(ordenados,letra):
-        ns["_numerar"](ordenados,letra,agrupar=True)
-        return _linhas(ordenados)
+        vis=list(ordenados)
+        for tentativa in range(6):
+            tmp=fz.open(); pg=tmp.new_page(width=842,height=595)
+            try: yb=ns['tabela'](pg,_linhas(vis),area.x0,area.y0)
+            finally: tmp.close()
+            h=area.y1-yb-12
+            r=fz.Rect(area.x0+2,yb+14,area.x0+246,yb+12+h*.58-2)
+            novos=_analisar_face(ns,r,ordenados,ang=30,elev=35,dmin=3200,margem=60)
+            if {id(i) for i in novos}=={id(i) for i in vis}: break
+            vis=novos
+        else: raise ValueError('Visibilidade do divisor não estabilizou no quadro')
+        resultado['visiveis']=vis
+        ns['_numerar'](vis,letra,agrupar=True)
+        return _linhas(vis)
     def tabela(p,linhas,x,y):
         yb=ns["tabela"](p,linhas,x,y)
         resultado["yb"]=yb
@@ -228,7 +258,10 @@ def _page_divisor(ns, esp, n):
         # A referência é desenhada abaixo, usando apenas a gaveta hospedeira.
         if kw.get("sem_portas"):
             return
-        return ns["render3d"](p,rect,pids,**kw)
+        letra=kw.pop('letra',None); grupo=kw.pop('itens',itens)
+        kw['dmin']=3200
+        return _render_divisoria_face(ns,p,rect,grupo,letra=letra,
+                                     listados=resultado['visiveis'],**kw)
     env.update(nova_prancha=nova,_numerar=numerar,tabela=tabela,render3d=render)
     try:
         fn=FunctionType(ns["_prancha_peca"].__code__,env)
@@ -236,63 +269,40 @@ def _page_divisor(ns, esp, n):
         p=resultado["pagina"]; yb=resultado["yb"]
         h=area.y1-yb-12
         ref=fz.Rect(area.x0,yb+12+h*.58+6,area.x0+248,area.y1)
-        # Fundo neutro no móvel hospedeiro para destacar o divisor real.
-        cores={}
-        for i in contexto:
-            for pi in i["pecas"]:
-                cores[pi]=ns["P"][pi].get("rgb")
-                ns["P"][pi]["rgb"]=(.85,.85,.85)
-        try:
-            ns["render3d"](p,fz.Rect(ref.x0+3,ref.y0+14,ref.x1-3,ref.y1-3),
-                [wid],itens=itens+contexto,ang=30,elev=45,dmin=2200,
-                margem=40,isolado=True,sem_portas=True)
-        finally:
-            for pi,rgb in cores.items():
-                if rgb is None: ns["P"][pi].pop("rgb",None)
-                else: ns["P"][pi]["rgb"]=rgb
+        _desenhar_referencia(ns,p,ref,itens,contexto=contexto,interno=True)
         return p
     finally:
         _restore_wall(ns,itens,wid,old)
 
 
-def _page_painel(ns, esp, n, cotas=False):
-    fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
-    titulo=("PAINEL - COTAS" if cotas else "PAINEL - LISTAGEM")
-    p=_nova_prancha_especial(ns,n,titulo)
+def _page_painel(ns,esp,n,cotas=False):
+    fz=ns['fz']; area=ns['AREA_IN']; itens=esp.itens
+    p=_nova_prancha_especial(ns,n,'PAINEL - COTAS' if cotas else 'PAINEL - LISTAGEM')
+    x0=area.x0+258
+    rs=[fz.Rect(x0,area.y0,area.x1,(area.y0+area.y1)/2-4),
+        fz.Rect(x0,(area.y0+area.y1)/2+4,area.x1,area.y1)]
+    vispor=[]
+    for r,ang in zip(rs,(0,180)):
+        vispor.append(_analisar_face(ns,fz.Rect(r.x0+3,r.y0+14,r.x1-3,r.y1-3),itens,ang=ang))
+    ids={id(i) for v in vispor for i in v}; vis=[i for i in itens if id(i) in ids]
+    letra=f'ESP_PAINEL_{n}'
     if not cotas:
-        yb=ns["tabela"](p,_linhas(esp.itens),area.x0,area.y0)
-        rctx=fz.Rect(area.x0,yb+10,area.x0+210,area.y1)
-        _contextos(ns,p,rctx,esp.itens)
-        x0=area.x0+220
-    else:
-        rctx=fz.Rect(area.x0,area.y1-130,area.x0+210,area.y1)
-        _contextos(ns,p,rctx,esp.itens)
-        x0=area.x0+220
-    reps=_representativos(esp.itens)
-    ws=_walls(ns,reps)
-    if cotas:
-        # frente e trás, ambos isolados. As cotas geométricas ficam na frente.
-        r1=fz.Rect(x0,area.y0,area.x1,(area.y0+area.y1)/2-4)
-        r2=fz.Rect(x0,(area.y0+area.y1)/2+4,area.x1,area.y1)
-        wid,old=_temporary_wall(ns,reps,"painel")
-        try:
-            G=ns["geom_parede"](ns["PW"][wid]); ns["_cotas_em"](p,[G],r1,["FRENTE"])
-        finally:
-            _restore_wall(ns,reps,wid,old)
-        if ws:
-            p.draw_rect(r2,color=ns["PRETO"],width=.5)
-            ns["render3d"](p,fz.Rect(r2.x0+2,r2.y0+2,r2.x1-2,r2.y1-2),[ws[0]],
-                           itens=reps,ang=180,elev=0,dmin=2200,margem=60,isolado=True)
-            p.insert_text((r2.x0+6,r2.y0+12),"TRÁS",fontname="hebo",fontsize=8,color=ns["RED"])
-    else:
-        r1=fz.Rect(x0,area.y0,area.x1,(area.y0+area.y1)/2-4)
-        r2=fz.Rect(x0,(area.y0+area.y1)/2+4,area.x1,area.y1)
-        for r,ang,lab in ((r1,0,"FRENTE"),(r2,180,"TRÁS")):
-            p.draw_rect(r,color=ns["PRETO"],width=.5)
-            if ws:
-                ns["render3d"](p,fz.Rect(r.x0+2,r.y0+14,r.x1-2,r.y1-2),[ws[0]],
-                               itens=reps,ang=ang,elev=0,dmin=2200,margem=60,isolado=True)
-            p.insert_text((r.x0+6,r.y0+11),lab,fontname="hebo",fontsize=8,color=ns["RED"])
+        ns['_numerar'](vis,letra,agrupar=True)
+        yb=ns['tabela'](p,_linhas(vis),area.x0,area.y0)
+        ctx=fz.Rect(area.x0,yb+10,area.x0+248,area.y1)
+    else: ctx=fz.Rect(area.x0,area.y1-130,area.x0+248,area.y1)
+    _contextos(ns,p,ctx,itens)
+    for k,(r,ang,lab) in enumerate(zip(rs,(0,180),('FRENTE','TRÁS'))):
+        p.draw_rect(r,color=ns['PRETO'],width=.5)
+        ri=fz.Rect(r.x0+3,r.y0+14,r.x1-3,r.y1-3)
+        if cotas and k==0:
+            wid,old=_temporary_wall(ns,itens,'PAINEL_COTA')
+            try: ns['_cotas_em'](p,[ns['geom_parede'](ns['PW'][wid])],ri,['FRENTE'])
+            finally: _restore_wall(ns,itens,wid,old)
+        else:
+            _render_divisoria_face(ns,p,ri,itens,ang=ang,
+                                  letra=None if cotas else letra,listados=vispor[k])
+        p.insert_text((r.x0+6,r.y0+11),lab,fontname='hebo',fontsize=8,color=ns['RED'])
     return p
 
 def _gap_ripas(itens):
@@ -308,37 +318,45 @@ def _gap_ripas(itens):
     return None
 
 def _page_ripado_1(ns,esp,n):
-    p=_page_generic(ns,esp,n,"PAINEL / PORTA RIPADA - LISTAGEM")
-    area=ns["AREA_IN"]; gap=_gap_ripas(esp.itens)
-    # detalhe redondo no canto inferior direito
-    cx,cy=area.x1-75,area.y1-65
-    p.draw_circle((cx,cy),48,color=ns["PRETO"],width=.7)
-    p.insert_text((cx-35,cy-10),"DISTÂNCIA",fontname="hebo",fontsize=7,color=ns["RED"])
-    txt="ENTRE RIPAS" if gap is None else f"VÃO: {_fmt(gap)} mm"
-    p.insert_text((cx-35,cy+5),txt,fontname="helv",fontsize=7)
+    fz=ns['fz']; area=ns['AREA_IN']; itens=esp.itens
+    p=_nova_prancha_especial(ns,n,'PAINEL / PORTA RIPADA - LISTAGEM')
+    r=fz.Rect(area.x0+258,area.y0,area.x1,area.y1-110)
+    ri=fz.Rect(r.x0+3,r.y0+3,r.x1-3,r.y1-3)
+    vis=_analisar_face(ns,ri,itens); letra=f'ESP_RIPADO_{n}'
+    ns['_numerar'](vis,letra,agrupar=True)
+    yb=ns['tabela'](p,_linhas(vis,True),area.x0,area.y0)
+    _contextos(ns,p,fz.Rect(area.x0,yb+10,area.x0+248,area.y1),itens)
+    p.draw_rect(r,color=ns['PRETO'],width=.5)
+    _render_divisoria_face(ns,p,ri,itens,letra=letra,listados=vis)
+    gap=_gap_ripas(itens); cx,cy=area.x1-65,area.y1-55
+    p.draw_circle((cx,cy),48,color=ns['PRETO'],width=.7)
+    p.insert_text((cx-34,cy-12),'ENTRE RIPAS',fontname='hebo',fontsize=7,color=ns['RED'])
+    txt='CONFERIR VÃO' if gap is None else f'VÃO: {_fmt(gap)} mm'
+    p.insert_text((cx-35,cy+6),txt,fontname='helv',fontsize=7)
     return p
 
 def _page_ripado_2(ns,esp,n):
-    fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
-    p=_nova_prancha_especial(ns,n,"PAINEL RIPADO - BASE + RIPAS")
-    reps=_representativos(esp.itens); ws=_walls(ns,reps)
-    rip=[i for i in reps if re.search(r"ripa",i.get("desc",""),re.I)]
-    sem=[i for i in reps if i not in rip]
-    rctx=fz.Rect(area.x0,area.y1-135,area.x0+205,area.y1)
-    _contextos(ns,p,rctx,esp.itens)
-    x0=area.x0+215; mid=(area.y0+area.y1)/2
-    for rr,its,lab in ((fz.Rect(x0,area.y0,area.x1,mid-4),sem or reps,"SEM RIPAS"),
-                       (fz.Rect(x0,mid+4,area.x1,area.y1),reps,"COM RIPAS")):
-        p.draw_rect(rr,color=ns["PRETO"],width=.5)
-        if ws and its:
-            ns["render3d"](p,fz.Rect(rr.x0+2,rr.y0+14,rr.x1-2,rr.y1-2),[ws[0]],itens=its,
-                           ang=0,elev=0,dmin=2200,margem=60,isolado=True)
-        p.insert_text((rr.x0+6,rr.y0+11),lab,fontname="hebo",fontsize=8,color=ns["RED"])
-    # detalhe circular reservado também para LED quando existir no conjunto
-    cx,cy=area.x1-65,area.y1-58
-    p.draw_circle((cx,cy),42,color=ns["PRETO"],width=.7)
-    p.insert_text((cx-28,cy-3),"DETALHE",fontname="hebo",fontsize=7,color=ns["RED"])
-    p.insert_text((cx-30,cy+10),"RIPAS / LED",fontname="helv",fontsize=6.5)
+    fz=ns['fz']; area=ns['AREA_IN']; itens=esp.itens
+    p=_nova_prancha_especial(ns,n,'PAINEL RIPADO - BASE + RIPAS')
+    rip=[i for i in itens if re.search(r'ripa',i.get('desc',''),re.I)]
+    sem=[i for i in itens if id(i) not in {id(j) for j in rip}]
+    x0=area.x0+258; mid=(area.y0+area.y1)/2
+    rs=[fz.Rect(x0,area.y0,area.x1,mid-4),fz.Rect(x0,mid+4,area.x1,area.y1)]
+    grupos=[sem or itens,itens]
+    vispor=[_analisar_face(ns,fz.Rect(r.x0+3,r.y0+14,r.x1-3,r.y1-3),g) for r,g in zip(rs,grupos)]
+    ids={id(i) for v in vispor for i in v}; vis=[i for i in itens if id(i) in ids]
+    letra=f'ESP_RIPADO_BASE_{n}'; ns['_numerar'](vis,letra,agrupar=True)
+    yb=ns['tabela'](p,_linhas(vis,True),area.x0,area.y0)
+    _contextos(ns,p,fz.Rect(area.x0,yb+10,area.x0+248,area.y1-110),itens)
+    cx,cy=area.x0+124,area.y1-55
+    p.draw_circle((cx,cy),48,color=ns['PRETO'],width=.7)
+    p.insert_text((cx-25,cy-4),'DETALHE',fontname='hebo',fontsize=7,color=ns['RED'])
+    p.insert_text((cx-30,cy+10),'RIPAS / LED',fontname='helv',fontsize=6.5)
+    for r,g,v,lab in zip(rs,grupos,vispor,('SEM RIPAS','COM RIPAS')):
+        p.draw_rect(r,color=ns['PRETO'],width=.5)
+        _render_divisoria_face(ns,p,fz.Rect(r.x0+3,r.y0+14,r.x1-3,r.y1-3),g,
+                              letra=letra,listados=v)
+        p.insert_text((r.x0+6,r.y0+11),lab,fontname='hebo',fontsize=8,color=ns['RED'])
     return p
 
 def _temporary_wall_key(ns, itens, tag, key):
@@ -422,77 +440,24 @@ def _divisoria_itens_por_face(esp, orientacoes):
         print("DIVISORIA - FACE:",rotulo,"PECAS",len(grupos[rotulo]))
     return grupos
 
-def _baloes_divisoria(ns, page, rect, itens, letra, posicoes):
-    """Um balão por ocorrência, sem sobreposição e dentro do quadro."""
-    fz=ns["fz"]; ocupados=[]
-    for item in itens:
-        numero=item.get("num_"+letra)
-        if id(item) not in posicoes or not numero:
-            raise ValueError("Peça da listagem sem posição de balão")
-        cx,cy=posicoes[id(item)]
-        texto=str(numero); largura=fz.get_text_length(texto,"hebo",7)+4
-        candidatos=[(cx,cy)]
-        for raio in (10,18,28,40,56,76,100,130):
-            for k in range(24):
-                ang=2*math.pi*k/24
-                candidatos.append((cx+raio*math.cos(ang),cy+raio*math.sin(ang)))
-        escolhido=None
-        for bx,by in candidatos:
-            r=fz.Rect(bx-largura/2,by-5.5,bx+largura/2,by+5.5)
-            folga=fz.Rect(r.x0-1.5,r.y0-1.5,r.x1+1.5,r.y1+1.5)
-            if rect.contains(folga) and not any(folga.intersects(o) for o in ocupados):
-                escolhido=(bx,by,r,folga)
-                break
-        if escolhido is None:
-            # Última alternativa: espaço livre no quadro, mantendo chamada à peça.
-            for by in range(int(rect.y0)+10,int(rect.y1)-8,16):
-                for bx in range(int(rect.x0)+12,int(rect.x1)-10,20):
-                    r=fz.Rect(bx-largura/2,by-5.5,bx+largura/2,by+5.5)
-                    folga=fz.Rect(r.x0-1.5,r.y0-1.5,r.x1+1.5,r.y1+1.5)
-                    if rect.contains(folga) and not any(folga.intersects(o) for o in ocupados):
-                        escolhido=(bx,by,r,folga); break
-                if escolhido: break
-        if escolhido is None:
-            raise ValueError("Sem espaço para balões: dividir a listagem")
-        bx,by,r,folga=escolhido
-        if abs(bx-cx)>1 or abs(by-cy)>1:
-            page.draw_line((cx,cy),(bx,by),color=ns["PRETO"],width=.35)
-            page.draw_circle((cx,cy),.9,color=ns["PRETO"],fill=ns["PRETO"])
-        page.draw_rect(r,color=ns["PRETO"],fill=(1,1,0),width=.4)
-        page.insert_text((r.x0+2,by+2.5),texto,fontname="hebo",fontsize=7)
-        ocupados.append(folga)
-    print("DIVISORIA - BALOES:",letra,len(ocupados))
-    return len(ocupados)
-
-def _render_divisoria_face(ns, page, rect, itens, key, elev=0, letra=None):
-    """Face isolada, câmera nivelada e balões por peça com posição rastreável."""
-    wid,old=_temporary_wall_key(ns,itens,"DIV_RENDER",key)
-    posicoes={}
-    class PaginaRender:
-        def __getattr__(self,nome):
-            return getattr(page,nome)
-        def draw_rect(self,*args,**kw):
-            if kw.get("fill")==(1,1,0): return
-            return page.draw_rect(*args,**kw)
-        def insert_text(self,*args,**kw):
-            if kw.get("fontname")=="hebo" and kw.get("fontsize")==7: return
-            return page.insert_text(*args,**kw)
-        def draw_line(self,*args,**kw):
-            if kw.get("width")==.35: return
-            return page.draw_line(*args,**kw)
-        def draw_circle(self,*args,**kw):
-            if len(args)>1 and args[1]==.9: return
-            return page.draw_circle(*args,**kw)
+def _analisar_face(ns,rect,itens,key=None,**kw):
+    if not itens: return []
+    key=key or ns['PW'][_walls(ns,itens)[0]]['key']
+    wid,old=_temporary_wall_key(ns,itens,'ANALISE',key)
     try:
-        # Impede a regra antiga de reduzir todos os iguais a um balão só.
-        ns["PW"][wid]["divisoria"]=False
-        alvo=PaginaRender() if letra else page
-        ns["render3d"](alvo,rect,[wid],letra=letra,itens=itens,ang=0,elev=elev,
-                       dmin=3200,margem=35,isolado=True,posicoes=posicoes)
-        if letra:
-            _baloes_divisoria(ns,page,rect,itens,letra,posicoes)
-    finally:
-        _restore_wall(ns,itens,wid,old)
+        vis,_,_=analisar(ns,rect,[wid],itens=itens,**kw)
+        return vis
+    finally: _restore_wall(ns,itens,wid,old)
+
+def _render_divisoria_face(ns,page,rect,itens,key=None,elev=0,letra=None,listados=None,**kw):
+    """Padrão comum: câmera centrada, visibilidade real e balões por ocorrência visível."""
+    if not itens: return
+    key=key or ns['PW'][_walls(ns,itens)[0]]['key']
+    wid,old=_temporary_wall_key(ns,itens,'RENDER',key)
+    try:
+        return renderizar(ns,page,rect,[wid],itens=itens,elev=elev,letra=letra,
+                          listados=listados,**kw)
+    finally: _restore_wall(ns,itens,wid,old)
 
 def _page_divisoria_listagem(ns,esp,n,rotulo,key,itens):
     """Listagem e imagem somente das peças pertencentes à face indicada."""
@@ -500,8 +465,10 @@ def _page_divisoria_listagem(ns,esp,n,rotulo,key,itens):
     p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - LISTAGEM {rotulo}")
     # Mesma ordem da tabela: itens iguais recebem o mesmo número pelo motor normal.
     letra=f"ESP_DIV_{n}_{rotulo}"
-    ns["_numerar"](itens,letra,agrupar=True)
-    yb=ns["tabela"](p,_linhas(itens),area.x0,area.y0)
+    r= fz.Rect(area.x0+262,area.y0+16,area.x1-4,area.y1-4)
+    vis=_analisar_face(ns,r,itens,key)
+    ns['_numerar'](vis,letra,agrupar=True)
+    yb=ns['tabela'](p,_linhas(vis),area.x0,area.y0)
 
     # Subimagem de localização no ambiente.
     rc=fz.Rect(area.x0,yb+8,area.x0+248,area.y1)
@@ -514,7 +481,7 @@ def _page_divisoria_listagem(ns,esp,n,rotulo,key,itens):
     p.insert_text((r.x0+6,r.y0+12),f"VISTA {rotulo}",
                   fontname="hebo",fontsize=8,color=ns["RED"])
     _render_divisoria_face(ns,p,fz.Rect(r.x0+4,r.y0+16,r.x1-4,r.y1-4),
-                           itens,key,elev=0,letra=letra)
+                           itens,key,elev=0,letra=letra,listados=vis)
     return p
 
 def _page_divisoria_cotas(ns,esp,n,orientacoes):
@@ -548,8 +515,8 @@ def _page_sequencia_divisoria(ns,esp,n):
         p.draw_rect(r,color=ns["PRETO"],width=.5)
         q=max(1,math.ceil(len(its)*(k+1)/4)); parcial=its[:q]
         if ws and parcial:
-            ns["render3d"](p,fz.Rect(r.x0+3,r.y0+16,r.x1-3,r.y1-3),[ws[0]],itens=parcial,
-                           ang=25,elev=10,dmin=2400,margem=60,isolado=True)
+            _render_divisoria_face(ns,p,fz.Rect(r.x0+3,r.y0+16,r.x1-3,r.y1-3),parcial,
+                                  ang=0,elev=0,dmin=3200,margem=60,isolado=True)
         p.insert_text((r.x0+6,r.y0+11),f"{k+1}ª ETAPA",fontname="hebo",fontsize=8,color=ns["RED"])
     return p
 

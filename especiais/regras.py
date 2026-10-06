@@ -43,10 +43,12 @@ class RegraVisual:
     frente_tras: bool = False
     qtd_pranchas: int = 1
 
+PADRAO_CAMERA_ESPECIAL = dict(ang=0, elev=0, dmin=3200, margem=35, isolado=True)
+
 REGRAS_VISUAIS = {
     Familia.PAINEL: RegraVisual(frente_tras=True, qtd_pranchas=2),
     Familia.PAINEL_RIPADO: RegraVisual(qtd_pranchas=2),
-    Familia.DIVISORIA: RegraVisual(qtd_pranchas=5),
+    Familia.DIVISORIA: RegraVisual(qtd_pranchas=4),
     Familia.CAMA: RegraVisual(qtd_pranchas=5),
 }
 
@@ -97,6 +99,12 @@ REGRAS_FUNCIONAIS = {
     "global": {
         "ordem_precedencia": precedencia(),
         "subimagem_contexto": True,
+        "camera_frontal_centrada_nivelada": True,
+        "listar_somente_ocorrencias_visiveis": True,
+        "balao_por_ocorrencia_visivel": True,
+        "ancora_balao_em_superficie_visivel": True,
+        "baloes_sem_sobreposicao_dentro_quadro": True,
+        "contexto_hospedeiro_com_destaque_especial": True,
         "principal_lista_e_cotas": True,
         "agrupar_mesma_geometria_dimensoes_diferentes": True,
         "novo_grupo_se_mudar_geometria_raio_angulo_usinagem": True,
@@ -159,7 +167,8 @@ REGRAS_FUNCIONAIS = {
         "espelho_aplicado_subimagem_com_espelho_principal_so_mdf": True,
     },
     "ripado": {
-        "um_balao_em_uma_ripa": True,
+        "um_balao_em_uma_ripa": False,  # atualização: um por ocorrência visível
+        "balao_por_ripa_visivel": True,
         "listagem_quantidade_agregada": True,
         "detalhe_redondo_espacamento": True,
         "com_fundo_segunda_prancha_sem_ripa_e_com_ripa": True,
