@@ -288,11 +288,11 @@ def _divisoria_orientacoes(ns, esp):
         key_lateral=("y" if key_frente.startswith("x") else "x")+sinal
     return (("FRONTAL",key_frente),("LATERAL",key_lateral))
 
-def _render_divisoria_face(ns, page, rect, itens, key, elev=0):
+def _render_divisoria_face(ns, page, rect, itens, key, elev=0, letra=None):
     """Conjunto completo, câmera frontal centralizada e nivelada, sem inclinação vertical."""
     wid,old=_temporary_wall_key(ns,itens,"DIV_RENDER",key)
     try:
-        ns["render3d"](page,rect,[wid],itens=itens,ang=0,elev=elev,
+        ns["render3d"](page,rect,[wid],letra=letra,itens=itens,ang=0,elev=elev,
                        dmin=3200,margem=35,isolado=True)
     finally:
         _restore_wall(ns,itens,wid,old)
@@ -301,6 +301,9 @@ def _page_divisoria_listagem(ns,esp,n,rotulo,key):
     """Uma prancha de listagem por face da divisória em L."""
     fz=ns["fz"]; area=ns["AREA_IN"]
     p=_nova_prancha_especial(ns,n,f"DIVISÓRIA - LISTAGEM {rotulo}")
+    # Mesma ordem da tabela: itens iguais recebem o mesmo número pelo motor normal.
+    letra=f"ESP_DIV_{n}_{rotulo}"
+    ns["_numerar"](esp.itens,letra,agrupar=True)
     yb=ns["tabela"](p,_linhas(esp.itens),area.x0,area.y0)
 
     # Subimagem de localização no ambiente.
@@ -314,7 +317,7 @@ def _page_divisoria_listagem(ns,esp,n,rotulo,key):
     p.insert_text((r.x0+6,r.y0+12),f"VISTA {rotulo}",
                   fontname="hebo",fontsize=8,color=ns["RED"])
     _render_divisoria_face(ns,p,fz.Rect(r.x0+4,r.y0+16,r.x1-4,r.y1-4),
-                           esp.itens,key,elev=0)
+                           esp.itens,key,elev=0,letra=letra)
     return p
 
 def _page_divisoria_cotas(ns,esp,n,orientacoes):
