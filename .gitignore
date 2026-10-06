@@ -1,3 +1,8 @@
 MATERIAIS/
 __pycache__/
 *.pyc
+
+SAIDAS_TESTES/
+SAIDAS_ESPECIAIS/
+_TESTE_ESPECIAIS/
+_compiere_especiais_*/
