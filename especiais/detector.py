@@ -212,8 +212,11 @@ def _classificar(it, sinais):
         return Destino.ESPECIAL, fam, "familia"
     if _porta_perfil(it):
         return Destino.ESPECIAL, Familia.PORTA_PERFIL, "porta_com_perfil"
-    if "painel" in n or "cabeceira" in n:
-        return Destino.ESPECIAL, Familia.PAINEL, "painel"
+    # Painel NÃO vira especial só pelo nome. O conjunto de painéis é reconhecido
+    # pelas relações geométricas já calculadas pelo motor (BLOCOS). Exceção:
+    # cabeceira explicitamente nomeada é família de painel por regra do caderno.
+    if "cabeceira" in n:
+        return Destino.ESPECIAL, Familia.PAINEL, "cabeceira"
     if "nicho" in n and (sinais.curva or sinais.angulo):
         return Destino.ESPECIAL, Familia.NICHO_ESPECIAL, "nicho_geometria"
     if "tampon" in n and (sinais.curva or sinais.angulo or sinais.usinagem):
@@ -266,32 +269,88 @@ def _pseudo_extras(ns, raw):
     return out
 
 def detectar(ns):
-    """Retorna lista de Especial sem tocar no documento/PDF do motor base."""
+    """Retorna lista de Especial sem tocar no documento/PDF do motor base.
+
+    Calibração universal:
+    - primeiro reutiliza relações construtivas já descobertas pelo motor (divisórias,
+      blocos de painéis, painel usinado);
+    - depois aplica famílias explícitas;
+    - por último usa geometria pura somente em peças soltas/componentes.
+    """
     import json
     raw = json.load(open(ns["cfg"]["pecas_json"], encoding="utf-8"))
     dxf_layers = scan_dxf(ns["cfg"]["dxf"])
-    candidatos = list(ns["inst"]) + _pseudo_extras(ns, raw)
     grupos = {}
+    consumidos = set()
+
+    def add_group(fam, itens, chave, motivo):
+        itens=[i for i in itens if i]
+        if not itens:
+            return
+        sig=Sinais()
+        for it in itens:
+            s=_sinais_item(it,raw,dxf_layers)
+            sig.curva |= s.curva; sig.angulo |= s.angulo; sig.usinagem |= s.usinagem; sig.circulo |= s.circulo
+            sig.contornos_fechados=max(sig.contornos_fechados,s.contornos_fechados)
+            sig.layers=tuple(sorted(set(sig.layers)|set(s.layers)))
+            consumidos.add(id(it))
+        key=(fam.value,chave)
+        grupos[key]=Especial(familia=fam,chave=chave,itens=list(itens),sinais=sig,motivo=motivo,folhas=_folhas(fam))
+
+    # 1) Relações construtivas fortes vindas do próprio motor atual.
+    for k,d in enumerate(ns.get("DIVISORIAS",[]) or [],1):
+        add_group(Familia.DIVISORIA,d.get("itens",[]),f"divisoria_{k}","relacao_divisoria")
+
+    for k,g in enumerate(ns.get("DIVISORES",[]) or [],1):
+        add_group(Familia.DIVISOR_TALHER,g,f"divisor_{k}","relacao_divisor_mdf")
+
+    for k,b in enumerate(ns.get("BLOCOS",[]) or [],1):
+        its=b.get("itens",[]) if isinstance(b,dict) else []
+        nome=norm((b.get("bloco","") if isinstance(b,dict) else "") or "painel")
+        fam=Familia.PAINEL_RIPADO if "rip" in nome else Familia.PAINEL
+        add_group(fam,its,f"bloco_painel_{k}","relacao_conjunto_paineis")
+
+    # Painel com vãos/usinação já reconhecido pelo motor base.
+    usin=ns.get("USINADOS",{}) or {}
+    if usin:
+        for it in ns.get("inst",[]):
+            if any(pi in usin for pi in it.get("pecas",[])):
+                add_group(Familia.USINAGEM,[it],f"usinagem_{it.get('n',id(it))}","painel_usinado_motor")
+
+    # 2) Famílias explícitas e geometria em peças não consumidas.
+    candidatos=list(ns["inst"])+_pseudo_extras(ns,raw)
     for it in candidatos:
-        sinais = _sinais_item(it, raw, dxf_layers)
-        fam_forcada = it.get("_familia_forcada")
+        if id(it) in consumidos:
+            continue
+        sinais=_sinais_item(it,raw,dxf_layers)
+        fam_forcada=it.get("_familia_forcada")
         if fam_forcada:
-            destino, fam, motivo = Destino.ESPECIAL, fam_forcada, "layer_dxf"
+            destino,fam,motivo=Destino.ESPECIAL,fam_forcada,"layer_dxf"
         else:
-            destino, fam, motivo = _classificar(it, sinais)
+            destino,fam,motivo=_classificar(it,sinais)
         if destino != Destino.ESPECIAL or fam is None:
             continue
-        # Mesma geometria pode agrupar dimensões diferentes; a chave não inclui dimensão.
-        base = _shape_name(it.get("desc") or fam.value)
+        # Mesma geometria pode agrupar dimensões diferentes.
+        base=_shape_name(it.get("desc") or fam.value)
         if fam == Familia.METALON:
-            base = "ambiente"
-        key = (fam.value, base)
+            base="ambiente"
+        key=(fam.value,base)
         if key not in grupos:
-            grupos[key] = Especial(familia=fam, chave=base, sinais=sinais, motivo=motivo, folhas=_folhas(fam))
+            grupos[key]=Especial(familia=fam,chave=base,sinais=sinais,motivo=motivo,folhas=_folhas(fam))
         grupos[key].itens.append(it)
-        # conserva sinais mais fortes do grupo
-        g = grupos[key].sinais
+        g=grupos[key].sinais
         g.curva |= sinais.curva; g.angulo |= sinais.angulo; g.usinagem |= sinais.usinagem; g.circulo |= sinais.circulo
-        g.contornos_fechados = max(g.contornos_fechados, sinais.contornos_fechados)
-        g.layers = tuple(sorted(set(g.layers) | set(sinais.layers)))
+        g.contornos_fechados=max(g.contornos_fechados,sinais.contornos_fechados)
+        g.layers=tuple(sorted(set(g.layers)|set(sinais.layers)))
+
+    # 3) Conjunto de peças soltas: só promove o conjunto inteiro quando alguma peça
+    # realmente apresenta condição especial. Isso evita transformar móvel normal em especial.
+    for k,md in enumerate(ns.get("MOVEIS_DIVERSOS",[]) or [],1):
+        its=md.get("itens",[])
+        if not its or any(id(i) in consumidos for i in its):
+            continue
+        ss=[_sinais_item(i,raw,dxf_layers) for i in its]
+        if any(s.curva or s.angulo or s.usinagem for s in ss):
+            add_group(Familia.CONJUNTO_ESPECIAL,its,f"conjunto_{k}","conjunto_com_geometria_especial")
+
     return list(grupos.values())
