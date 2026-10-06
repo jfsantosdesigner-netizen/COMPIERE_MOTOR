@@ -1310,7 +1310,9 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
                 img.paste(tint,(0,0),mask)
             else: dr.polygon(Q, fill=tuple(int(255 * v) for v in c_))
         for (a_, b_), fl_ in zip(zip(Q, Q[1:] + Q[:1]), ft):
-            if fl_: dr.line([a_, b_], fill=(50, 50, 50), width=max(1, int(0.35 * s_)))
+            if fl_:
+                esp_ = 0.85 if f_[0] == 0 else 0.35
+                dr.line([a_, b_], fill=(35, 35, 35), width=max(1, int(esp_ * s_)))
     import io as _io
     bio = _io.BytesIO(); img.save(bio, format='JPEG', quality=88)
     page.insert_image(rect, stream=bio.getvalue())
@@ -1427,6 +1429,24 @@ def detalhes(w):
             if mudou: break
     return gs
 
+def grupos_baloes(w):
+    """Conjuntos fisicamente concentrados que produziriam três ou mais balões juntos."""
+    f_ = FV[w['key']]; al_ = 1 if f_[0] else 0
+    itens_ = sorted(w['itens'], key=lambda i: ((i['bb'][al_] + i['bb'][al_+3]) / 2,
+                                               (i['bb'][2] + i['bb'][5]) / 2))
+    grupos_, usados_ = [], set()
+    for i_, item_ in enumerate(itens_):
+        if id(item_) in usados_: continue
+        c0_ = ((item_['bb'][al_] + item_['bb'][al_+3]) / 2,
+               (item_['bb'][2] + item_['bb'][5]) / 2)
+        grupo_ = [j_ for j_ in itens_ if id(j_) not in usados_
+                  and abs((j_['bb'][al_] + j_['bb'][al_+3]) / 2 - c0_[0]) <= 420
+                  and abs((j_['bb'][2] + j_['bb'][5]) / 2 - c0_[1]) <= 420]
+        if len(grupo_) >= 3:
+            grupos_.append(grupo_)
+            usados_.update(id(j_) for j_ in grupo_)
+    return grupos_
+
 def abertos(w):
     # REGRA (João): NICHO = estrutura ABERTA, SEM PORTA (sem porta/basculante/gaveta), com ou sem prateleira.
     # Módulo sem porta (até 2 m x 1,2 m) + tamponamentos/painéis encostados = DETALHE. Armário com porta NUNCA é nicho.
@@ -1508,6 +1528,12 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     ctx = contexto and len(pids) == 1 and not kw.get('isolado')
     tc, D, cam = posicionar(U, fw, dmin, ambiente=ctx,
                             caixas=[p['bb'] for p in P] if ctx else ())
+    if kw.get('camera_frontal_1500'):
+        # Regra rígida das imagens 3D de listagem: câmera e foco no mesmo
+        # nível, exatamente 1,50 m acima do piso, sem inclinação vertical.
+        tc = (tc[0], tc[1], ZP + 1500)
+        cam = (cam[0], cam[1], ZP + 1500)
+        fw = (hx, hy, 0.0); up = (0.0, 0.0, 1.0)
     _tg = {pi for i in its for pi in i['pecas']}
     _retirados = obstaculos(inst, P, _tg, fw) if contexto else set()
     _retirados.difference_update(_tg)
@@ -1526,7 +1552,7 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             if pi in _tg: return True
             if pi in _retirados: return False
             bb = _donos.get(pi, bb)  # vizinho é selecionado inteiro, nunca chapa por chapa
-            if not (prof_(bb) <= max(1800, _pf_mov+900) and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
+            if not kw.get('ambiente_completo') and not (prof_(bb) <= max(1800, _pf_mov+900) and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
             # REGRA (v26, só parede cortada / bloco): o que fica todo ATRÁS do plano da vista (outro ambiente) não aparece
             if (w0.get('cortada') or w0.get('bloco')) and max((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg) < -100: return False
             cz = sum(((bb[k_] + bb[k_ + 3]) / 2 - cam[k_]) * fw[k_] for k_ in range(3))
@@ -1796,7 +1822,8 @@ for v in VW:
     _vis_v = set()
     _tmp_v = fz.open(); _pg_v = _tmp_v.new_page(width=842, height=595)
     render3d(_pg_v, fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1), v['paredes'],
-             contexto=True, visiveis=_vis_v, so_visiveis=True)
+             contexto=True, visiveis=_vis_v, so_visiveis=True,
+             camera_frontal_1500=True, ambiente_completo=True)
     # REGRA (João, 28/09/2026 - bloco 1): só PEÇA SOLTA pode ser escondida (base sob módulo,
     # tamponamento sob superior). MÓDULO da vista nunca é escondido nem sai da listagem.
     _fora_v = [i for i in its if i['tipo'] != 'mod' and not any(pi in _vis_v for pi in i['pecas'])]
@@ -2082,7 +2109,8 @@ def _cotas_em(p, GS, R, rotulos):
         p.insert_text((cx0 + cw / 2 - fz.get_text_length(lab, 'hebo', 8.5) / 2, min(fy + 44, R.y1 - 2)), lab, fontname='hebo', fontsize=8.5)
         if j: p.draw_line((cx0, R.y0 - IN), (cx0, R.y1 + IN), color=PRETO, width=0.6)
 
-# por bloco: listagem de cada parede (frontal) e depois as cotas do bloco (paredes lado a lado)
+# por bloco: listagem de cada parede (frontal); cotas são paginadas depois.
+COTAS_FILA = []
 for v in V:
     GS = [geom_parede(PW[w]) for w in v['paredes']]
     for s_ in [q_ for s0_ in v['subs'] for q_ in _partes(s0_)]:
@@ -2091,6 +2119,12 @@ for v in V:
         # Engenharia: somente nichos identificados por XML + geometria/dimensão
         # geram subimagem no motor padrão. Não há exceções semânticas por nome de produto.
         nis = [(w,c,{'rotulo':'DETALHE - NICHO','sem_lista':False}) for w in s_['paredes'] for c in detalhes(PW[w])]
+        for w in s_['paredes']:
+            for grupo_ in grupos_baloes(PW[w]):
+                ids_ = {id(i) for i in grupo_}
+                if any(ids_.intersection(id(i) for i in g) for _,g,_ in nis): continue
+                nis.append((w, grupo_, {'rotulo':'DETALHE - GRUPO DE BALÕES',
+                                        'sem_lista':False, 'grupo_baloes':True}))
         # Canto reto e canto L recuperam as câmeras funcionais anteriores.
         from normal.regras import subimagens
         for w in s_['paredes']:
@@ -2115,7 +2149,8 @@ for v in V:
         _caixas_main = {}
         render3d(p, _RI, s_['paredes'], letra=s_['letra'], contexto=True,
                  itens_vista=_alvos_vista, sem_balao=_sb, ang=0, elev=0,
-                 caixas_projetadas=_caixas_main)
+                 caixas_projetadas=_caixas_main, camera_frontal_1500=True,
+                 ambiente_completo=True)
         # REGRA (João, 28/09/2026 - skill P1.1): TODOS os nichos da vista ficam na MESMA prancha (caixa dividida),
         # com os números da listagem. Não existe prancha "NICHO k" com listagem própria.
         def _dq(p, w, c, tp_, r_):
@@ -2132,8 +2167,8 @@ for v in V:
                 return
             from normal.cameras import orientar, portas_do_canto, tampas_modulos_deitados
             portas_detalhe = portas_do_canto(globals(), c)
-            if tp_.get('rotulo') == 'DETALHE - NICHO':
-                # Nicho: câmera frontal, centralizada pelo enquadramento dinâmico.
+            if tp_.get('rotulo') == 'DETALHE - NICHO' or tp_.get('grupo_baloes'):
+                # Nicho e grupo de balões: câmera frontal e enquadramento central.
                 op = dict(camera_key=PW[w]['key'], ang=0, elev=0)
             else:
                 op = orientar(c, P, PW[w]['key'], _portas() | portas_detalhe)
@@ -2190,9 +2225,43 @@ for v in V:
                     _seta_referencia_oculta(pd, rd_, tp_, caixas_)
                 else:
                     _dq(pd, w, c, tp_, AREA_IN)
-    # cotas
-    n += 1; p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v['titulo']}")
-    _cotas_em(p, GS, AREA_IN, [f"VISTA {l_}" for l_ in v['letras']])
+    COTAS_FILA.append((v, GS))
+
+# Cotas: duas vistas na mesma folha somente quando uma delas cabe, legível,
+# dentro de um terço do quadro. Caso contrário cada vista recebe folha própria.
+def _cabe_em_terco(G_):
+    largura_ = G_['vmax'] - G_['vmin']; altura_ = G_['ztop']
+    S_, _ = escala_para(largura_, altura_, AREA_IN.width / 3 - 48, AREA_IN.height - 62, cheio=True)
+    return S_ <= 50
+
+_i_cota = 0
+while _i_cota < len(COTAS_FILA):
+    v1_, gs1_ = COTAS_FILA[_i_cota]
+    par_ = None
+    if _i_cota + 1 < len(COTAS_FILA) and len(gs1_) == 1:
+        v2_, gs2_ = COTAS_FILA[_i_cota + 1]
+        if len(gs2_) == 1 and (_cabe_em_terco(gs1_[0]) or _cabe_em_terco(gs2_[0])):
+            par_ = (v2_, gs2_)
+    if par_:
+        v2_, gs2_ = par_
+        if _cabe_em_terco(gs1_[0]) and not _cabe_em_terco(gs2_[0]):
+            vg_, gg_, vp_, gp_ = v2_, gs2_, v1_, gs1_
+        else:
+            vg_, gg_, vp_, gp_ = v1_, gs1_, v2_, gs2_
+        n += 1
+        p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {vg_['titulo']} / {vp_['titulo']}")
+        corte_ = AREA_IN.x0 + AREA_IN.width * 2 / 3
+        _cotas_em(p, gg_, fz.Rect(AREA_IN.x0, AREA_IN.y0, corte_, AREA_IN.y1),
+                  [f"VISTA {l_}" for l_ in vg_['letras']])
+        _cotas_em(p, gp_, fz.Rect(corte_, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1),
+                  [f"VISTA {l_}" for l_ in vp_['letras']])
+        p.draw_line((corte_, AREA.y0), (corte_, AREA.y1), color=PRETO, width=0.8)
+        _i_cota += 2
+    else:
+        n += 1
+        p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v1_['titulo']}")
+        _cotas_em(p, gs1_, AREA_IN, [f"VISTA {l_}" for l_ in v1_['letras']])
+        _i_cota += 1
 
 
 # ===== CAPA (design fixo: quadro externo + logo + cliente + EXECUTIVO - AMBIENTE) =====
@@ -2242,7 +2311,8 @@ open(os.path.splitext(cfg['saida'])[0] + '_QUALIDADE.md', 'w', encoding='utf-8')
 with open(os.path.splitext(cfg['saida'])[0] + '_CAMERAS.json', 'w', encoding='utf-8') as _ca:
     json.dump(dict(cameras=globals().get('_auditoria_cameras',[]),
                    subimagens=globals().get('_auditoria_subimagens',[]),
-                   ocultas=globals().get('_auditoria_ocultas',[])), _ca, ensure_ascii=False, indent=2)
+                   ocultas=globals().get('_auditoria_ocultas',[]),
+                   cotas=globals().get('_auditoria_geometria_cotas',[])), _ca, ensure_ascii=False, indent=2)
 print('\n'.join(q))
 for i in range(len(doc)):
     doc[i].get_pixmap(dpi=80).save(os.path.join(os.path.dirname(cfg['saida']), f'_prev_{i + 1}.png'))
