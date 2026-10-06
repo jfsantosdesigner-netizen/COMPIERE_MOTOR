@@ -1,0 +1,43 @@
+pecas 442
+C:\AGENTES COMPIERE\GIT_WORKSPACE_COMPIERE\gerar_caderno.py:1835: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}
+CORES: 143 pecas coloridas pelo MATERIAIS (medidas no XML: 50)
+   Branco                  109 pecas <- ..\texturas\branco.jpg
+   Metallic Sued            34 pecas <- ..\texturas\metalic_suede.jpg
+INTEGRIDADE: OK | Balcão Inferior | XML=1 DXF=1 | 1750x750x307
+INTEGRIDADE: OK | Armário c/ Portas de Giro c/ Rodapé | XML=1 DXF=1 | 2770x2350x580
+INTEGRIDADE: OK | Mesa de cabeceira 01 Gaveta com nicho | XML=1 DXF=1 | 430x400x328
+INTEGRIDADE: OK | Painel Metallic Sued MDF | XML=1 DXF=1 | 829x18x300
+INTEGRIDADE: OK | Tamponamento | XML=4 DXF=4 | 1460x18x70
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 2350x18x70
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 330x18x120
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 300x18x90
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 1800x18x90
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 2700x18x70
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 2700x18x330
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 750x18x70
+AMBIENTE (eletros/objetos): 0 peças
+AMBIENTE (pedra): 1 peças
+FLUXO NORMAL: 2 paredes; 1 grupos destinados aos especiais
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA A: 1
+    Tamponamento 300x18x90
+# QUALIDADE — RAFAEL CLARET / Suite Casal (gerado por script)
+
+- APROVADO | nº de pranchas 8 = 4 + 2 listagens + 0 divisões + 2 cotas (sem extras/especiais)
+- APROVADO | itens localizados no DXF: 12/12
+- APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | texturas dos materiais
+- VISTA A: paredes y+@-150 | 7 linhas de listagem
+- VISTA B: paredes x+@5064 | 3 linhas de listagem
+  A1: Balcão Inferior 1750x750x307
+  A2: Painel Metallic Sued MDF 829x18x300
+  A3: Tamponamento 330x18x120
+  A4: Tamponamento 1800x18x90
+  A5: Tamponamento 2700x18x70
+  A6: Tamponamento 2700x18x330
+  A7: Tamponamento 750x18x70
+  B1: Armário c/ Portas de Giro c/ Rodapé 2770x2350x580
+  B2: Tamponamento 1460x18x70
+  B3: Tamponamento 2350x18x70
+OK C:\AGENTES COMPIERE\GIT_WORKSPACE_COMPIERE\SAIDAS_RAFAEL_SEM_COZINHA\20261006_120253\SUITE_CASAL\CADERNO - SUITE_CASAL.pdf

@@ -1,0 +1,34 @@
+pecas 856
+C:\AGENTES COMPIERE\GIT_WORKSPACE_COMPIERE\gerar_caderno.py:1835: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}
+CORES: 104 pecas coloridas pelo MATERIAIS (medidas no XML: 30)
+   Branco                   80 pecas <- ..\texturas\branco.jpg
+   Preto TX                 14 pecas <- ..\texturas\preto.jpg
+   Chumbo                   10 pecas <- ..\texturas\chumbo.jpg
+INTEGRIDADE: OK | Armário c/ Portas de Giro c/ Rodapé | XML=1 DXF=1 | 556x2350x320
+INTEGRIDADE: OK | Armário c/ Portas de Giro c/ Rodapé | XML=1 DXF=1 | 2210x2350x550
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 2260x18x80
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 638x18x70
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 2350x18x70
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 572x18x70
+INTEGRIDADE: OK | Tamponamento | XML=1 DXF=1 | 2260x18x70
+AMBIENTE (eletros/objetos): 0 peças
+AMBIENTE (pedra): 0 peças
+FLUXO NORMAL: 1 paredes; 0 grupos destinados aos especiais
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA A: 1
+    Tamponamento 572x18x70
+# QUALIDADE — RAFAEL CLARET / Escritorio (gerado por script)
+
+- APROVADO | nº de pranchas 6 = 4 + 1 listagens + 0 divisões + 1 cotas (sem extras/especiais)
+- APROVADO | itens localizados no DXF: 7/7
+- APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | texturas dos materiais
+- VISTA A: paredes x+@2164 | 6 linhas de listagem
+  A1: Armário c/ Portas de Giro c/ Rodapé 556x2350x320
+  A2: Armário c/ Portas de Giro c/ Rodapé 2210x2350x550
+  A3: Tamponamento 2260x18x80
+  A4: Tamponamento 638x18x70
+  A5: Tamponamento 2350x18x70
+  A6: Tamponamento 2260x18x70
+OK C:\AGENTES COMPIERE\GIT_WORKSPACE_COMPIERE\SAIDAS_RAFAEL_SEM_COZINHA\20261006_120253\ESCRITORIO\CADERNO - ESCRITORIO.pdf

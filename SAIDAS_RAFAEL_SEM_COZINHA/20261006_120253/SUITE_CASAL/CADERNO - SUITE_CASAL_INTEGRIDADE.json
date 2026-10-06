@@ -1,0 +1,113 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "1750x750x307",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 2,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "2770x2350x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 3,
+      "descricao": "Mesa de cabeceira 01 Gaveta com nicho",
+      "dimensoes_xml": "430x400x328",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Painel Metallic Sued MDF",
+      "dimensoes_xml": "829x18x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1460x18x70",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2350x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "330x18x120",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "300x18x90",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1800x18x90",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2700x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2700x18x330",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 12,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "750x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+pecas 178
+ERRO CRITICO: integridade XML/DXF reprovada. Caderno bloqueado; nenhuma peça obrigatória pode ser omitida.
+CORES: 54 pecas coloridas pelo MATERIAIS (medidas no XML: 35)
+   Branco                   31 pecas <- ..\texturas\branco.jpg
+   Freijo Puro              21 pecas <- ..\texturas\freijo_puro.jpg
+   Volakas                   2 pecas <- ..\texturas\volakas.jpg
+INTEGRIDADE: OK | BalcÃ£o Inferior | XML=1 DXF=1 | 1570x430x350
+INTEGRIDADE: OK | BalcÃ£o 2 Portas | XML=2 DXF=2 | 730x724x577
+INTEGRIDADE: FALHA | Fechamento | XML=1 DXF=0 | 70x724x300
+INTEGRIDADE: OK | Painel Branco MDF | XML=2 DXF=2 | 780x18x120
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=2 DXF=2 | 600x25x250
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 857x18x564
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 857x18x672
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=2 DXF=2 | 332x18x100
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 1570x18x100
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 1570x18x132
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 1570x25x250
+INTEGRIDADE: OK | Painel Freijo Puro MDF | XML=1 DXF=1 | 1570x25x316
+INTEGRIDADE: OK | Painel Volakas MDF | XML=1 DXF=1 | 1250x18x1570
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 132x25x70
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 1250x25x70
+INTEGRIDADE: OK | Tamponamento | XML=2 DXF=2 | 857x25x70
+INTEGRIDADE: OK | Tamponamento Inferior | XML=1 DXF=1 | 1570x18x370
