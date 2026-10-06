@@ -13,3 +13,8 @@ As câmeras de listagem ficam centradas e niveladas. A subimagem da gaveta monta
 Validação: geração dos cadernos normais de Suíte Casal e Cozinha, geração combinada de ambos, conferência dos títulos/páginas e dos retângulos dos balões no PDF, teste de 80 balões coincidentes e teste dos acabamentos Bronze/Champagne/transparente/espelho.
 
 Peças funcionais encobertas usam normal.ocultas: detalhe montado, referência de aplicação e balões em superfícies visíveis. Sobreposição genérica não cria subimagem. A engenharia e as referências manuais estão em [SUBIMAGENS_FUNCIONAIS.md](SUBIMAGENS_FUNCIONAIS.md). Regressões: python -m unittest normal.test_regras normal.test_ocultas.
+
+
+Refinamento de vistas divididas (06/10/2026): nas folhas Superiores/Inferiores ou Parte 1/Parte 2, o alvo da câmera e os balões da imagem principal seguem os itens da listagem daquela folha. Os móveis próximos continuam como contexto. A seleção usa itens_vista, independente do parâmetro itens reservado aos detalhes.
+
+Câmeras dos cantos aprovadas por João Felipe em 06/10/2026: canto reto frontal, elevação 20°; Canto L direito +45° e esquerdo −45°, elevação 20°, foco no centro do módulo e referência nos lados abertos reais do canto. Preservar subimagens funcionais.

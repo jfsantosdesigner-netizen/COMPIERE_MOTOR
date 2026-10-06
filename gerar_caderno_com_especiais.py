@@ -110,6 +110,11 @@ def executar(config_path):
         traceback.print_exc()
         return 1
     finally:
+        integridade = work / "BASE_NORMAL_INTEGRIDADE.json"
+        if integridade.exists():
+            shutil.copy2(integridade, str(Path(saida_final).with_suffix("")) + "_INTEGRIDADE.json")
+        if "ns" in locals() and ns.get("doc") is not None:
+            ns["doc"].close()
         try:
             shutil.rmtree(work, ignore_errors=True)
         except Exception:
