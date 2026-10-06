@@ -1,0 +1,940 @@
+COMPIERE — ÍNDICE DE AUDITORIA DO CORE MOTOR V35
+
+OBJETIVO
+
+Este documento é um mapa de auditoria de refatoração.
+
+Pergunta central:
+
+O que realmente existe hoje no V35, qual responsabilidade cada parte exerce, quais são suas dependências e para qual dos 9 blocos da nova arquitetura ela pode migrar sem quebrar o comportamento validado?
+
+REGRA
+
+Este documento é mapa de auditoria. Não altera o V35 e não substitui as regras técnicas existentes.
+
+============================================================
+
+1. NOVA LINHA DE PRODUÇÃO
+   ============================================================
+
+01 ENTRADA
+↓
+02 UNIFICAÇÃO
+↓
+03 ENGENHARIA
+↓
+04 REPRESENTAÇÃO / ESPECIAIS
+↓
+05 LISTAGEM / IDENTIFICAÇÃO
+↓
+06 COTAS
+↓
+07 PRANCHAS
+↓
+08 AUDITORIA
+↓
+09 ENTREGA
+
+============================================================
+2. CRITÉRIO DE CLASSIFICAÇÃO
+============================
+
+Cada função deve ser analisada por cinco perguntas:
+
+1. Qual é sua responsabilidade real?
+2. De quais estruturas ela depende?
+3. Quem depende dela?
+4. Para qual bloco ela pertence conceitualmente?
+5. É seguro extraí-la agora?
+
+VERDE
+Responsabilidade clara e baixo acoplamento.
+Candidato a extração.
+
+AMARELO
+Responsabilidade identificável, mas possui dependências cruzadas.
+
+VERMELHO
+Altamente acoplado ou sensível.
+Preservar até isolar dependências.
+
+COMPARTILHADO
+Infraestrutura que deve permanecer como fonte única de verdade.
+
+============================================================
+3. RESUMO DA AUDITORIA
+======================
+
+gerar_caderno.py
+2188 linhas / 75 funções
+Motor monolítico principal.
+
+geo.py
+288 linhas / 25 funções
+Geometria, associação e agrupamento.
+
+dxf_pecas(motor core).py
+228 linhas / 5 funções
+Leitor/extrator DXF.
+
+novo_ambiente.py
+76 linhas / 2 funções
+Entrada/orquestração.
+
+launcher.py
+93 linhas / 2 funções
+Interface de execução.
+
+server.py
+6 linhas
+Infraestrutura mínima.
+
+testar_motor.py
+Testes do leitor DXF.
+
+testar_lote.py
+Regressão em lote.
+
+ACHADO PRINCIPAL:
+
+O V35 não possui nove módulos independentes.
+
+Possui nove responsabilidades que já aparecem no código, porém várias estão misturadas principalmente em gerar_caderno.py.
+
+Portanto:
+
+NÃO cortar o arquivo por tamanho ou por faixa de linhas.
+
+Extrair por responsabilidade e dependência.
+
+============================================================
+4. BLOCO 01 — ENTRADA
+=====================
+
+RESPONSABILIDADE
+
+Receber projeto, localizar XML/DXF/configuração e preparar execução.
+
+novo_ambiente.py:
+
+_tem_projeto() — linha 12
+processar() — linha 19
+
+gerar_caderno.py:
+
+Configuração inicial — linhas iniciais
+ler_xml() — linha 40
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+DECISÃO
+
+Separar recepção/localização da interpretação semântica.
+
+Não duplicar o leitor XML.
+
+============================================================
+5. BLOCO 02 — UNIFICAÇÃO
+========================
+
+RESPONSABILIDADE
+
+Transformar XML + DXF em uma base consolidada e rastreável.
+
+---
+
+## DXF
+
+dxf_pecas(motor core).py:
+
+_push_vertex() — 18
+_push_face() — 26
+_bbox_arco() — 35
+_processar() — 43
+main() — 205
+
+CLASSIFICAÇÃO
+
+VERDE
+
+---
+
+## GEO
+
+geo.py:
+
+num() — 8
+parse_dim() — 10
+eh_componente() — 14
+carregar() — 17
+uniao() — 22
+dentro() — 25
+laterais() — 28
+casar() — 37
+_cands_mod() — 74
+_sobrepoe() — 99
+limites() — 106
+parede_de() — 110
+uz() — 125
+caixa_elev() — 129
+agrupar_vistas() — 133
+plano() — 181
+dist_caixas() — 184
+_ao_longo() — 188
+_montar() — 195
+definir_paredes() — 208
+agrupar_vistas2() — 264
+
+CLASSIFICAÇÃO
+
+GEO básico:
+VERDE/AMARELO
+
+Associação XML ↔ DXF:
+AMARELO
+
+Paredes/vistas:
+AMARELO
+
+Geometria que já decide representação:
+AMARELO
+
+---
+
+## gerar_caderno.py
+
+ler_xml() — 40
+preparar() — 89
+_juntar_paredes() — 232
+_vol() / _vol_int() — 258–259
+*faces_parede_real() — 286
+caixa_faces*() — 304
+_parede_real_atras() — 308
+_eletro_ok() — 361
+*arestas() — 397
+parse_dim*() — 430
+_toca() — 433
+_faces_parede() — 566
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+DECISÃO
+
+Criar uma BASE consolidada antes de retirar funções.
+
+A BASE deve carregar, no mínimo:
+
+* identidade;
+* origem;
+* dimensões;
+* bbox;
+* faces/geometria;
+* posição;
+* orientação;
+* material/cor;
+* relação XML ↔ DXF;
+* módulos;
+* componentes;
+* paredes;
+* ambiente;
+* conflitos/missing associations;
+* proveniência.
+
+============================================================
+6. BLOCO 03 — ENGENHARIA
+========================
+
+RESPONSABILIDADE
+
+Aplicar regras técnicas, construtivas, de fabricação e montagem ao projeto já unificado.
+
+REGRAS DOCUMENTADAS
+
+03_ENGENHARIA_REGRAS/
+
+motor v33__ENGENHARIA_CADERNO_CLIENTE.md
+
+motor v34__ENGENHARIA_IMPLEMENTACAO.md
+
+e PDFs existentes.
+
+CÓDIGO ATUALMENTE MISTURADO EM gerar_caderno.py:
+
+_tem_frente_solto() — 636
+_eh_acessorio() — 768
+_larg() — 821
+_eh_ripa() — 929
+_eh_porta() — 1190
+_portas_cota() — 1207
+_puxador_xml() — 1350
+_gerar_puxadores() — 1364
+_portas() — 1414
+tem_porta() — 1424
+detalhes() — 1435
+abertos() — 1449
+nichos() — 1467
+_espec() — 1764
+add() — 1768
+
+CLASSIFICAÇÃO
+
+AMARELO → VERMELHO
+
+DECISÃO
+
+Não extrair simplesmente.
+
+Primeiro definir entrada/saída dessas regras sobre a BASE.
+
+============================================================
+7. BLOCO 04 — REPRESENTAÇÃO / ESPECIAIS
+=======================================
+
+RESPONSABILIDADE
+
+Transformar a base já interpretada em representações técnicas e tratar elementos especiais.
+
+---
+
+## REPRESENTAÇÃO
+
+gerar_caderno.py:
+
+_desenho2d() — 1047
+caixa_faces() — 1154
+paredes_recorte() — 1158
+_vista_limites() — 1165
+geom_parede() — 1216
+_ordem_pecas() — 1238
+frente() — 1253
+_persp() — 1288
+*raster3d() — 1296
+render3d() — 1499
+dentro*() — 1532
+pj() — 1614
+_clip() — 1884
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+---
+
+## ESPECIAIS
+
+_espec() — 1764
+detalhes() — 1435
+abertos() — 1449
+nichos() — 1467
+_gerar_puxadores() — 1364
+_portas() — 1414
+
+CLASSIFICAÇÃO
+
+AMARELO/VERMELHO
+
+DECISÃO
+
+Não misturar os dois conceitos.
+
+Representação consome engenharia/base.
+
+Especiais podem produzir objetos técnicos consumidos por:
+
+* listagem;
+* identificação;
+* cotas;
+* pranchas.
+
+============================================================
+8. BLOCO 05 — LISTAGEM / IDENTIFICAÇÃO
+======================================
+
+RESPONSABILIDADE
+
+Identificar módulos/componentes, gerar listas e relacionar identificação gráfica.
+
+CÓDIGO
+
+_numerar() — 1719
+_espec() — 1764
+add() — 1768
+_partes() — 1955
+tabela() — 1112
+nova_prancha() — 1098
+
+Também existem partes de render3d() relacionadas a:
+
+baloes
+letra
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+PROBLEMA ATUAL
+
+A identificação está acoplada à representação.
+
+DECISÃO
+
+Criar identificação estável na BASE:
+
+* ID interno;
+* ID de módulo;
+* ID de peça;
+* ID de especial;
+* número de lista;
+* posição gráfica.
+
+O balão consome esse ID.
+
+Ele não deve redescobrir a peça.
+
+============================================================
+9. BLOCO 06 — COTAS
+===================
+
+RESPONSABILIDADE
+
+Decidir o que deve ser cotado, entre quais referências e como apresentar.
+
+CÓDIGO
+
+_uniq() — 920
+cotar_divisoria() — 934
+_u_de() — 970
+cotar_bloco() — 973
+cotar() — 992
+_tick() — 862
+_txt() — 865
+cadeia_h() — 872
+cadeia_v() — 896
+_cotas_em() — 1975
+_dq() — 2035
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+DECISÃO
+
+É um dos primeiros blocos que pode ser isolado depois da BASE estar estável.
+
+REGRA
+
+GEO fornece geometria e referências.
+
+COTAS decide:
+
+* o que dimensionar;
+* entre quais referências;
+* hierarquia;
+* agrupamento;
+* posição;
+* apresentação.
+
+============================================================
+10. BLOCO 07 — PRANCHAS
+=======================
+
+RESPONSABILIDADE
+
+Compor páginas sem tomar decisões de engenharia.
+
+CÓDIGO
+
+nova_prancha() — 1098
+tabela() — 1112
+escala_para() — 1134
+desenhar() — 1142
+_quebra() — 1817
+_clip() — 1884
+_cotas_em() — 1975
+_dq() — 2035
+_prancha_peca() — 2069
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+DECISÃO
+
+PRANCHAS deve receber objetos prontos:
+
+* vista;
+* lista;
+* balões;
+* cotas;
+* detalhes;
+* título;
+* escala.
+
+E somente compor a página.
+
+PRANCHAS não deve decidir engenharia.
+
+============================================================
+11. BLOCO 08 — AUDITORIA
+========================
+
+CÓDIGO ATUAL
+
+gerar_caderno.py
+Finalização/checagens aproximadamente 2164–2185.
+
+testar_motor.py
+Teste do leitor DXF.
+
+testar_lote.py
+Teste de regressão em projetos.
+
+CLASSIFICAÇÃO
+
+AMARELO
+
+DECISÃO
+
+Separar dois conceitos:
+
+1. Testes do software.
+2. Auditoria do caderno gerado.
+
+A auditoria do produto deve verificar:
+
+* módulos esperados;
+* associações;
+* peças sem associação;
+* páginas;
+* IDs;
+* cotas;
+* vistas;
+* especiais;
+* arquivos de saída;
+* inconsistências XML/DXF;
+* erros não silenciosos.
+
+============================================================
+12. BLOCO 09 — ENTREGA
+======================
+
+CÓDIGO
+
+gerar_caderno.py
+Aproximadamente 2138–2188.
+
+novo_ambiente.py
+19–76.
+
+launcher.py
+21 e 33.
+
+server.py
+Infraestrutura mínima.
+
+CLASSIFICAÇÃO
+
+VERDE
+
+DECISÃO
+
+Manter simples.
+
+Entrada
+→ processamento
+→ auditoria
+→ saída.
+
+============================================================
+13. MAPA DE EXTRAÇÃO DO gerar_caderno.py
+========================================
+
+GRUPO A — ENTRADA / LEITURA
+
+modelo()
+ler_xml()
+
+Destino:
+01 Entrada / 02 Unificação
+
+Status:
+AMARELO
+
+GRUPO B — GEOMETRIA
+
+_n()
+preparar()
+_juntar_paredes()
+_vol()
+_vol_int()
+*faces_parede_real()
+caixa_faces*()
+_parede_real_atras()
+_eletro_ok()
+_arestas()
+*sd()
+parse_dim*()
+_toca()
+_faces_parede()
+
+Destino:
+02 Unificação, com algumas funções posteriores em 03/04.
+
+Status:
+AMARELO
+
+GRUPO C — MATERIAIS
+
+_norm()
+_parecido()
+cor_material()
+textura()
+
+Destino:
+02 Unificação / dados de representação.
+
+Status:
+COMPARTILHADO
+
+Não duplicar essa lógica em vários blocos.
+
+GRUPO D — ENGENHARIA
+
+_tem_frente_solto()
+_eh_ripa()
+_ancora_regex()
+_eh_acessorio()
+_larg()
+_eh_porta()
+_portas_cota()
+_puxador_xml()
+_gerar_puxadores()
+_portas()
+tem_porta()
+detalhes()
+abertos()
+nichos()
+_espec()
+
+Destino:
+03 Engenharia + 04 Especiais.
+
+Status:
+AMARELO/VERMELHO
+
+GRUPO E — COTAGEM
+
+_uniq()
+_tick()
+_txt()
+cadeia_h()
+cadeia_v()
+cotar_divisoria()
+_u_de()
+cotar_bloco()
+cotar()
+
+Destino:
+06 Cotas.
+
+Status:
+AMARELO
+
+GRUPO F — REPRESENTAÇÃO
+
+_desenho2d()
+caixa_faces()
+paredes_recorte()
+_vista_limites()
+geom_parede()
+_ordem_pecas()
+frente()
+_persp()
+*raster3d()
+render3d()
+dentro*()
+pj()
+
+Destino:
+04 Representação.
+
+Status:
+AMARELO/VERMELHO
+
+GRUPO G — IDENTIFICAÇÃO / LISTAGEM
+
+_numerar()
+_partes()
+tabela()
+
+Destino:
+05 Listagem / Identificação.
+
+Status:
+AMARELO
+
+GRUPO H — PRANCHAS
+
+nova_prancha()
+escala_para()
+desenhar()
+_quebra()
+_clip()
+_cotas_em()
+_dq()
+_prancha_peca()
+
+Destino:
+07 Pranchas.
+
+Status:
+AMARELO
+
+============================================================
+14. geo.py — MAPA DE EXTRAÇÃO
+=============================
+
+INFRAESTRUTURA GEOMÉTRICA
+
+num()
+parse_dim()
+carregar()
+uniao()
+dentro()
+laterais()
+_sobrepoe()
+limites()
+plano()
+dist_caixas()
+_ao_longo()
+
+Destino:
+02 Unificação.
+
+Classificação:
+VERDE/COMPARTILHADO.
+
+ASSOCIAÇÃO
+
+casar()
+_cands_mod()
+
+Destino:
+02 Unificação.
+
+Classificação:
+AMARELO.
+
+PAREDES / VISTAS
+
+parede_de()
+uz()
+caixa_elev()
+agrupar_vistas()
+_montar()
+definir_paredes()
+agrupar_vistas2()
+
+Destino:
+02 + 04.
+
+Classificação:
+AMARELO.
+
+============================================================
+15. dxf_pecas.py — MAPA DE EXTRAÇÃO
+===================================
+
+_push_vertex()
+_push_face()
+_bbox_arco()
+_processar()
+main()
+
+Destino:
+02 Unificação.
+
+Classificação:
+VERDE.
+
+É um componente relativamente isolado.
+
+============================================================
+16. ORDEM SEGURA DE EXTRAÇÃO
+============================
+
+FASE 1
+Preservar V35 funcionando.
+
+↓
+
+FASE 2
+Criar BASE consolidada.
+
+↓
+
+FASE 3
+Isolar leitor DXF.
+
+↓
+
+FASE 4
+Isolar associação XML ↔ DXF.
+
+↓
+
+FASE 5
+Isolar regras de Engenharia.
+
+↓
+
+FASE 6
+Isolar Representação / Especiais.
+
+↓
+
+FASE 7
+Isolar Listagem / Identificação.
+
+↓
+
+FASE 8
+Isolar Cotas.
+
+↓
+
+FASE 9
+Isolar Pranchas.
+
+↓
+
+FASE 10
+Auditoria.
+
+↓
+
+FASE 11
+Entrega.
+
+============================================================
+17. REGRA DE OURO DA REFATORAÇÃO
+================================
+
+NÃO FAZER:
+
+gerar_caderno.py
+→ cortar linhas
+→ espalhar em pastas.
+
+FAZER:
+
+V35 validado
+→ identificar responsabilidade
+→ identificar dependências
+→ definir contrato
+→ extrair
+→ rodar regressão
+→ comparar resultado
+→ somente então remover o código antigo.
+
+============================================================
+18. O QUE NÃO DEVE SER DUPLICADO
+================================
+
+GEOMETRIA
+
+Uma única fonte de verdade.
+
+ASSOCIAÇÃO XML ↔ DXF
+
+Uma única associação.
+
+IDENTIDADE
+
+Um único ID por objeto.
+
+REGRAS DE ENGENHARIA
+
+Uma única implementação por regra.
+
+MATERIAIS
+
+Uma única resolução de material/cor.
+
+COTAS
+
+Não reconstruir geometria.
+
+REPRESENTAÇÃO
+
+Não reinventar engenharia.
+
+PRANCHAS
+
+Não tomar decisões técnicas.
+
+AUDITORIA
+
+Não corrigir silenciosamente.
+
+============================================================
+19. CONCLUSÃO DA AUDITORIA
+==========================
+
+O V35 já contém uma quantidade significativa da engenharia necessária.
+
+O problema principal não é ausência de código.
+
+O problema principal é ACOPLAMENTO DE RESPONSABILIDADES.
+
+O maior núcleo a ser tratado é:
+
+gerar_caderno.py
+2188 linhas
+75 funções.
+
+Porém, o arquivo NÃO deve ser reescrito.
+
+ESTRATÉGIA:
+
+Preservar o comportamento validado e retirar responsabilidades uma por uma, começando pela BASE e pelas fronteiras mais claras.
+
+dxf_pecas.py e parte da infraestrutura de geo.py são os candidatos mais claros para formar a base do BLOCO 02.
+
+As regras de engenharia, representação, cotas, listagem e pranchas devem ser extraídas somente depois que a BASE tiver contratos estáveis.
+
+============================================================
+20. STATUS
+==========
+
+Auditoria inicial:
+CONCLUÍDA.
+
+V35 alterado:
+NÃO.
+
+Nova arquitetura criada:
+NÃO.
+
+Mapa de extração:
+SIM.
+
+PRÓXIMO NÍVEL DA AUDITORIA:
+
+FUNÇÃO
+→ responsabilidade
+→ entrada
+→ saída
+→ dependências
+→ consumidores
+→ bloco destino
+→ risco
+→ ordem de extração.
+
+Este arquivo é um MAPA DE TRABALHO.
+
+Não é uma autorização automática para alterar o V35.

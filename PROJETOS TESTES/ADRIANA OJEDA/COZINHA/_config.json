@@ -1,0 +1,18 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "ADRIANA OJEDA",
+  "ambiente": "Cozinha",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "layout": "C:\\AGENTES COMPIERE\\core_motor\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\AGENTES COMPIERE\\core_motor\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS\\ADRIANA OJEDA\\COZINHA\\EXECUTIVO COZINHA - 10000338.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS\\ADRIANA OJEDA\\COZINHA\\COZINHA.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS\\ADRIANA OJEDA\\COZINHA\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\AGENTES COMPIERE\\core_motor\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS\\ADRIANA OJEDA\\COZINHA\\CADERNO - COZINHA.pdf"
+}

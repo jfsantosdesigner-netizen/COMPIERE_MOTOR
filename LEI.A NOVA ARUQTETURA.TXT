@@ -1,0 +1,246 @@
+﻿# Compiere Soluções — Modelo de Negócio
+
+## 1. O que é a Compiere
+
+A Compiere Soluções é uma plataforma de engenharia e documentação técnica voltada para o setor de móveis planejados e marcenaria.
+
+A solução recebe projetos já desenvolvidos em softwares de projeto, como o Promob, juntamente com seus arquivos técnicos de informação e geometria, e transforma esses dados em **documentação executiva organizada, padronizada e pronta para produção e montagem**.
+
+A Compiere não tem como objetivo substituir o projetista nem criar o projeto do zero.
+
+Seu objetivo é transformar um projeto já existente em documentação técnica estruturada.
+
+---
+
+## 2. Problema de mercado
+
+Após a conclusão de um projeto de móveis planejados, ainda existe uma etapa significativa de trabalho para transformar o projeto em documentação utilizável pela fábrica, produção, montagem e demais envolvidos.
+
+Esse trabalho normalmente envolve:
+
+* interpretação das informações do projeto;
+* organização de módulos e componentes;
+* preparação de vistas;
+* geração e posicionamento de cotas;
+* listas;
+* identificação de peças;
+* balões;
+* detalhes específicos;
+* compatibilização;
+* documentação para produção;
+* documentação para montagem;
+* revisão.
+
+Em muitas operações, parte desse trabalho ainda depende de profissionais especializados executando tarefas repetitivas manualmente.
+
+Isso gera:
+
+* tempo elevado por projeto;
+* dependência de profissionais específicos;
+* variação na qualidade da documentação;
+* retrabalho;
+* dificuldade de padronização;
+* dificuldade para aumentar volume sem aumentar proporcionalmente a equipe.
+
+---
+
+## 3. Solução
+
+A Compiere transforma esse processo em uma **linha de produção digital de engenharia documental**.
+
+O projeto entra uma vez e passa por processos especializados.
+
+De forma simplificada:
+
+**Projeto → leitura → unificação → representação → cotas → listagem → identificação → compatibilização → engenharia → pranchas → auditoria → entrega**
+
+Cada etapa possui regras próprias e responsabilidade definida.
+
+A proposta é que o sistema não dependa de uma única inteligência tentando interpretar todo o projeto.
+
+Em vez disso, cada processo executa uma função especializada sobre uma base comum de informações.
+
+---
+
+## 4. Tecnologia
+
+A solução é baseada inicialmente em processamento determinístico, utilizando as informações estruturadas do projeto e sua geometria.
+
+O sistema pode trabalhar com:
+
+* XML;
+* DXF;
+* geometria;
+* informações semânticas;
+* regras de engenharia;
+* processamento geométrico;
+* geração de imagens;
+* geração de documentos PDF.
+
+A arquitetura permite que diferentes processos utilizem ferramentas especializadas para suas respectivas funções.
+
+Por exemplo:
+
+* processamento XML para organização semântica;
+* processamento DXF para geometria;
+* ferramentas geométricas para unificação e análise;
+* Blender para determinadas representações 3D;
+* processamento específico para cotas;
+* geração automática de listas e balões;
+* regras específicas para peças especiais;
+* geração de pranchas e PDF;
+* auditoria automática da documentação.
+
+---
+
+## 5. Cliente-alvo
+
+O mercado potencial inclui empresas que desenvolvem ou fabricam móveis planejados e que precisam transformar projetos em documentação técnica.
+
+Entre os potenciais clientes estão:
+
+### Marcenarias
+
+Empresas que recebem projetos e precisam preparar documentação para fabricação e montagem.
+
+### Fábricas de móveis planejados
+
+Operações com maior volume de projetos e necessidade de padronização documental.
+
+### Lojas e revendedores
+
+Empresas que projetam e vendem móveis, mas precisam estruturar a documentação para produção.
+
+### Escritórios e equipes de engenharia
+
+Operações que produzem grande quantidade de documentação técnica e desejam reduzir trabalho repetitivo.
+
+### Empresas de montagem
+
+Operações que precisam receber documentação clara e padronizada para executar instalações.
+
+---
+
+## 6. Modelo de negócio
+
+A Compiere pode operar como um serviço B2B especializado.
+
+O cliente fornece os projetos e arquivos necessários.
+
+A Compiere processa esses projetos e entrega a documentação executiva.
+
+O modelo pode combinar:
+
+* cobrança por projeto;
+* cobrança por ambiente;
+* cobrança por caderno;
+* planos mensais por volume;
+* contratos recorrentes com fábricas ou marcenarias;
+* eventualmente, licenciamento do motor para operações com estrutura própria.
+
+O modelo comercial definitivo ainda deve ser validado pelo mercado.
+
+---
+
+## 7. Proposta de valor
+
+A proposta central é:
+
+> **Transformar projetos já existentes em documentação executiva padronizada, em escala e com rastreabilidade.**
+
+Os principais benefícios esperados são:
+
+* redução do tempo de documentação;
+* aumento da capacidade produtiva;
+* padronização;
+* redução de tarefas repetitivas;
+* menor dependência de execução manual;
+* rastreabilidade das informações;
+* possibilidade de processamento de maior volume sem crescimento proporcional da equipe;
+* documentação mais consistente para produção e montagem.
+
+---
+
+## 8. Diferencial
+
+O principal diferencial não é simplesmente gerar um PDF.
+
+A proposta é criar uma **engenharia documental estruturada**, na qual cada etapa possui regras, entradas, saídas e validações próprias.
+
+Isso permite que a solução evolua por processos.
+
+Por exemplo, melhorias na geração de cotas podem ser desenvolvidas sem necessariamente alterar o processo de geração de imagens.
+
+Da mesma forma, novas regras para peças especiais podem ser incorporadas ao processo de engenharia sem alterar o leitor de DXF.
+
+---
+
+## 9. Escalabilidade
+
+O modelo busca separar o crescimento do volume de projetos do crescimento da quantidade de trabalho manual.
+
+Em uma operação convencional:
+
+**mais projetos → mais horas de profissionais**
+
+Na proposta da Compiere:
+
+**mais projetos → processamento automatizado + supervisão/validação**
+
+Isso cria potencial para operações de maior volume.
+
+A capacidade real de escala, entretanto, depende da variedade dos projetos, qualidade dos arquivos de entrada, cobertura das regras e índice de intervenção humana necessário.
+
+---
+
+## 10. Posicionamento
+
+A Compiere não pretende ser inicialmente:
+
+* um software de projeto;
+* uma ferramenta de criação de móveis;
+* um substituto do Promob;
+* uma plataforma de fabricação CNC;
+* uma ferramenta de desenho livre.
+
+O posicionamento é mais específico:
+
+> **Uma camada de engenharia e documentação entre o projeto e a produção/montagem.**
+
+---
+
+## 11. Hipótese de mercado a ser validada
+
+A hipótese central para pesquisa de mercado é:
+
+> **Empresas de móveis planejados e marcenaria possuem uma demanda recorrente por transformação de projetos em documentação executiva e estariam dispostas a pagar por uma solução que reduza significativamente o tempo e o custo dessa etapa, mantendo controle e confiabilidade técnica.**
+
+A pesquisa deve validar principalmente:
+
+1. Quanto tempo as empresas gastam atualmente com documentação.
+2. Quantas pessoas estão envolvidas nessa etapa.
+3. Qual o volume médio de projetos/ambientes processados.
+4. Quais partes do processo são mais trabalhosas.
+5. Quanto retrabalho ocorre.
+6. Quais erros geram maior custo.
+7. Quanto custa atualmente produzir essa documentação.
+8. Quanto as empresas estariam dispostas a pagar por projeto ou por volume.
+9. Qual nível de automação o mercado aceitaria.
+10. Quanto controle humano o cliente considera necessário.
+11. Quais formatos de arquivo fazem parte do fluxo atual.
+12. Quais softwares são utilizados na origem dos projetos.
+13. Quais informações precisam obrigatoriamente aparecer na documentação.
+14. Quais critérios determinam que um caderno está "aprovado" para produção e montagem.
+15. Se existe interesse em contratar o serviço como operação recorrente.
+
+---
+
+## 12. Visão de negócio
+
+A visão de longo prazo é transformar a Compiere em uma infraestrutura especializada de **engenharia documental para o setor moveleiro**, capaz de processar projetos em escala e produzir documentação padronizada para diferentes etapas da cadeia produtiva.
+
+O primeiro produto, entretanto, deve permanecer concentrado em um problema específico:
+
+**receber o projeto pronto e gerar sua documentação executiva.**
+
+A expansão para outras funções deve ocorrer somente depois da validação desse núcleo.
