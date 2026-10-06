@@ -122,7 +122,7 @@ def renderizar(ns,page,rect,plano,letra,permitidos):
     contexto=[host]+grupo
     caixas={}
     ns['render3d'](page,referencia,[w['id']],itens=contexto,ang=0,elev=0,dmin=4200,margem=60,
-                   isolado=True,sem_portas=False,margem_pontos=4,caixas_projetadas=caixas)
+                   isolado=False,contexto=True,sem_portas=False,margem_pontos=4,caixas_projetadas=caixas)
     alvo=[caixas[pi] for i in grupo for pi in i['pecas'] if pi in caixas]
     if alvo:
         b=fz.Rect(min(q[0] for q in alvo),min(q[1] for q in alvo),max(q[2] for q in alvo),max(q[3] for q in alvo))

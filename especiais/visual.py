@@ -55,8 +55,10 @@ def _motor(ns):
                                       ast.parse('_iso is None', mode='eval').body])
             if isinstance(node, ast.If) and 'AMB_I' in ast.unparse(node.test) and 'ELETRO_I' in ast.unparse(node.test):
                 for sub in node.body:
-                    if isinstance(sub, ast.If) and ast.unparse(sub.test) == 'itens':
-                        sub.test = ast.parse('itens and _iso is None', mode='eval').body
+                    if isinstance(sub, ast.If) and any(isinstance(x,ast.Continue) for x in sub.body) and any(
+                            isinstance(x,ast.Name) and x.id=='itens' for x in ast.walk(sub.test)):
+                        sub.test = ast.BoolOp(op=ast.And(),values=[sub.test,
+                                         ast.parse('_iso is None',mode='eval').body])
                     if isinstance(sub, ast.If) and any(isinstance(x, ast.Expr) and
                             ast.unparse(x).startswith('shell.append') for x in sub.body):
                         k = next(k for k,x in enumerate(sub.body) if isinstance(x,ast.Expr)

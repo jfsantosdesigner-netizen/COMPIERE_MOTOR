@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding='utf-8')
 import pymupdf as fz, geo
 from normal.vidros import estilo, faces_porta
+from camera_comum import posicionar, obstaculos, enquadrar, cantos
 
 
 cfg = json.load(open(sys.argv[1], encoding='utf-8'))
@@ -1440,8 +1441,10 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     for i in its: U = geo.uniao(U, i['bb'])
     E = [U[0] - 80, U[1] - 80, U[2] - 80, U[3] + 80, U[4] + 80, U[5] + 80]
     f = FV[kw.get('camera_key', PW[pids[0]]['key'])]; a = 0.0
-    if len(pids) > 1:
-        f2 = FV[PW[pids[1]]['key']]; a = math.radians(22 if f[0] * f2[1] - f[1] * f2[0] >= 0 else -22)
+    if len(pids) > 1 and kw.get('papel') == 'geral':
+        f2 = FV[PW[pids[1]]['key']]
+        cruz = f[0] * f2[1] - f[1] * f2[0]
+        if cruz: a = math.radians(22 if cruz > 0 else -22)  # conjunto em L: complemento geral
     if ang is not None: a = math.radians(ang)
     hx = f[0] * math.cos(a) - f[1] * math.sin(a); hy = f[0] * math.sin(a) + f[1] * math.cos(a)
     # REGRA (v33, João): a vista frontal fica EXATAMENTE no centro - sem inclinação nenhuma.
@@ -1451,11 +1454,12 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     rn = math.hypot(hy, hx); r = (hy / rn, -hx / rn, 0.0)
     up = (r[1] * fw[2] - r[2] * fw[1], r[2] * fw[0] - r[0] * fw[2], r[0] * fw[1] - r[1] * fw[0])
     dot = lambda a_, b_: a_[0] * b_[0] + a_[1] * b_[1] + a_[2] * b_[2]
-    tc = ((U[0] + U[3]) / 2, (U[1] + U[4]) / 2, (U[2] + U[5]) / 2)
-    D = max(max(U[3] - U[0], U[4] - U[1], U[5] - U[2]) * 1.9, dmin)
-    if contexto and not itens and len(pids) == 1: D = max(D, 7000)   # com ambiente: câmera mais longe (menos distorção)  # parede pequena: câmera não chega perto demais (sem distorção)
-    cam = (tc[0] - fw[0] * D, tc[1] - fw[1] * D, tc[2] - fw[2] * D)
-    ctx = contexto and not itens and len(pids) == 1
+    ctx = contexto and len(pids) == 1 and not kw.get('isolado')
+    tc, D, cam = posicionar(U, fw, dmin, ambiente=ctx,
+                            caixas=[p['bb'] for p in P] if ctx else ())
+    _tg = {pi for i in its for pi in i['pecas']}
+    _retirados = obstaculos(inst, P, _tg, fw) if contexto else set()
+    _retirados.difference_update(_tg)
     if ctx:
         w0 = PW[pids[0]]; axd = 0 if f[0] else 1; axl = 1 - axd; sg = f[axd]
         prof_ = lambda bb: min((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg)
@@ -1464,14 +1468,18 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         # sem ninguem ter que acertar posicao de corte.
         _pf_mov = max((w0['plano'] - U[axd]) * sg, (w0['plano'] - U[axd + 3]) * sg)
         _na_frente = lambda bb: min((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg) > _pf_mov + 50
-        _tg = {pi for i in its for pi in i['pecas']}
+        _donos = {}
+        for item in sorted(inst, key=lambda i: i['tipo'] != 'mod'):
+            for pi_ in item['pecas']: _donos.setdefault(pi_, item['bb'])
         def dentro_(bb, pi=None):
-            if not (prof_(bb) <= 1000 and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
             if pi in _tg: return True
+            if pi in _retirados: return False
+            bb = _donos.get(pi, bb)  # vizinho é selecionado inteiro, nunca chapa por chapa
+            if not (prof_(bb) <= max(1800, _pf_mov+900) and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
             # REGRA (v26, só parede cortada / bloco): o que fica todo ATRÁS do plano da vista (outro ambiente) não aparece
             if (w0.get('cortada') or w0.get('bloco')) and max((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg) < -100: return False
             cz = sum(((bb[k_] + bb[k_ + 3]) / 2 - cam[k_]) * fw[k_] for k_ in range(3))
-            return cz > D * 0.8   # vizinho não fica entre a câmera e a parede
+            return cz > 200  # obstáculos são retirados por entidade, sem apagar vizinhos por distância
     cor = {}
     for i in inst:
         for pi in i['pecas']: cor[pi] = MADEIRA if i['tipo'] == 'comp' else (0.97, 0.97, 0.97)
@@ -1482,18 +1490,18 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         sd_ = sorted(p_['dim'])
         if _iso is not None and p_['i'] not in _iso: continue
         if kw.get('sem_portas') and p_['i'] in _portas(): continue
-        if p_['i'] in DUP_I: continue
-        # REGRA (João, 28/09/2026 - skill P3): móvel diverso SAI da imagem da vista (vai para a prancha extra)
-        if ctx and p_['i'] in _ESPECIAL_I and p_['i'] not in _tg: continue
+        if p_['i'] in DUP_I or p_['i'] in _retirados: continue
+        # Especial vizinho pode orientar no ambiente; tabela/balões permanecem só dos alvos da vista.
+        _referencia_especial = ctx and p_['i'] in _ESPECIAL_I and p_['i'] not in _tg
         if p_['i'] in AMB_I or p_['i'] in ELETRO_I:
-            if itens and not kw.get('representacao_interna'): continue   # detalhe (nicho/costas): só os móveis, sem pedra/eletros
+            if itens and not ctx and not kw.get('representacao_interna'): continue   # detalhe (nicho/costas): só os móveis, sem pedra/eletros
             if (dentro_(b, p_['i']) if ctx else all(b[k] <= E[k + 3] and b[k + 3] >= E[k] for k in range(3))):
                 c0_ = PEDRA_COR if p_['i'] in AMB_I else ELETRO_COR
                 for fc, fl in zip(p_['faces'], p_['ft']): src.append((fc, c0_, fl, 1, len(shell)))
                 _pidx[len(shell)] = p_['i']
                 shell.append(b)
             continue
-        if not kw.get('representacao_interna') and (sd_[1] < 50 or sd_[0] > 60): continue  # REGRA: 3D só com MDF (chapas); suportes, dobradiças, cabideiros, pés = fora
+        if not kw.get('representacao_interna') and not _referencia_especial and (sd_[1] < 50 or sd_[0] > 60): continue  # REGRA: 3D só com MDF (chapas); suportes, dobradiças, cabideiros, pés = fora
         if (dentro_(b, p_['i']) if ctx else (all(b[k] >= E[k] for k in range(3)) and all(b[k + 3] <= E[k + 3] for k in range(3)))):
             base = p_.get('rgb') or cor.get(p_['i'], (0.80, 0.80, 0.83))
             _pmat[len(shell)] = p_.get('mat'); _pidx[len(shell)] = p_['i']
@@ -1558,6 +1566,7 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     if ctx and MALHA_PAR:
         _cob = []; _ilha = U[5] <= 1200   # móvel baixo solto (ilha/bancada): sem parede inventada nem laterais distantes
         for p_ in MALHA_PAR:
+            if _na_frente(p_['bb']): continue  # retira a parede inteira, nunca corta faces do móvel
             for fc, fl in zip(p_['faces'], p_['ft']):
                 c_ = [sum(v[k_] for v in fc) / len(fc) for k_ in range(3)]
                 if min((w0['plano'] - v[axd]) * sg for v in fc) > 1300: continue
@@ -1587,14 +1596,17 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             for fc in caixa_faces(b): src.append((fc, PAREDE_COR, [True] * 4, 0, -1))
     elif _iso is None:
         if ctx: R[axl] -= 1800; R[axl + 3] += 1800
-        for b in paredes_recorte(R):
+        for p_ in PAREDES_PECAS:
+            b = p_['bb']
+            if p_['i'] in _retirados or (ctx and _na_frente(b)): continue
+            if not all(b[k] <= R[k+3] and b[k+3] >= R[k] for k in range(3)): continue
             for fc in caixa_faces(b): src.append((fc, PAREDE_COR, [True] * 4, 0, -1))
     # REGRA (João, 2026-09-28, REAPLICADO): piso não depende mais de "vista com 1 parede só" (ctx).
     # Antes o piso usava eixo/plano de PW[pids[0]] -> em vista de canto (2 paredes, L), ctx era False
     # e o piso não saía (bug: "gerei 11 suíte e não saiu com piso"). Agora é uma laje plana sob toda
     # a área visível (bounding box dos itens + margem), independente de quantas paredes tem a vista.
     # Lógica de parede (_na_frente/etc.) não foi tocada.
-    if contexto and not itens:
+    if contexto and not kw.get('isolado'):
         _pz = [U[0] - 4000, U[1] - 4000, -20, U[3] + 4000, U[4] + 4000, 0]
         src.append((caixa_faces(_pz)[1], PISO_COR, [True] * 4, 0, -1))
     L = (0.35, -0.45, 0.82); nl = math.sqrt(dot(L, L))
@@ -1617,19 +1629,29 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         cc = [pj((b_[i0], b_[1 + j0], b_[2 + k0])) for pc_, b_ in _bi.items() if _pidx.get(pc_) in _alvo for i0 in (0, 3) for j0 in (0, 3) for k0 in (0, 3)]
         cc = [c_ for c_ in cc if c_[2] > 50]
         if cc: xs = [c_[0] for c_ in cc]; ys = [c_[1] for c_ in cc]
-    if ctx:   # REGRA (v15, João): a imagem PREENCHE o quadro todo. Enquadra os móveis com folga curta
-        # (300 mm dos lados, piso até 150 mm acima do móvel); o ambiente (paredes, piso) completa o resto e é recortado.
-        Uq = list(U); Uq[axl] -= 300; Uq[axl + 3] += 300; Uq[2] = 0; Uq[5] += 150
-        # móvel pequeno: enquadramento mínimo 2,2 m x 2,0 m (mostra o ambiente, não vira close do móvel)
-        _fx = max(0, 2200 - (Uq[axl + 3] - Uq[axl])) / 2; Uq[axl] -= _fx; Uq[axl + 3] += _fx; Uq[5] = max(Uq[5], 2000)
+    if ctx:  # conjunto completo e contexto próximo, com vizinhos enquadrados por inteiro
+        vizinhos = [i['bb'] for i in inst if not set(i['pecas']) & _retirados
+                    and any(pi in _pidx.values() for pi in i['pecas'])]
+        Uq = enquadrar(U, axl, vizinhos)
         cc = [pj((Uq[i0], Uq[1 + j0], Uq[2 + k0])) for i0 in (0, 3) for j0 in (0, 3) for k0 in (0, 3)]
         cc = [c_ for c_ in cc if c_[2] > 50]
         xs = [c_[0] for c_ in cc]; ys = [c_[1] for c_ in cc]
+    # O bbox XML pode ser maior que as faces efetivamente exportadas no DXF.
+    # Enquadra também o envelope completo do conjunto, em todas as categorias.
+    _proj_alvo = [pj(v) for v in cantos(U)]
+    xs += [q[0] for q in _proj_alvo]; ys += [q[1] for q in _proj_alvo]
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
     mgf = kw.get('margem_pontos', 22 if itens else 4 if ctx else 16)
     k = min((rect.width - mgf) / (x1 - x0), (rect.height - mgf) / (y1 - y0))
     ox = rect.x0 + (rect.width - (x1 - x0) * k) / 2; oy = rect.y0 + (rect.height - (y1 - y0) * k) / 2
     T = lambda x, y: (ox + (x - x0) * k, oy + (y1 - y) * k)
+    _enquadrado = all(rect.x0-.1 <= T(q[0],q[1])[0] <= rect.x1+.1 and
+                      rect.y0-.1 <= T(q[0],q[1])[1] <= rect.y1+.1 for q in _proj_alvo)
+    if not _enquadrado: raise ValueError('Câmera recortou o conjunto listado')
+    globals().setdefault('_auditoria_cameras', []).append(dict(
+        paredes=list(pids), contexto=ctx, ang=math.degrees(a), elev=math.degrees(e),
+        camera=cam, alvo=U, enquadrado=_enquadrado,
+        retirados=sorted(_retirados), alvos=sorted(_tg), quadro=tuple(rect)))
     if kw.get('caixas_projetadas') is not None:
         for face in fcs:
             pi = _pidx.get(face[5])
@@ -1742,7 +1764,7 @@ for v in VW:
 # ---------------- montagem ----------------
 doc = fz.open(); n = 0; relat = []
 n += 1; p = nova_prancha(doc, n, 'CAPA')
-render3d(p, fz.Rect(AREA_IN.x0, AREA_IN.y0 + 34, AREA_IN.x1, AREA_IN.y1), [w['id'] for w in paredes])
+render3d(p, fz.Rect(AREA_IN.x0, AREA_IN.y0 + 34, AREA_IN.x1, AREA_IN.y1), [w['id'] for w in paredes], contexto=True, papel='geral')
 t = f"CADERNO DE {cfg['tipo_caderno']} - {cfg['dados']['ambiente'].upper()}"
 p.insert_text((419.5 - fz.get_text_length(t, 'hebo', 18) / 2, AREA_IN.y0 + 22), t, fontname='hebo', fontsize=18, color=RED)
 

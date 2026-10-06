@@ -104,14 +104,14 @@ def _desenhar_referencia(ns,page,rect,itens,contexto=None,interno=False):
             cores[pi]=(obj.get('rgb'),obj.get('mat'))
             obj['rgb']=(.85,.85,.85); obj['mat']=None
     try:
-        if contexto:
-            _,pontos,caixas=renderizar(ns,page,r,[ws[0]],itens=itens+contexto,
-                ang=30 if interno else 0,elev=35 if interno else 0,
-                sem_portas=interno,dmin=3200,isolado=True)
-        else:
-            _,pontos,caixas=renderizar(ns,page,r,[ws[0]],contexto=True,
-                isolado=False,ang=0,elev=0)
-        boxes=[fz.Rect(caixas[id(i)]) for i in itens if id(i) in caixas]
+        # A localização é frontal e montada no ambiente. Ângulos funcionais ficam no detalhe.
+        grupo = itens + contexto if contexto else list(ns['PW'][ws[0]]['itens']) + itens
+        grupo = list({id(i):i for i in grupo}.values())
+        projetadas = {}
+        renderizar(ns,page,r,[ws[0]],itens=grupo,contexto=True,
+                   isolado=False,ang=0,elev=0,sem_portas=False,
+                   caixas_projetadas=projetadas)
+        boxes=[fz.Rect(projetadas[pi]) for i in itens for pi in i['pecas'] if pi in projetadas]
         if boxes:
             b=fz.Rect(boxes[0])
             for box in boxes[1:]: b|=box
