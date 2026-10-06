@@ -1157,6 +1157,10 @@ def _portas_cota(w):
     for m in [i for i in w['itens'] if i['tipo'] == 'mod']:
         for pi in m['pecas']:
             if pi not in protegidas and _eh_porta(P[pi]['bb'], m['bb'], w): out.add(pi)
+    # Regra rígida: prateleiras horizontais de armário canto L nunca são
+    # confundidas com porta e permanecem em todas as elevações cotadas.
+    for m in [i for i in w['itens'] if i['tipo'] == 'mod' and re.search(r'canto\s+l\b', i['desc'], re.I)]:
+        out.difference_update(pi for pi in m['pecas'] if P[pi]['bb'][5] - P[pi]['bb'][2] <= 30)
     return out
 
 def geom_parede(w):
@@ -1313,8 +1317,29 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
             if fl_:
                 esp_ = 0.85 if f_[0] == 0 else 0.35
                 dr.line([a_, b_], fill=(35, 35, 35), width=max(1, int(esp_ * s_)))
+    # Perfil tonal calibrado pela mediana visual dos tres PDFs de referencia:
+    # brilho alto controlado, contraste moderado e tonalidade levemente quente.
+    _arr_original = _np.asarray(img).astype(_np.float32) / 255.0
+    _arr = _arr_original.copy()
+    _lum = .2126 * _arr[:, :, 0] + .7152 * _arr[:, :, 1] + .0722 * _arr[:, :, 2]
+    _mask = (_lum > .08) & (_lum < .985)
+    if int(_mask.sum()) >= 500:
+        _amostra = _lum[_mask]
+        _media = float(_amostra.mean())
+        _desvio = float(_amostra.std())
+        _ganho = min(1.25, max(.82, .195 / max(.06, _desvio)))
+        _novo_lum = _np.clip((_lum - _media) * _ganho + .70, .03, .975)
+        _escala = _novo_lum / _np.maximum(_lum, .03)
+        _arr[_mask] *= _escala[_mask, None]
+        _arr[_mask] *= _np.array([1.02, 1.0, .97], dtype=_np.float32)
+        _cinza = (.2126 * _arr[:, :, 0] + .7152 * _arr[:, :, 1] +
+                  .0722 * _arr[:, :, 2])[:, :, None]
+        _arr[_mask] = (_cinza + 1.04 * (_arr - _cinza))[_mask]
+        _arr = _np.clip(_arr, 0.0, 1.0)
+        _arr[~_mask] = _arr_original[~_mask]
+        img = _Im.fromarray((_arr * 255.0 + .5).astype(_np.uint8), 'RGB')
     import io as _io
-    bio = _io.BytesIO(); img.save(bio, format='JPEG', quality=88)
+    bio = _io.BytesIO(); img.save(bio, format='JPEG', quality=92)
     page.insert_image(rect, stream=bio.getvalue())
 
 
@@ -1566,7 +1591,8 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         b = p_['bb']
         sd_ = sorted(p_['dim'])
         if _iso is not None and p_['i'] not in _iso: continue
-        if kw.get('sem_portas') and (p_['i'] in _portas() or p_['i'] in kw.get('ocultar_pecas',())): continue
+        _protegidas_canto = kw.get('prateleiras_canto', set())
+        if kw.get('sem_portas') and p_['i'] not in _protegidas_canto and (p_['i'] in _portas() or p_['i'] in kw.get('ocultar_pecas',())): continue
         if p_['i'] in DUP_I or p_['i'] in _retirados: continue
         # Especial vizinho pode orientar no ambiente; tabela/balões permanecem só dos alvos da vista.
         _referencia_especial = ctx and p_['i'] in _ESPECIAL_I and p_['i'] not in _tg
@@ -2177,6 +2203,9 @@ for v in V:
                 # Frente aberta está acima na geometria DXF deitada. Somente
                 # no detalhe, a câmera olha para o interior e oculta as tampas.
                 op['elev'] = 75
+            if tp_.get('canto'):
+                op['prateleiras_canto'] = sorted(pi for i in c for pi in i['pecas']
+                                                 if P[pi]['bb'][5] - P[pi]['bb'][2] <= 30)
             if portas_detalhe or tampas_deitadas:
                 op['ocultar_pecas'] = sorted(portas_detalhe | tampas_deitadas)
             globals().setdefault('_auditoria_subimagens', []).append(dict(
