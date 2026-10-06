@@ -61,6 +61,16 @@ def candidatos(ns,w,ocultos):
         host=_hospedeiro(ns,[i],w)
         if host is None: continue
         out.append(([i],host,'DETALHE FUNCIONAL — '+i['desc']));usados.add(id(i))
+    # Nova regra: nenhuma peça escondida desaparece. Toda ocorrência restante
+    # recebe detalhe e referência ao módulo em que está aplicada.
+    for i in ocultos:
+        if id(i) in usados: continue
+        host=_hospedeiro(ns,[i],w)
+        if host is None:
+            mods=[m for m in w['itens'] if m['tipo']=='mod' and m is not i]
+            host=min(mods,key=lambda m:ns['geo'].dist_caixas(i['bb'],m['bb']),default=None)
+            if host is None or ns['geo'].dist_caixas(i['bb'],host['bb'])>400: continue
+        out.append(([i],host,'PEÇA ESCONDIDA — '+i['desc']));usados.add(id(i))
     return out
 
 

@@ -284,6 +284,46 @@ for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q
 _todas_mats = {r_ for c_ in _dm.values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
 inst = geo.casar(P, linhas, QT, FONTES_XML)
+
+# Nova regra: tolera no máximo três ocorrências obrigatórias ausentes no casamento.
+# A geometria é reconstruída na posição da melhor evidência DXF, mas SEMPRE com
+# as dimensões declaradas no XML. Acima de três faltas, a integridade bloqueia.
+def _reproduzir_faltantes_xml():
+    import itertools
+    usados = {pi for it in inst for pi in it['pecas']}
+    conf = integridade.conferir(linhas, QT, inst)
+    faltas = [(it['n'], it['descricao'], it['dimensoes_xml'],
+               it['quantidade_xml'] - it['quantidade_dxf'])
+              for it in conf['itens'] if it['status'] == 'FALHA']
+    total = sum(max(0, q) for _, _, _, q in faltas)
+    if not total or total > 3:
+        return
+    for n_, desc_, dm_, qtd_ in faltas:
+        alvo = geo.parse_dim(dm_)
+        for _ in range(qtd_):
+            candidatos = []
+            for pc in P:
+                if pc['i'] in usados:
+                    continue
+                melhor = min((sum(abs(a-b) for a,b in zip(perm, pc['dim'])),
+                              sum(abs(a-b) <= 3 for a,b in zip(perm, pc['dim'])), perm)
+                             for perm in itertools.permutations(alvo))
+                if melhor[1] >= 2:
+                    candidatos.append((melhor[0], pc, melhor[2]))
+            if not candidatos:
+                continue
+            _, base_, eixos_ = min(candidatos, key=lambda x: x[0])
+            centro = [(base_['bb'][k] + base_['bb'][k+3]) / 2 for k in range(3)]
+            bb_ = [centro[k] - eixos_[k] / 2 for k in range(3)] + [centro[k] + eixos_[k] / 2 for k in range(3)]
+            novo_ = dict(base_)
+            novo_.update(i=len(P), dim=list(eixos_), bb=bb_, faces=[], _sintetica_xml=True)
+            P.append(novo_); preparar([novo_]); usados.add(base_['i']); usados.add(novo_['i'])
+            tipo_ = 'comp' if geo.eh_componente(desc_) or min(alvo) <= 26 else 'mod'
+            inst.append(dict(n=n_, desc=desc_, dim=dm_, bb=bb_, tipo=tipo_,
+                             pecas=[novo_['i']], sintetica_xml=True))
+            print('XML/DXF: peça reconstruída no render pela medida XML | %s | %s' % (desc_, dm_))
+
+_reproduzir_faltantes_xml()
 INTEGRIDADE = integridade.conferir(linhas, QT, inst)
 nao_achados = [(i["descricao"], i["dimensoes_xml"]) for i in INTEGRIDADE["itens"] if i["quantidade_dxf"] == 0]
 _acessorios = [(i["descricao"], i["dimensoes_xml"]) for i in INTEGRIDADE["itens"] if i["status"] == "DISPENSADO"]
@@ -1395,6 +1435,7 @@ def abertos(w):
         for i in g: ja.add(id(i))
     for m in w['itens']:
         if m['tipo'] != 'mod' or id(m) in ja: continue
+        if not re.search(r'\bnicho\b', m.get('desc', ''), re.I): continue
         mb = m['bb']
         if mb[al + 3] - mb[al] > 2000 or mb[5] - mb[2] > 1200 or tem_porta(m, w): continue
         g = [m] + [o for o in w['itens'] if o['tipo'] == 'comp' and id(o) not in ja
@@ -1408,7 +1449,8 @@ def abertos(w):
 def nichos(w):
     # REGRA (João): TODO NICHO ABERTO vira detalhe. Nicho = conjunto de painéis/tamponamentos encostados entre si
     # (peças "Vista" de acabamento não entram no agrupamento), com 3+ peças e 2+ horizontais, até 2 m de largura e 1,2 m de altura.
-    cs = [i for i in w['itens'] if i['tipo'] == 'comp' and not re.match(r'vista\b', i['desc'], re.I)]; grupos_ = []
+    cs = [i for i in w['itens'] if i['tipo'] == 'comp'
+          and re.search(r'painel|tamponamento', i.get('desc', ''), re.I)]; grupos_ = []
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -3 for k in range(3))
     for i in cs:
         junto = [g for g in grupos_ if any(toca(i['bb'], j['bb']) for j in g)]
@@ -1421,7 +1463,7 @@ def nichos(w):
         ext = [U_[k + 3] - U_[k] for k in range(3)]
         hz = sum(1 for i in g if i['bb'][5] - i['bb'][2] <= 30)
         ax_ = 1 if FV[w['key']][0] else 0
-        if not (len(g) >= 3 and hz >= 2 and ext[ax_] <= 2000 and ext[2] <= 1200): continue
+        if not (len(g) >= 4 and hz >= 2 and ext[ax_] <= 2000 and ext[2] <= 1200): continue
         # REGRA (v31): nicho tem a FRENTE ABERTA. Chapas do conjunto em pé de frente p/ a câmera, na face da frente,
         # cobrindo >= 40% da frente = caixa fechada -> não é nicho.
         ad_ = 1 - ax_; sg_ = FV[w['key']][ad_]; perto = lambda bb: min(bb[ad_] * sg_, bb[ad_ + 3] * sg_)
@@ -1769,8 +1811,8 @@ for v in VW:
         its = [i for i in its if i not in _fora_v]
     v['itens_listados'] = its
     ordem = sorted(its, key=lambda i: (i['tipo'] != 'mod', i['n']))
-    # Engenharia: cada ocorrência é um item e recebe seu próprio número/balão.
-    v['linhas'] = _numerar(ordem, v['letra'], agrupar=False)
+    # Peças ou módulos iguais compartilham o número; todas as ocorrências recebem balão.
+    v['linhas'] = _numerar(ordem, v['letra'], agrupar=True)
 
 # ---------------- montagem ----------------
 doc = fz.open(); n = 0; relat = []
@@ -1960,29 +2002,38 @@ for v in V:                # setas das vistas (uma por parede); se encostar em o
 lab = f'PLANTA BAIXA - ESC. 1:{S}'
 p.insert_text((pr.x0 + pr.width / 2 - fz.get_text_length(lab, 'hebo', 8) / 2, pr.y1 - 3), lab, fontname='hebo', fontsize=8)
 
-# VISÃO GERAL: uma imagem limpa para cada vista/parede que contém elementos.
-# São usadas tantas pranchas quanto necessário; não há limite global de quatro imagens.
-_vg = [x for x in VW if not PW[x['paredes'][0]].get('divisoria')] or VW
+# VISÃO GERAL: no máximo quatro imagens limpas, sem balões ou cotas.
+_vg = ([x for x in VW if not PW[x['paredes'][0]].get('divisoria')] or VW)[:4]
 for _ini in range(0, len(_vg), 4):
     n += 1; p = nova_prancha(doc, n, 'VISÃO GERAL DOS MÓVEIS')
-    com_img = [dict(titulo=x['titulo'], paredes=x['paredes'], img3d=None) for x in _vg[_ini:_ini + 4]]
-    m = len(com_img); a = AREA_IN
-    _nc = 1 if m == 1 else 2; _nr = -(-m // _nc)
-    cel = [fz.Rect(a.x0 + (i % _nc) * a.width / _nc, a.y0 + (i // _nc) * a.height / _nr,
-                   a.x0 + (i % _nc + 1) * a.width / _nc, a.y0 + (i // _nc + 1) * a.height / _nr)
-           for i in range(m)]
+    com_img = [dict(titulo=x['titulo'], paredes=x['paredes'], img3d=None) for x in _vg]
+    m = len(com_img); a = AREA_IN; xm = a.x0 + a.width / 2; ym = a.y0 + a.height / 2
+    if m == 1:
+        cel = [a]
+    elif m == 2:
+        # Duas imagens: divisão vertical, uma metade para cada vista.
+        cel = [fz.Rect(a.x0, a.y0, xm, a.y1), fz.Rect(xm, a.y0, a.x1, a.y1)]
+    elif m == 3:
+        # Três imagens: esquerda inteira; direita dividida em duas.
+        cel = [fz.Rect(a.x0, a.y0, xm, a.y1),
+               fz.Rect(xm, a.y0, a.x1, ym), fz.Rect(xm, ym, a.x1, a.y1)]
+    else:
+        cel = [fz.Rect(a.x0, a.y0, xm, ym), fz.Rect(xm, a.y0, a.x1, ym),
+               fz.Rect(a.x0, ym, xm, a.y1), fz.Rect(xm, ym, a.x1, a.y1)]
     for v, c in zip(com_img, cel):
         render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
         p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
-    for j in range(1, _nc):
-        p.draw_line((a.x0 + j * a.width / _nc, AREA.y0), (a.x0 + j * a.width / _nc, AREA.y1), color=PRETO, width=0.6)
-    for j in range(1, _nr):
-        p.draw_line((AREA.x0, a.y0 + j * a.height / _nr), (AREA.x1, a.y0 + j * a.height / _nr), color=PRETO, width=0.6)
+    if m >= 2:
+        p.draw_line((xm, a.y0), (xm, a.y1), color=PRETO, width=0.6)
+    if m == 3:
+        p.draw_line((xm, ym), (a.x1, ym), color=PRETO, width=0.6)
+    elif m == 4:
+        p.draw_line((a.x0, ym), (a.x1, ym), color=PRETO, width=0.6)
 
 # REGRA (v26, João): LISTAGEM POLUÍDA (mais de 15 linhas) = DUAS pranchas: SUPERIORES (armários de cima e altos) e
 # INFERIORES (balcões). Cada uma com a tabela e os balões só das suas peças (numeração própria). Sem os dois grupos:
 # divide a parede ao meio (PARTE 1 / PARTE 2).
-LIST_MAX = 15; _extra = 0   # Engenharia: acima de 15 itens, dividir sem tolerância adicional.
+LIST_MAX = 25; _extra = 0   # Nova regra: acima de 25 linhas, dividir a listagem.
 def _partes(s_):
     global _extra
     # REGRA (v34, João): usa a lista JÁ FILTRADA (sem as peças escondidas). Antes esta função relia a
@@ -2007,7 +2058,7 @@ def _partes(s_):
     out = []
     for k_, (nome, g) in enumerate(gs):
         key = f"{s_['letra']}{k_ + 1}"
-        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key, agrupar=False)
+        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key, agrupar=True)
         out.append(dict(letra=key, titulo=f"{s_['titulo']} - {nome}", linhas=lin, paredes=s_['paredes'], ids={id(i) for i in g}, primeiro=k_ == 0, base=s_))
     _extra += len(out) - 1
     return out
@@ -2040,6 +2091,15 @@ for v in V:
         # Engenharia: somente nichos identificados por XML + geometria/dimensão
         # geram subimagem no motor padrão. Não há exceções semânticas por nome de produto.
         nis = [(w,c,{'rotulo':'DETALHE - NICHO','sem_lista':False}) for w in s_['paredes'] for c in detalhes(PW[w])]
+        # Canto reto e canto L recuperam as câmeras funcionais anteriores.
+        from normal.regras import subimagens
+        for w in s_['paredes']:
+            for grupo, rotulo, sem_lista in subimagens(globals(), PW[w]):
+                if not re.search(r'canto\s+(?:reto|l)\b', rotulo, re.I):
+                    continue
+                ids_ = {id(i) for i in grupo}
+                nis = [(ww,g,t) for ww,g,t in nis if not ids_.intersection(id(i) for i in g)]
+                nis.append((w, grupo, {'rotulo':'DETALHE - ' + rotulo.upper(), 'sem_lista':False, 'canto':True}))
         planos = s_.get('_detalhes_ocultos',s_.get('base',{}).get('_detalhes_ocultos',[]))
         for plano in planos:
             ids = {id(i) for i in plano['itens']}
@@ -2052,8 +2112,10 @@ for v in V:
         _alvos_vista = None
         if s_.get('ids') is not None:
             _alvos_vista = [i for w in s_['paredes'] for i in PW[w]['itens'] if id(i) in s_['ids']]
+        _caixas_main = {}
         render3d(p, _RI, s_['paredes'], letra=s_['letra'], contexto=True,
-                 itens_vista=_alvos_vista, sem_balao=_sb, ang=0, elev=0)
+                 itens_vista=_alvos_vista, sem_balao=_sb, ang=0, elev=0,
+                 caixas_projetadas=_caixas_main)
         # REGRA (João, 28/09/2026 - skill P1.1): TODOS os nichos da vista ficam na MESMA prancha (caixa dividida),
         # com os números da listagem. Não existe prancha "NICHO k" com listagem própria.
         def _dq(p, w, c, tp_, r_):
@@ -2070,7 +2132,11 @@ for v in V:
                 return
             from normal.cameras import orientar, portas_do_canto, tampas_modulos_deitados
             portas_detalhe = portas_do_canto(globals(), c)
-            op = orientar(c, P, PW[w]['key'], _portas() | portas_detalhe)
+            if tp_.get('rotulo') == 'DETALHE - NICHO':
+                # Nicho: câmera frontal, centralizada pelo enquadramento dinâmico.
+                op = dict(camera_key=PW[w]['key'], ang=0, elev=0)
+            else:
+                op = orientar(c, P, PW[w]['key'], _portas() | portas_detalhe)
             tampas_deitadas = tampas_modulos_deitados(c, P)
             if tampas_deitadas:
                 # Frente aberta está acima na geometria DXF deitada. Somente
@@ -2085,20 +2151,45 @@ for v in V:
             render3d(p, fz.Rect(r_.x0 + 2, r_.y0 + 14, r_.x1 - 2, r_.y1 - 2), [w], letra=None if tp_['sem_lista'] else s_['letra'], itens=c,
                      representacao_interna=tp_['sem_lista'], dmin=3200, margem=60, isolado=True,sem_portas=True,**op)
 
+        def _seta_referencia_oculta(pg_, caixa_det_, tp_, caixas_):
+            plano_ = tp_.get('oculto')
+            if not plano_: return
+            host_ = plano_['hospedeiro']
+            bb_ = [caixas_[pi] for pi in host_['pecas'] if pi in caixas_]
+            if not bb_: return
+            alvo_ = fz.Rect(min(q[0] for q in bb_), min(q[1] for q in bb_),
+                            max(q[2] for q in bb_), max(q[3] for q in bb_))
+            fim_ = (alvo_.x0 - 5, alvo_.y0 + alvo_.height * .72)
+            ini_ = (caixa_det_.x1, caixa_det_.y0 + caixa_det_.height * .55)
+            guia_ = min(_RI.x0 - 5, fim_[0] - 12)
+            pts_ = [ini_, (guia_, ini_[1]), (guia_, fim_[1]), fim_]
+            pg_.draw_polyline(pts_, color=RED, width=1)
+            pg_.draw_polyline([(fim_[0]-7, fim_[1]-3), fim_, (fim_[0]-7, fim_[1]+3)], color=RED, width=1)
+
         if nis:
-            # Um nicho por página. O primeiro fica, quando houver área legível,
-            # junto da vista principal; os demais recebem página própria em escala dinâmica.
+            # Exatamente uma subimagem por prancha.
             y0_ = yb + 18
             if AREA_IN.y1 - y0_ >= 90:
                 w, c, tp_ = nis[0]
-                _dq(p, w, c, tp_, fz.Rect(AREA_IN.x0, y0_, AREA_IN.x0 + 248, AREA_IN.y1))
+                rd_ = fz.Rect(AREA_IN.x0, y0_, AREA_IN.x0 + 248, AREA_IN.y1)
+                _dq(p, w, c, tp_, rd_)
+                _seta_referencia_oculta(p, rd_, tp_, _caixas_main)
                 extras_nicho = nis[1:]
             else:
                 extras_nicho = nis
             for k2_, (w, c, tp_) in enumerate(extras_nicho, 1):
                 n += 1
-                pd = nova_prancha(doc, n, f"DETALHE - NICHO — {s_['titulo']}")
-                _dq(pd, w, c, tp_, AREA_IN)
+                pd = nova_prancha(doc, n, f"{tp_['rotulo']} — {s_['titulo']}")
+                if tp_.get('oculto'):
+                    rd_ = fz.Rect(AREA_IN.x0, AREA_IN.y0, AREA_IN.x0 + 330, AREA_IN.y1)
+                    rr_ = fz.Rect(AREA_IN.x0 + 342, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1)
+                    caixas_ = {}
+                    render3d(pd, rr_, s_['paredes'], contexto=True, sem_balao={id(i) for i in _alvos_vista or []},
+                             itens_vista=_alvos_vista, ang=0, elev=0, caixas_projetadas=caixas_)
+                    _dq(pd, w, c, tp_, rd_)
+                    _seta_referencia_oculta(pd, rd_, tp_, caixas_)
+                else:
+                    _dq(pd, w, c, tp_, AREA_IN)
     # cotas
     n += 1; p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v['titulo']}")
     _cotas_em(p, GS, AREA_IN, [f"VISTA {l_}" for l_ in v['letras']])
