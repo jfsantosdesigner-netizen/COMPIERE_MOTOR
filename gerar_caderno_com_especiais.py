@@ -61,6 +61,18 @@ def executar(config_path):
         from especiais.pranchas import gerar
 
         especiais = detectar(ns)
+
+        # O gerar_caderno.py já salvou o documento-base. Não continuar desenhando no mesmo
+        # objeto PyMuPDF depois desse save: isso pode deixar referências XObject/Image do
+        # layout quebradas na segunda gravação. Reabre o PDF normal consolidado e usa-o
+        # como documento de destino das especiais. O motor geral continua intocado.
+        try:
+            ns["doc"].close()
+        except Exception:
+            pass
+        ns["doc"] = ns["fz"].open(cfg_base["saida"])
+        ns["n"] = len(ns["doc"])
+
         ultimo, rel = gerar(ns, especiais)
 
         # Salva em outro arquivo; o PDF normal produzido pelo motor base permanece intocado.
