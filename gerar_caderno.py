@@ -7,6 +7,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 import pymupdf as fz, geo
 from normal.vidros import estilo, faces_porta
 from camera_comum import posicionar, obstaculos, enquadrar, cantos
+from cotas_comum import contornos, vaos_prateleiras, assinatura_vaos
 
 
 cfg = json.load(open(sys.argv[1], encoding='utf-8'))
@@ -945,16 +946,21 @@ def cotar(page, G, ox, fy, k):
         for pi in it['pecas']:
             bb = P[pi]['bb']; pu0, pz0, pu1, pz1 = geo.caixa_elev(bb, G['f'])
             if prof(bb) < 150: continue                      # portas, frentes, tamponamentos, ferragens
-            if pu1 - pu0 <= 30 and pz1 - pz0 >= 300: vert.append((pu0, pu1))
+            if pu1 - pu0 <= 30 and pz1 - pz0 >= 300: vert.append((pu0, pu1, pz0, pz1))
             elif 12 <= pz1 - pz0 <= 30 and pu1 - pu0 >= 150: hor.append((pu0, pz0, pu1, pz1))
-        vert = sorted(vert)
-        vaos = [(a[1], c[0]) for a, c in zip(vert, vert[1:]) if c[0] - a[1] > 100]
+        vaos = vaos_prateleiras(vert,hor,b['z1']-b['z0'])
+        cotados = set()
         for cu0, cu1 in vaos:
             larg = cu1 - cu0
             niv = sorted((z0_, z1_) for u0_, z0_, u1_, z1_ in hor if u0_ <= cu0 + 10 and u1_ >= cu1 - 10)
             gaps = [(a[1], c[0]) for a, c in zip(niv, niv[1:]) if c[0] - a[1] > 40]
             xv = X(cu0 + larg * 0.5)
-            for g0, g1 in gaps: cadeia_v(page, [g0, g1], xv, None, Y, fs=5.5, fundo=True)
+            assinatura = assinatura_vaos(gaps)
+            if assinatura not in cotados:
+                for g0,g1 in gaps: cadeia_v(page,[g0,g1],xv,None,Y,fs=5.5,fundo=True)
+                cotados.add(assinatura)
+            globals().setdefault('_auditoria_vaos_cotas',[]).append(dict(
+                modulo=it['desc'],dim=it['dim'],vao=(cu0,cu1),gaps=gaps,assinatura=assinatura))
             zt = (gaps[-1][1] if gaps else b['z1']) - 70
             cadeia_h(page, [cu0, cu1], Y(zt), Y(zt), X, fs=5.5, fundo=True)
 
@@ -976,7 +982,9 @@ def _desenho2d(page, faces, XY):
                 for (a_, b_), f_ in zip(zip(q, q[1:] + q[:1]), ft):
                     if f_: sh.draw_line(a_, b_)
                 sh.finish(color=(0.2, 0.2, 0.2), width=0.3, closePath=False)
-        sh.commit(); return
+        sh.commit()
+        contornos(globals(),page,faces,XY)
+        return
     R = fz.Rect(min(x for q in [i[0] for i in its] for x, _ in q), min(y for q in [i[0] for i in its] for _, y in q),
                 max(x for q in [i[0] for i in its] for x, _ in q), max(y for q in [i[0] for i in its] for _, y in q)) & page.rect
     if R.is_empty: return
@@ -1006,6 +1014,7 @@ def _desenho2d(page, faces, XY):
     import io as _io
     bio = _io.BytesIO(); img.save(bio, format='PNG', optimize=True)
     page.insert_image(R, stream=bio.getvalue())
+    contornos(globals(),page,faces,XY)
 
 # ---------------- pranchas ----------------
 lay = fz.open(cfg['layout'])
@@ -1063,7 +1072,7 @@ def desenhar(page, G, ox, fy, k, baloes=None, letra=None):
 
 
 # ===== REGRAS FIXAS (João, 28/09/2026 - skill P1/P2): LISTAGEM = 3D FRONTAL, PORTAS FECHADAS, COM PAREDES (referência de localização)
-#       | COTAS = 2D FRONTAL, MÓVEL ISOLADO (sem paredes, piso, pedra, eletros e móveis de outras paredes), SEM PORTAS, EM ESCALA, DENTRO DO QUADRO =====
+#       | COTAS = 2D FRONTAL, MÓVEL ISOLADO (sem paredes, piso, eletros e móveis de outras paredes; pedra real de referência), SEM PORTAS, EM ESCALA, DENTRO DO QUADRO =====
 PAREDES_PECAS = [p_ for p_ in P if p_['dim'][2] >= 2000 and 80 <= min(p_['dim'][0], p_['dim'][1]) <= 400 and max(p_['dim'][0], p_['dim'][1]) >= 1000]
 def caixa_faces(b):
     x0, y0, z0, x1, y1, z1 = b
@@ -1122,32 +1131,62 @@ def _portas_cota(w):
     # REGRA (v31 + bloco cotas 28/09/2026): COTAS = SEM PORTAS. Usa a definição única _eh_porta.
     # Porta avulsa do XML (POR_) fica presa ao item mais próximo (às vezes um painel): sai também.
     out = {pi for it in w['itens'] for pi in it['pecas'] if pi in PORTAS_XML}
+    protegidas = {pi for it in w['itens'] if it['tipo']=='comp' and
+                  re.search(r'fechamento|vista|tampon|painel|rodap|afastador|cunha|porta falsa',it['desc'],re.I)
+                  for pi in it['pecas'] if pi not in PORTAS_XML}
     for m in [i for i in w['itens'] if i['tipo'] == 'mod']:
         for pi in m['pecas']:
-            if _eh_porta(P[pi]['bb'], m['bb'], w): out.add(pi)
+            if pi not in protegidas and _eh_porta(P[pi]['bb'], m['bb'], w): out.add(pi)
     return out
 
 def geom_parede(w):
-    f = FV[w['key']]; faces = []; boxes = []
+    # Cotas: conjunto montado, somente portas retiradas; pedra real como referência.
+    f = FV[w['key']]; faces = []; boxes = []; mantidas = set()
     dep = lambda vs: sum(v[0] * f[0] + v[1] * f[1] for v in vs) / len(vs)
     _pc = _portas_cota(w)
     for it in w['itens']:
         cor = MADEIRA if it['tipo'] == 'comp' else BRANCO
+        ids = []
         for pi in it['pecas']:
-            if pi in _pc: continue   # porta/frente não aparece nas cotas
+            if pi in _pc: continue
             sd_ = sorted(P[pi]['dim'])
-            if sd_[1] < 50 or sd_[0] > 60: continue  # REGRA: só MDF (sem dobradiças/suportes/cabideiros)
-            for uq, nv, ft in P[pi]['fq']:
-                faces.append((dep(uq), [(uu(v[0], v[1], f), v[2]) for v in uq], P[pi].get('rgb', cor), ft, P[pi].get('mat'), pi))
-        u0, z0, u1, z1 = geo.caixa_elev(it['bb'], f)
-        boxes.append(dict(it=it, u0=u0, z0=z0, u1=u1, z1=z1))
-    # REGRA (João, 28/09/2026 - skill P2): cota = MÓVEL ISOLADO. Fica SÓ o conjunto de móveis listados da vista:
-    # sem paredes, piso, janelas, portas do cômodo, pedra, eletros e móveis de outras paredes (substitui a v15
-    # "a cota não elimina as paredes"). Enquadramento = o próprio conjunto + 100 mm de cada lado.
+            # Componentes construtivos atribuídos (inclusive vistas estreitas) são preservados.
+            # Ferragens internas do módulo seguem a regra de representação, sem cotas.
+            if it['tipo']=='mod' and (sd_[1] < 50 or sd_[0] > 60): continue
+            if pi not in mantidas:
+                for uq,nv,ft in P[pi]['fq']:
+                    faces.append((dep(uq),[(uu(v[0],v[1],f),v[2]) for v in uq],
+                                  P[pi].get('rgb',cor),ft,P[pi].get('mat'),pi))
+                mantidas.add(pi)
+            ids.append(pi)
+        if ids:
+            u0,z0,u1,z1 = geo.caixa_elev(it['bb'],f)
+            boxes.append(dict(it=it,u0=u0,z0=z0,u1=u1,z1=z1))
+    if not boxes: raise ValueError('Cotas sem geometria construtiva após retirar portas')
     umin_ = min(b['u0'] for b in boxes); umax_ = max(b['u1'] for b in boxes); zmax_ = max(b['z1'] for b in boxes)
-    vmin_, vmax_, ztop_ = umin_ - 100, umax_ + 100, zmax_ + 50
-    faces.sort(key=lambda t: -t[0])
-    return dict(w=w, f=f, faces=faces, boxes=boxes, umin=umin_, umax=umax_, zmax=zmax_, vmin=vmin_, vmax=vmax_, ztop=ztop_)
+    # Pedra não entra na listagem/cadeias. Entra inteira na projeção, sem recorte.
+    pedras = []
+    bbs = [b['it']['bb'] for b in boxes]
+    for p_ in (p for p in P if p['i'] in AMB_I):
+        if p_['i'] in mantidas or not any(geo.dist_caixas(p_['bb'],b)<=180 for b in bbs): continue
+        su0,sz0,su1,sz1 = geo.caixa_elev(p_['bb'],f)
+        sobreposicao = min(su1,umax_)-max(su0,umin_)
+        if sobreposicao < .6*max(1,su1-su0): continue  # pedra do outro trecho não amplia esta vista
+        pedras.append(p_['i'])
+        for fc,ft in zip(p_['faces'],p_['ft']):
+            faces.append((dep(fc),[(uu(v[0],v[1],f),v[2]) for v in fc],
+                          (.91,.91,.91),ft,None,p_['i']))
+    limites = [(b['u0'],b['z0'],b['u1'],b['z1']) for b in boxes]
+    limites += [geo.caixa_elev(P[pi]['bb'],f) for pi in pedras]
+    vmin_ = min(b[0] for b in limites)-100
+    vmax_ = max(b[2] for b in limites)+100
+    ztop_ = max(b[3] for b in limites)+50
+    faces.sort(key=lambda t:-t[0])
+    globals().setdefault('_auditoria_geometria_cotas',[]).append(dict(
+        parede=w['id'],mantidas=sorted(mantidas),portas=sorted(_pc),pedras=pedras,
+        sem_cortes=True))
+    return dict(w=w,f=f,faces=faces,boxes=boxes,umin=umin_,umax=umax_,zmax=zmax_,
+                vmin=vmin_,vmax=vmax_,ztop=ztop_,pecas_cotas=mantidas,portas_cotas=_pc,pedras_cotas=pedras)
 
 def _ordem_pecas(fcs, bbs, cam):
     # Ordem de desenho POR PEÇA (pintor): A antes de B quando B está na frente de A.

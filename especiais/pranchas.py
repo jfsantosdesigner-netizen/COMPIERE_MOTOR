@@ -296,9 +296,13 @@ def _page_painel(ns,esp,n,cotas=False):
     for k,(r,ang,lab) in enumerate(zip(rs,(0,180),('FRENTE','TRÁS'))):
         p.draw_rect(r,color=ns['PRETO'],width=.5)
         ri=fz.Rect(r.x0+3,r.y0+14,r.x1-3,r.y1-3)
-        if cotas and k==0:
+        if cotas:
             wid,old=_temporary_wall(ns,itens,'PAINEL_COTA')
-            try: ns['_cotas_em'](p,[ns['geom_parede'](ns['PW'][wid])],ri,['FRENTE'])
+            try:
+                if k:
+                    key=ns['PW'][wid]['key']
+                    ns['PW'][wid]['key']=key[0]+('-' if key[1]=='+' else '+')
+                ns['_cotas_em'](p,[ns['geom_parede'](ns['PW'][wid])],ri,[lab])
             finally: _restore_wall(ns,itens,wid,old)
         else:
             _render_divisoria_face(ns,p,ri,itens,ang=ang,
