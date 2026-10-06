@@ -26,6 +26,13 @@ def baloes(ns, page, rect, itens, letra, posicoes):
         bx,by,r,folga=escolhido
         chamadas.append((cx,cy,bx,by,r,texto))
         ocupados.append(folga)
+    # Disponibiliza as caixas para setas e outras anotações desviarem dos balões.
+    pagina=page.number+1
+    ns.setdefault('_baloes_por_pagina',{}).setdefault(pagina,[]).extend(
+        (r.x0,r.y0,r.x1,r.y1) for _,_,_,_,r,_ in chamadas)
+    ns.setdefault('_auditoria_baloes',[]).append(dict(
+        pagina=pagina,vista=letra,esperados=len(itens),gerados=len(chamadas),
+        numeros=[item.get('num_'+letra) for item in itens]))
     # Chamadas primeiro: uma linha nova nunca risca o número de um balão anterior.
     for cx,cy,bx,by,r,texto in chamadas:
         if abs(bx-cx)>1 or abs(by-cy)>1:

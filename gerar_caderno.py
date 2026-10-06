@@ -1804,13 +1804,12 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         sh.commit()
         if ctx: page.show_pdf_page(rect, _tmp, 0, clip=rect)
     if letra:
-        _marcados = []; _pontos = {}; _ja_bal = set()
+        _marcados = []; _pontos = {}
         for i in its:
             nb = i.get('num_' + letra)
             if not nb or id(i) in kw.get('sem_balao', ()): continue
-            if PW.get(i.get('parede'), {}).get('divisoria'):   # REGRA (v18): divisória = UM balão por tipo de peça
-                if nb in _ja_bal: continue
-                _ja_bal.add(nb)
+            # Regra atual: itens iguais compartilham o número, mas CADA ocorrência
+            # recebe seu próprio balão, inclusive em paredes divisórias.
             b = i['bb']; fi = FV[kw.get('camera_key', PW[i['parede']]['key'])]; axi = 0 if fi[0] else 1
             c3 = [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]
             c3[axi] = b[axi] if (fi[axi] > 0) != bool(kw.get('costas')) else b[axi + 3]
@@ -1916,7 +1915,8 @@ def _espec(xml):
     pux_n, pux_c = [], []
     for d, it in todos_:
         if re.match(r'puxador', d, re.I):
-            rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}
+            refs_ = it.find('REFERENCES')
+            rf = {g.tag: g.get('REFERENCE') for g in refs_} if refs_ is not None else {}
             n_ = lim(d); lg = rf.get('LARGURA')
             if lg and lg + 'mm' not in n_: n_ += f' - {lg}mm'
             if n_ not in pux_n: pux_n.append(n_)
@@ -2226,7 +2226,26 @@ for v in V:
             fim_ = (alvo_.x0 - 5, alvo_.y0 + alvo_.height * .72)
             ini_ = (caixa_det_.x1, caixa_det_.y0 + caixa_det_.height * .55)
             guia_ = min(_RI.x0 - 5, fim_[0] - 12)
-            pts_ = [ini_, (guia_, ini_[1]), (guia_, fim_[1]), fim_]
+            # Rota ortogonal escolhida por colisão: a seta nunca atravessa caixa de balão.
+            obst_ = [fz.Rect(q) + (-2, -2, 2, 2)
+                     for q in globals().get('_baloes_por_pagina', {}).get(pg_.number + 1, [])]
+            def _toca_balao(a_, b_):
+                sr_ = fz.Rect(min(a_[0], b_[0]) - .6, min(a_[1], b_[1]) - .6,
+                              max(a_[0], b_[0]) + .6, max(a_[1], b_[1]) + .6)
+                return any(sr_.intersects(o_) for o_ in obst_)
+            niveis_ = [fim_[1], ini_[1], _RI.y0 + 8, _RI.y1 - 8]
+            niveis_ += [ini_[1] + d_ for d_ in (-48, -32, -16, 16, 32, 48)]
+            rotas_ = []
+            for ny_ in niveis_:
+                ny_ = min(max(ny_, AREA_IN.y0 + 6), AREA_IN.y1 - 6)
+                pts_c_ = [ini_, (guia_, ini_[1]), (guia_, ny_),
+                           (fim_[0] - 12, ny_), (fim_[0] - 12, fim_[1]), fim_]
+                col_ = sum(_toca_balao(a_, b_) for a_, b_ in zip(pts_c_, pts_c_[1:]))
+                comp_ = sum(math.dist(a_, b_) for a_, b_ in zip(pts_c_, pts_c_[1:]))
+                rotas_.append((col_, comp_, pts_c_))
+            colisoes_, _, pts_ = min(rotas_, key=lambda q: (q[0], q[1]))
+            if colisoes_:
+                raise ValueError('Sem rota livre para seta de referência: dividir a prancha')
             pg_.draw_polyline(pts_, color=RED, width=1)
             pg_.draw_polyline([(fim_[0]-7, fim_[1]-3), fim_, (fim_[0]-7, fim_[1]+3)], color=RED, width=1)
 
@@ -2341,6 +2360,7 @@ with open(os.path.splitext(cfg['saida'])[0] + '_CAMERAS.json', 'w', encoding='ut
     json.dump(dict(cameras=globals().get('_auditoria_cameras',[]),
                    subimagens=globals().get('_auditoria_subimagens',[]),
                    ocultas=globals().get('_auditoria_ocultas',[]),
+                   baloes=globals().get('_auditoria_baloes',[]),
                    cotas=globals().get('_auditoria_geometria_cotas',[])), _ca, ensure_ascii=False, indent=2)
 print('\n'.join(q))
 for i in range(len(doc)):
