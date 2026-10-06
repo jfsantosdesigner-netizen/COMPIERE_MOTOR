@@ -1626,10 +1626,19 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         cc = [c_ for c_ in cc if c_[2] > 50]
         xs = [c_[0] for c_ in cc]; ys = [c_[1] for c_ in cc]
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
-    mgf = 22 if itens else 4 if ctx else 16
+    mgf = kw.get('margem_pontos', 22 if itens else 4 if ctx else 16)
     k = min((rect.width - mgf) / (x1 - x0), (rect.height - mgf) / (y1 - y0))
     ox = rect.x0 + (rect.width - (x1 - x0) * k) / 2; oy = rect.y0 + (rect.height - (y1 - y0) * k) / 2
     T = lambda x, y: (ox + (x - x0) * k, oy + (y1 - y) * k)
+    if kw.get('caixas_projetadas') is not None:
+        for face in fcs:
+            pi = _pidx.get(face[5])
+            if pi is None: continue
+            for x_,y_ in face[2]:
+                px_,py_ = T(x_,y_)
+                b_ = kw['caixas_projetadas'].setdefault(pi,[px_,py_,px_,py_])
+                b_[0]=min(b_[0],px_); b_[1]=min(b_[1],py_)
+                b_[2]=max(b_[2],px_); b_[3]=max(b_[3],py_)
     if kw.get('visiveis') is not None and _Im is not None:
         # REGRA (v25): quais peças APARECEM nesta imagem (buffer de identificação, desenho na mesma ordem das faces)
         _s = 2.0; _W = max(1, int(rect.width * _s)); _H = max(1, int(rect.height * _s))
@@ -1649,6 +1658,8 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             if v_ <= 0 or pc_ not in _pidx or pc_ not in _bx: continue
             b_ = _bx[pc_]; area_ = max(1.0, (b_[2] - b_[0]) * (b_[3] - b_[1]) * _s * _s)
             if c_ >= 40 and c_ / area_ >= 0.05: kw['visiveis'].add(_pidx[pc_])   # peça aparece DE VERDADE (15%+ dela)
+        if callable(kw.get('visibilidade_callback')):
+            kw['visibilidade_callback'](_ib,_pidx,rect,kw['visiveis'])
         if kw.get('so_visiveis'): return
     if _Im is not None and (any(len(f_)>8 and f_[8]<.999 for f_ in fcs) or (cfg.get('textura', True) and any(textura(m_) for m_ in _pmat.values()))):
         _raster3d(page, rect, fcs, T, _pmat)
@@ -1691,8 +1702,9 @@ PUXADORES = _gerar_puxadores() if cfg.get('puxadores_regra') else []
 print('PUXADORES:', len(PUXADORES), '(regra desligada; o DXF não traz puxador)' if not PUXADORES else 'gerados')
 # REGRA (v33, João): PEÇA ESCONDIDA NÃO É LISTADA. Antes de montar a tabela, o motor desenha a
 # imagem frontal da vista num rascunho e anota quais peças realmente aparecem nela. Item que não
-# tem nenhuma peça visível fica FORA da tabela e não ganha balão. Nada de tirar a peça de onde ela
-# está para fazer uma imagem só dela.
+# tem nenhuma peça visível fica FORA da tabela e não ganha balão. Exceção funcional:
+# apoio/fixação ou detalhe previsto no documento pode aparecer em subimagem montada,
+# com referência ao hospedeiro e balões somente das ocorrências visíveis no detalhe.
 # (precisa vir depois de render3d estar definido)
 # DECISÃO D1 (João, 28/09/2026): elementos com mesma (desc, dim) → mesmo número em TODAS as vistas.
 # Na tabela: uma linha, sem quantidade. Na imagem: cada ocorrência tem balão próprio com mesmo número.
@@ -1714,6 +1726,11 @@ for v in VW:
     # REGRA (João, 28/09/2026 - bloco 1): só PEÇA SOLTA pode ser escondida (base sob módulo,
     # tamponamento sob superior). MÓDULO da vista nunca é escondido nem sai da listagem.
     _fora_v = [i for i in its if i['tipo'] != 'mod' and not any(pi in _vis_v for pi in i['pecas'])]
+    from normal.ocultas import planejar
+    v['_detalhes_ocultos'] = planejar(globals(),v,_fora_v)
+    _em_detalhe = {id(i) for plano in v['_detalhes_ocultos'] for i in plano['listados']}
+    _fora_v = [i for i in _fora_v if id(i) not in _em_detalhe]
+    _tmp_v.close()
     if _fora_v:
         print('ESCONDIDAS (fora da listagem) em %s: %d' % (v['titulo'], len(_fora_v)))
         for i in _fora_v: print('    %s %s' % (i['desc'], i['dim']))
@@ -1990,6 +2007,11 @@ for v in V:
                 ids={id(i) for i in grupo}
                 nis=[(ww,g,t) for ww,g,t in nis if not ids.intersection(id(i) for i in g)]
                 nis.append((w,grupo,{'rotulo':rotulo,'sem_lista':sem_lista}))
+        planos = s_.get('_detalhes_ocultos',s_.get('base',{}).get('_detalhes_ocultos',[]))
+        for plano in planos:
+            ids = {id(i) for i in plano['itens']}
+            nis = [(ww,g,t) for ww,g,t in nis if not ids.intersection(id(i) for i in g)]
+            nis.append((plano['w'],plano['listados'],dict(rotulo=plano['rotulo'],sem_lista=False,oculto=plano)))
         if s_.get('ids') is not None:
             nis = [(w, c, t) for w, c, t in nis if any(id(i) in s_['ids'] for i in c)]
         _sb = {id(i) for _,c,t in nis if not t['sem_lista'] for i in c}
@@ -2004,6 +2026,11 @@ for v in V:
             # para mostrar a face sintética; nicho/aberto segue com ângulo.
             p.draw_rect(r_, color=PRETO, width=0.5)
             p.insert_text((r_.x0 + 4, r_.y0 + 10), tp_['rotulo'], fontname='hebo', fontsize=7.5, color=RED)
+            if tp_.get('oculto'):
+                from normal.ocultas import renderizar
+                permitidos = s_.get('ids',{id(i) for i in s_.get('itens_listados',[])})
+                renderizar(globals(),p,fz.Rect(r_.x0+2,r_.y0+14,r_.x1-2,r_.y1-2),tp_['oculto'],s_['letra'],permitidos)
+                return
             gaveta = next((i for i in c if i.get('_gaveta_montada')),None)
             op = dict(ang=0,elev=0)
             if gaveta:

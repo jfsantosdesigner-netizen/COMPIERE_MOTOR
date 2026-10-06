@@ -11,3 +11,5 @@ normal.vidros lê os nomes de acabamentos do XML. O vidro é translúcido segund
 As câmeras de listagem ficam centradas e niveladas. A subimagem da gaveta montada usa seu eixo frontal e uma elevação para mostrar o fundo e a montagem. visual_comum distribui os balões em ambos os motores, dentro do quadro e sem sobreposição.
 
 Validação: geração dos cadernos normais de Suíte Casal e Cozinha, geração combinada de ambos, conferência dos títulos/páginas e dos retângulos dos balões no PDF, teste de 80 balões coincidentes e teste dos acabamentos Bronze/Champagne/transparente/espelho.
+
+Peças funcionais encobertas usam normal.ocultas: detalhe montado, referência de aplicação e balões em superfícies visíveis. Sobreposição genérica não cria subimagem. A engenharia e as referências manuais estão em [SUBIMAGENS_FUNCIONAIS.md](SUBIMAGENS_FUNCIONAIS.md). Regressões: python -m unittest normal.test_regras normal.test_ocultas.
