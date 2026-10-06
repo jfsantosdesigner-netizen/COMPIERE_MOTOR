@@ -1,0 +1,176 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Branco",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 2,
+      "descricao": "Armário Despenseiro",
+      "dimensoes_xml": "400x1215x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 3,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "400x500x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "550x2550x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "660x2550x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário Canto L Direito",
+      "dimensoes_xml": "950x2550x920",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "362x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "398x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "562x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "598x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1300x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "390x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1062x25x250",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "580x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "770x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1355x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 17,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "402x18x600",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 18,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2550x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 19,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2470x18x323",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}

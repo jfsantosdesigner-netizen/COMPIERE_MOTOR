@@ -1,0 +1,248 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Branco",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 5,
+      "quantidade_dxf": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 2,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Nude",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 3,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "838x622x350",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "840x622x350",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "493x165x350",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "700x2590x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Armário Canto L Esquerdo",
+      "dimensoes_xml": "970x2590x980",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "2100x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "568x18x60",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "1170x18x60",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "400x18x60",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "184x18x370",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "494x18x60",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "530x18x370",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "648x18x530",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "1250x18x1502",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "400x18x530",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Frassino Almendra MDP",
+      "dimensoes_xml": "2562x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "525x18x1150",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "600x18x1390",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "1956x18x600",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "2100x18x60",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "80x18x1080",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 24,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "2700x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 25,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "80x18x432",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 26,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "2700x18x100",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 27,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "2562x18x350",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}

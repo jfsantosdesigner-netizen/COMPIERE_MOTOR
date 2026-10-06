@@ -18,14 +18,14 @@ for rel in ALVOS:
     dest.mkdir(parents=True)
     for p in pasta.iterdir():
         if p.is_file() and (p.suffix.lower() in (".json", ".md5") or p.name.startswith(("CADERNO - ", "_prev_"))):
-            shutil.copy2(p, dest / p.name)
+            if p.suffix.lower() not in ('.json', '.md5'):
+                shutil.copy2(p, dest / p.name)
             p.unlink()
     for p in pasta.rglob("__pycache__"):
         if p.is_dir(): shutil.rmtree(p)
 for name in ("cores_cache.json", "materiais_index.json"):
     p = ROOT / name
     if p.exists():
-        shutil.copy2(p, AUD / name)
         p.unlink()
 p = ROOT / "_cache_texturas"
 if p.exists(): shutil.rmtree(p)

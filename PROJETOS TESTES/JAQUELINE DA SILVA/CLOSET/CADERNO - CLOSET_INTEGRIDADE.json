@@ -1,0 +1,104 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Branco",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 10,
+      "quantidade_dxf": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 2,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "802x405x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 3,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "2902x2605x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1026x2605x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "550x2605x580",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "580x2605x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Armário Canto L Esquerdo",
+      "dimensoes_xml": "1000x2605x1000",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Frente Sapateira",
+      "dimensoes_xml": "937,5x70x18",
+      "quantidade_xml": 6,
+      "quantidade_dxf": 6,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "2700x18x150",
+      "quantidade_xml": 5,
+      "quantidade_dxf": 5,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "802x18x560",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "2182x18x560",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}

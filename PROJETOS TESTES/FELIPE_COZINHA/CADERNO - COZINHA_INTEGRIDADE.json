@@ -1,0 +1,275 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Armário 2 Portas",
+      "dimensoes_xml": "720x1011x200",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 2,
+      "descricao": "Armário Despenseiro",
+      "dimensoes_xml": "200x1714x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 3,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "500x740x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "766x740x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário 1 Portas Basculantes",
+      "dimensoes_xml": "1019x418x450",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário 1 Portas Basculantes",
+      "dimensoes_xml": "760x400x427",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Armário 2 Portas",
+      "dimensoes_xml": "897x480x470",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Armário 2 Portas",
+      "dimensoes_xml": "940x480x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Balcão 1 Gaveta",
+      "dimensoes_xml": "562x250x633",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Balcão 1 Porta",
+      "dimensoes_xml": "470x750x633",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Balcão 2 Portas",
+      "dimensoes_xml": "747x750x363",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 12,
+      "descricao": "Balcão p/ Forno",
+      "dimensoes_xml": "700x750x633",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Chumbo MDF",
+      "dimensoes_xml": "680x25x250",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Chumbo MDP",
+      "dimensoes_xml": "1314x18x890",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 15,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "740x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 16,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "480x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 17,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1732x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 18,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "750x18x385",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 19,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "720x18x200",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 20,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "482x18x653",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 21,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "268x18x653",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 22,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "562x18x653",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 23,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "200x18x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 24,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1794x18x150",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 25,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "973x18x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 26,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "778x18x450",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 27,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "400x18x110",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 28,
+      "descricao": "Vista",
+      "dimensoes_xml": "996x18x189",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 29,
+      "descricao": "Vista",
+      "dimensoes_xml": "1794x18x189",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 30,
+      "descricao": "Vista",
+      "dimensoes_xml": "212x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}

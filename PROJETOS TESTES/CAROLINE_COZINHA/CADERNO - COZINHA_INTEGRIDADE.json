@@ -1,0 +1,347 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Armário Despenseiro",
+      "dimensoes_xml": "670x2138x200",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 2,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "618x350x605",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 3,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "725x788x200",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "732x350x605",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "740x350x605",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 6,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "200x757x673",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 7,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "350x757x673",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 8,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "686x757x673",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 9,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "750x757x673",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 10,
+      "descricao": "Armário 1 Portas Basculantes",
+      "dimensoes_xml": "732x343x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 11,
+      "descricao": "Armário 1 Portas Basculantes",
+      "dimensoes_xml": "609x343x400",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 12,
+      "descricao": "Balcão 1 Gaveta",
+      "dimensoes_xml": "600x350x490",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 13,
+      "descricao": "Balcão 2 Portas",
+      "dimensoes_xml": "750x787x490",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 14,
+      "descricao": "Balcão 2 Portas",
+      "dimensoes_xml": "618x437x510",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 15,
+      "descricao": "Balcão 2 Portas",
+      "dimensoes_xml": "717x757x408",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "190x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "2150x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "350x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "791x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "1968x18x250",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "725x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "1972x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "771x18x610",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 24,
+      "descricao": "Painel Areia MDF",
+      "dimensoes_xml": "752x18x745",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 25,
+      "descricao": "Painel Itapua MDF",
+      "dimensoes_xml": "937x18x1400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 26,
+      "descricao": "Painel Itapua MDF",
+      "dimensoes_xml": "1218x18x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 27,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "350x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 28,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "732x18x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 29,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "368x18x420",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 30,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "416x18x420",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 31,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "361x18x420",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 32,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2138x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 33,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "847x18x220",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 34,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2181x18x630",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 35,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1986x25x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 36,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "717x25x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 37,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "782x18x428",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    },
+    {
+      "n": 38,
+      "descricao": "Tamponamento Superior",
+      "dimensoes_xml": "787x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "obrigatorio": true,
+      "status": "OK"
+    }
+  ]
+}
