@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Executa o gerar_caderno.py intacto e acrescenta as pranchas especiais em outro PDF.
+"""Executa o fluxo normal e acrescenta as pranchas do motor de especiais em outro PDF.
 
 Uso:
     python gerar_caderno_com_especiais.py config.json
 
-O arquivo gerar_caderno.py NÃO é importado nem editado: ele é executado em namespace
-isolado com uma configuração temporária. O resultado normal vira a base e os especiais
+O gerar_caderno.py é executado em namespace isolado com uma configuração temporária.
+O resultado contém somente o fluxo normal; a detecção compartilhada é reutilizada e os especiais
 são acrescentados depois, reutilizando as funções de layout, tabela, render e cotas já
 carregadas pelo motor atual.
 """

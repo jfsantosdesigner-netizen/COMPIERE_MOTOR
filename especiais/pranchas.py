@@ -223,11 +223,12 @@ def _contexto_gaveta_divisor(ns, itens, interno=True):
 def _page_divisor(ns, esp, n):
     """Reutiliza o 3D e a vista superior cotada da prancha normal de divisor."""
     from types import FunctionType
+    from .divisor import _prancha_peca
     fz=ns["fz"]; area=ns["AREA_IN"]
     itens=esp.itens
     contexto=_contexto_gaveta_divisor(ns,itens)
     wid,old=_temporary_wall(ns,itens,"DIVISOR")
-    env=dict(ns["_prancha_peca"].__globals__)
+    env=dict(_prancha_peca.__globals__)
     env.update(ns)
     env["n"]=n-1; env["_nl"]=0; env["letras"]=(f"ESP_DIVISOR_{n}",)
     resultado={}
@@ -264,7 +265,7 @@ def _page_divisor(ns, esp, n):
                                      listados=resultado['visiveis'],**kw)
     env.update(nova_prancha=nova,_numerar=numerar,tabela=tabela,render3d=render)
     try:
-        fn=FunctionType(ns["_prancha_peca"].__code__,env)
+        fn=FunctionType(_prancha_peca.__code__,env)
         fn(itens,"DIVISOR DE GAVETA - DETALHAMENTO","DIVISOR")
         p=resultado["pagina"]; yb=resultado["yb"]
         h=area.y1-yb-12

@@ -196,7 +196,7 @@ def _excecao_normal(it):
     n = norm(it.get("desc"))
     if "prateleira" in n and "vidro" in n:
         return True
-    if any(norm(x) in n for x in EXCECOES_NORMAL):
+    if any(norm(x) in n for x in EXCECOES_NORMAL + NORMAL_POR_NOME):
         return True
     if it.get("tipo") == "mod" and "curv" in n:
         # Módulo curvo descrito como um módulo do XML = produto pronto de fábrica.
@@ -277,6 +277,8 @@ def detectar(ns):
     - depois aplica famílias explícitas;
     - por último usa geometria pura somente em peças soltas/componentes.
     """
+    if "_especiais_detectados" in ns:
+        return ns["_especiais_detectados"]
     import json
     raw = json.load(open(ns["cfg"]["pecas_json"], encoding="utf-8"))
     dxf_layers = scan_dxf(ns["cfg"]["dxf"])
