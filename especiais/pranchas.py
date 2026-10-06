@@ -5,6 +5,33 @@ from collections import Counter
 import math, re
 from .regras import Familia
 
+def _nova_prancha_especial(ns, n, titulo):
+    """Cria especial a partir de uma prancha normal já gerada pelo próprio motor."""
+    fz=ns["fz"]; doc=ns["doc"]
+    src=ns.get("_layout_especial_src")
+    if src is None:
+        src=fz.open(ns["cfg"]["saida"])
+        ns["_layout_especial_src"]=src
+    idx=min(4, src.page_count-1)
+    doc.insert_pdf(src, from_page=idx, to_page=idx)
+    p=doc[-1]
+
+    # Limpa somente a área útil da prancha clonada; cabeçalho/quadro/logo permanecem.
+    area=ns["AREA_IN"]
+    p.draw_rect(area, color=None, fill=ns["BRANCO"], overlay=True)
+
+    # Substitui título e número da prancha.
+    p.draw_rect(fz.Rect(200,118,710,140),color=None,fill=ns["BRANCO"],overlay=True)
+    p.draw_rect(fz.Rect(712,52,816,96),color=None,fill=ns["BRANCO"],overlay=True)
+    p.insert_text((419.5-fz.get_text_length(titulo,"hebo",16)/2,135),titulo,
+                  fontname="hebo",fontsize=16,color=ns["RED"],overlay=True)
+    p.insert_text((764-fz.get_text_length("PRANCHA","hebo",18)/2,62),"PRANCHA",
+                  fontname="hebo",fontsize=18,overlay=True)
+    s=f"{n:02d}"
+    p.insert_text((764-fz.get_text_length(s,"hebo",18)/2,85),s,
+                  fontname="hebo",fontsize=18,overlay=True)
+    return p
+
 TITULOS = {
     Familia.CAMA: "CAMA - DETALHAMENTO ESPECIAL",
     Familia.LED: "LED - DETALHAMENTO",
@@ -105,7 +132,7 @@ def _representativos(itens):
 
 def _page_generic(ns, esp, n, titulo=None):
     fz=ns["fz"]; doc=ns["doc"]; area=ns["AREA_IN"]
-    p=ns["nova_prancha"](doc,n,titulo or TITULOS.get(esp.familia,"DETALHAMENTO ESPECIAL"))
+    p=_nova_prancha_especial(ns,n,titulo or TITULOS.get(esp.familia,"DETALHAMENTO ESPECIAL"))
     linhas=_linhas(esp.itens, esp.familia==Familia.PAINEL_RIPADO)
     yb=ns["tabela"](p,linhas,area.x0,area.y0)
     # subimagem do ambiente, sempre lateral esquerda
@@ -134,7 +161,7 @@ def _page_generic(ns, esp, n, titulo=None):
 def _page_painel(ns, esp, n, cotas=False):
     fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
     titulo=("PAINEL - COTAS" if cotas else "PAINEL - LISTAGEM")
-    p=ns["nova_prancha"](doc,n,titulo)
+    p=_nova_prancha_especial(ns,n,titulo)
     if not cotas:
         yb=ns["tabela"](p,_linhas(esp.itens),area.x0,area.y0)
         rctx=fz.Rect(area.x0,yb+10,area.x0+210,area.y1)
@@ -196,7 +223,7 @@ def _page_ripado_1(ns,esp,n):
 
 def _page_ripado_2(ns,esp,n):
     fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
-    p=ns["nova_prancha"](doc,n,"PAINEL RIPADO - BASE + RIPAS")
+    p=_nova_prancha_especial(ns,n,"PAINEL RIPADO - BASE + RIPAS")
     reps=_representativos(esp.itens); ws=_walls(ns,reps)
     rip=[i for i in reps if re.search(r"ripa",i.get("desc",""),re.I)]
     sem=[i for i in reps if i not in rip]
@@ -219,7 +246,7 @@ def _page_ripado_2(ns,esp,n):
 
 def _page_sequencia_divisoria(ns,esp,n):
     fz=ns["fz"]; area=ns["AREA_IN"]; doc=ns["doc"]
-    p=ns["nova_prancha"](doc,n,"DIVISÓRIA - SEQUÊNCIA DE MONTAGEM")
+    p=_nova_prancha_especial(ns,n,"DIVISÓRIA - SEQUÊNCIA DE MONTAGEM")
     # ordem estrutural: peças largas/base primeiro; ripas por último.
     its=sorted(esp.itens,key=lambda i:(bool(re.search(r"ripa",i.get("desc",""),re.I)),
                                        i["bb"][2],-(i["bb"][3]-i["bb"][0])*(i["bb"][4]-i["bb"][1])))
