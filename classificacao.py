@@ -29,7 +29,7 @@ RODAPE_PISO_TOL   = 30.0   # peca apoiada no piso: z0 ate 30 mm acima do piso
 RODAPE_SOBRE_TOL  = 20.0   # modulo em cima: z0 do modulo >= topo da peca - 20 mm
 RODAPE_SOBREPOSICAO = 0.5  # fracao da planta da peca coberta pelo modulo
 OCLUSAO_MIN_RATIO = 0.6
-CASCA_MIN_RATIO   = 0.9    # peca que cobre >=90% do ambiente nos 2 eixos = casca, nao oclui
+GRUPO_TOL         = 5.0    # pecas soltas se tocam se a folga entre bbs <= 5 mm
 
 TIPOS = ('MODULO_COMUM', 'CANTO_L_ESQ', 'CANTO_L_DIR', 'CANTO_RETO',
          'NICHO', 'PAINEL_OCULTO', 'RODAPE_OCULTO')
@@ -39,7 +39,7 @@ _NAO_CANTO = ('cantoneira', 'suporte', 'dobradica')
 
 def classificar_peca(peca, contexto):
     if peca.get('tipo') == 'grupo' or 'itens' in peca:
-        return 'NICHO' if _eh_nicho_conjunto(peca['itens']) else 'MODULO_COMUM'
+        return 'MODULO_COMUM'
 
     if peca.get('tipo') == 'mod':
         canto = _canto_por_nomenclatura(peca.get('desc', ''))
@@ -50,6 +50,8 @@ def classificar_peca(peca, contexto):
         return 'MODULO_COMUM'
 
     if peca.get('tipo') == 'comp':
+        if _eh_nicho_conjunto(_grupo_de(peca, contexto), contexto):
+            return 'NICHO'
         if _eh_oculto(peca, contexto):
             return 'RODAPE_OCULTO' if _eh_rodape(peca, contexto) else 'PAINEL_OCULTO'
         return 'MODULO_COMUM'
@@ -152,7 +154,26 @@ def _eh_nicho_modulo(peca, contexto):
     return _cobertura_frontal_max(peca, contexto['P']) < NICHO_MIN_RATIO
 
 
-def _eh_nicho_conjunto(itens):
+def _grupo_de(peca, contexto):
+    """Pecas soltas (comp) da mesma parede ligadas a 'peca' por contato (folga <= GRUPO_TOL),
+    transitivamente. Nao ha conjunto definido no XML: o grupo nasce do contato."""
+    soltas = [i for i in contexto['soltas'] if i['tipo'] == 'comp']
+    grupo, fila = [peca], [peca]
+    visto = {id(peca)}
+    while fila:
+        a = fila.pop()['bb']
+        for o in soltas:
+            if id(o) in visto:
+                continue
+            ob = o['bb']
+            if all(min(a[k + 3], ob[k + 3]) - max(a[k], ob[k]) >= -GRUPO_TOL for k in range(3)):
+                visto.add(id(o)); grupo.append(o); fila.append(o)
+    return grupo
+
+
+def _eh_nicho_conjunto(itens, contexto):
+    """Grupo de pecas soltas SEM porta: >=3 pecas, >=2 horizontais, tamanho de nicho
+    (peca grande nao e nicho) e frente nao coberta por moveis (porta)."""
     if len(itens) < NICHO_MIN_PECAS:
         return False
     horizontais = sum(1 for i in itens if (i['bb'][5] - i['bb'][2]) <= 30)
@@ -163,12 +184,10 @@ def _eh_nicho_conjunto(itens):
         U = geo.uniao(U, i['bb'])
     largura = max(U[3] - U[0], U[4] - U[1])
     altura = U[5] - U[2]
-    return largura <= NICHO_LARG_MAX and altura <= NICHO_ALT_MAX
-
-
-def _eh_casca(ob, lim):
-    return ((ob[3] - ob[0]) >= CASCA_MIN_RATIO * (lim[2] - lim[0]) and
-            (ob[4] - ob[1]) >= CASCA_MIN_RATIO * (lim[3] - lim[1]))
+    if largura > NICHO_LARG_MAX or altura > NICHO_ALT_MAX:
+        return False
+    visiveis = sum(1 for i in itens if not _eh_oculto(i, contexto))
+    return visiveis * 2 >= len(itens)
 
 
 def _eh_oculto(peca, contexto):
@@ -182,14 +201,12 @@ def _eh_oculto(peca, contexto):
     face = b[ad] if sinal > 0 else b[ad + 3]
     area_face = max(1.0, (b[al + 3] - b[al]) * (b[5] - b[2]))
     excluir = set(peca.get('pecas', []))
-    lim = contexto['lim']
+    moveis = contexto['moveis']   # indices das pecas casadas com itens do XML; arquitetura fica fora
     rects = []
     for o in contexto['P']:
-        if o['i'] in excluir:
+        if o['i'] in excluir or o['i'] not in moveis:
             continue
         ob = o['bb']
-        if _eh_casca(ob, lim):
-            continue
         frente_o = ob[ad] if sinal > 0 else ob[ad + 3]
         if (face - frente_o) * sinal <= 5:   # 'o' precisa estar MAIS perto da camera que a face
             continue
@@ -211,7 +228,9 @@ def _eh_rodape(peca, contexto):
     if b[2] - _piso_z(contexto['P']) > RODAPE_PISO_TOL:
         return False
     area = max(1.0, (b[3] - b[0]) * (b[4] - b[1]))
-    for m in contexto['mods']:
+    for m in contexto['soltas']:
+        if m['tipo'] != 'mod':
+            continue
         mb = m['bb']
         if mb[2] < b[5] - RODAPE_SOBRE_TOL:
             continue
