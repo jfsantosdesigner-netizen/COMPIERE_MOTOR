@@ -1546,6 +1546,26 @@ def tem_porta(m, w):
     if cob >= NICHO_MIN_RATIO * area_: return True
     return bool(m.get('xml_tem_porta'))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
 
+def _fundo_nicho_face(its, f):
+    # REGRA (João, 06/10/2026): o nicho sem peça de fundo (aberto para a parede) é desenhado com FUNDO da cor
+    # da madeira (MADEIRA), em vez de mostrar o vazio. Devolve o quadro (4 vértices) do fundo, ou None se o
+    # grupo já tem peça de fundo (chapa fina no plano de trás cobrindo >= 60% do vão).
+    U = list(its[0]['bb'])
+    for i in its: U = geo.uniao(U, i['bb'])
+    ad = 0 if f[0] else 1; al = 1 - ad
+    xb = U[ad] if f[ad] < 0 else U[ad + 3]            # plano de trás = lado da parede (oposto ao da porta)
+    larg = U[al + 3] - U[al]; alt = U[5] - U[2]
+    if larg <= 0 or alt <= 0: return None
+    cob = 0.0
+    for i in its:
+        for pi in i['pecas']:
+            b = P[pi]['bb']
+            if b[ad + 3] - b[ad] > 30 or min(abs(b[ad] - xb), abs(b[ad + 3] - xb)) > 40: continue
+            cob += max(0, min(b[al + 3], U[al + 3]) - max(b[al], U[al])) * max(0, min(b[5], U[5]) - max(b[2], U[2]))
+    if cob >= 0.6 * larg * alt: return None
+    if ad == 0: return [(xb, U[1], U[2]), (xb, U[4], U[2]), (xb, U[4], U[5]), (xb, U[1], U[5])]
+    return [(U[0], xb, U[2]), (U[3], xb, U[2]), (U[3], xb, U[5]), (U[0], xb, U[5])]
+
 def _nichos_classificados(w):
     # REGRA (João, 06/10/2026): TODO nicho (estrutura SEM porta, módulo ou grupo de painéis soltos) vira subimagem.
     # A decisão é classificacao.classificar_peca (função pura); aqui só se monta o contexto e se agrupam as peças.
@@ -1755,6 +1775,12 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
                 _face = [(_mb[0], _xf, _mb[2]), (_mb[3], _xf, _mb[2]), (_mb[3], _xf, _mb[5]), (_mb[0], _xf, _mb[5])]
             src.append((_face, _cor_m, [True, True, True, True], 1, len(shell)))
             shell.append([_mb[0] - 1, _mb[1] - 1, _mb[2] - 1, _mb[3] + 1, _mb[4] + 1, _mb[5] + 1])
+    if kw.get('fundo_nicho'):   # subimagem de nicho: fundo em madeira quando o nicho não tem peça de fundo
+        _ff = _fundo_nicho_face(its, f)
+        if _ff:
+            src.append((_ff, MADEIRA, [True, True, True, True], 1, len(shell)))
+            shell.append([min(v[0] for v in _ff) - 1, min(v[1] for v in _ff) - 1, min(v[2] for v in _ff) - 1,
+                          max(v[0] for v in _ff) + 1, max(v[1] for v in _ff) + 1, max(v[2] for v in _ff) + 1])
     mg = kw.get('margem', 700); R = [U[0] - mg, U[1] - mg, 0 if mg >= 700 else U[2] - mg, U[3] + mg, U[4] + mg, U[5] + min(150, mg)]
     if ctx and MALHA_PAR:
         _cob = []; _ilha = U[5] <= 1200   # móvel baixo solto (ilha/bancada): sem parede inventada nem laterais distantes
@@ -2240,7 +2266,7 @@ for v in V:
             larg_ = max(i['bb'][ax_ + 3] for i in c) - min(i['bb'][ax_] for i in c)
             _ang_sub = 0 if _porta_ausente else (-1 if lado > 0 else 1) * (28 if larg_ < 1000 else 14)
             render3d(p, fz.Rect(r_.x0 + 2, r_.y0 + 14, r_.x1 - 2, r_.y1 - 2), [w], letra=s_['letra'], itens=c,
-                     ang=_ang_sub, dmin=2200, margem=60, isolado=True)
+                     ang=_ang_sub, dmin=2200, margem=60, isolado=True, fundo_nicho=not _porta_ausente)
         if nis:
             # REGRA (ajuste, pedido João): largura da tabela é sempre fixa (248pt, já era assim).
             # A altura da tabela acompanha a quantidade de itens (até 15 linhas por prancha, já

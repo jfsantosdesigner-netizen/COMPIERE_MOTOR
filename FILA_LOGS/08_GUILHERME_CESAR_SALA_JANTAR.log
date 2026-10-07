@@ -1,0 +1,24 @@
+CORES: 51 pecas coloridas pelo MATERIAIS (medidas no XML: 23)
+   Branco                   33 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Itapua                   18 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\duratex\Essencial Wood\Itapua_Essencial_Wood.jpg
+AMBIENTE (eletros/objetos): 1 peças
+AMBIENTE (pedra): 0 peças
+MÓVEIS DIVERSOS: 1 móvel(is) de peças soltas com porta/frente detectado(s)
+AVISO: 2 peça(s) do XML não localizada(s) no DXF (abaixo do limiar de bloqueio):
+  - Tampo Acab Curvo R155  1653x18x400
+  - Módulo Acab. Curvo R150  250x300x400
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+# QUALIDADE — GUILHERME CESAR / Sala Jantar (gerado por script)
+
+- APROVADO | nº de pranchas 7 = 4 + 1 listagens + 1 cotas + 1 móvel(is) diverso(s)
+- INCERTO | itens localizados no DXF: 7/9
+  - FORA DA LISTAGEM: Tampo Acab Curvo R155 1653x18x400 (não localizado no DXF, logo não aparece na imagem)
+  - FORA DA LISTAGEM: Módulo Acab. Curvo R150 250x300x400 (não localizado no DXF, logo não aparece na imagem)
+- INCERTO | XML confere com o projeto (baseado em itens localizados no DXF) — 2 item(ns) sem correspondência no DXF, ver acima
+- APROVADO | texturas dos materiais
+- VISTA A: paredes y+@-1320 | 1 linhas de listagem
+  A1: Balcão 1 Gaveta 700x300x378
+OK C:\COMPIERE\CORE_MOTOR\PROJETOS TESTES\GUILHERME CESAR\SALA JANTAR\CADERNO - SALA JANTAR.pdf
+Gerando: GUILHERME CESAR / Sala Jantar ...
+OK: GUILHERME CESAR / Sala Jantar
+

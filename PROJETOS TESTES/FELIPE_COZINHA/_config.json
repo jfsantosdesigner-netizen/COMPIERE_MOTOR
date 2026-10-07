@@ -6,13 +6,13 @@
   "projetista": "JOÃO FELIPE SANTOS",
   "arquiteta": "FERNANDA"
  },
- "layout": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\LAYOUT_FIXO.pdf",
- "contrato_fonte": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\CONTRATO.pdf",
- "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\EXECUTIVO COZINHA - 10000334.xml",
- "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\COZINJHA.dxf",
- "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\_pecas_dxf.json",
+ "layout": "C:\\COMPIERE\\CORE_MOTOR\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\CORE_MOTOR\\assets\\CONTRATO.pdf",
+ "xml": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\FELIPE_COZINHA\\EXECUTIVO COZINHA - 10000334.xml",
+ "dxf": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\FELIPE_COZINHA\\COZINJHA.dxf",
+ "pecas_json": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\FELIPE_COZINHA\\_pecas_dxf.json",
  "vistas": [],
- "logo": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\LOGO.png",
+ "logo": "C:\\COMPIERE\\CORE_MOTOR\\assets\\LOGO.png",
  "materiais": "MATERIAIS",
- "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\CADERNO - FELIPE_COZINHA.pdf"
+ "saida": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\FELIPE_COZINHA\\CADERNO - FELIPE_COZINHA.pdf"
 }

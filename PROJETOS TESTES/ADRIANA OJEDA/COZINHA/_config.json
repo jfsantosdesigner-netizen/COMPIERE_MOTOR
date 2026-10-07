@@ -1,0 +1,18 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "ADRIANA OJEDA",
+  "ambiente": "Cozinha",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "layout": "C:\\COMPIERE\\CORE_MOTOR\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\CORE_MOTOR\\assets\\CONTRATO.pdf",
+ "xml": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\ADRIANA OJEDA\\COZINHA\\EXECUTIVO COZINHA - 10000338.xml",
+ "dxf": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\ADRIANA OJEDA\\COZINHA\\COZINHA.dxf",
+ "pecas_json": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\ADRIANA OJEDA\\COZINHA\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE\\CORE_MOTOR\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\COMPIERE\\CORE_MOTOR\\PROJETOS TESTES\\ADRIANA OJEDA\\COZINHA\\CADERNO - COZINHA.pdf"
+}

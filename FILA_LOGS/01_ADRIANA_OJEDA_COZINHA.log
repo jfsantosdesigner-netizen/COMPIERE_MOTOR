@@ -1,0 +1,85 @@
+pecas 864
+CORES: 263 pecas coloridas pelo MATERIAIS (medidas no XML: 161)
+   Branco                  162 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Chumbo                   91 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\Berneck\Linha Trend Colors\Chumbo.JPG
+   Itapua                   10 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\duratex\Essencial Wood\Itapua_Essencial_Wood.jpg
+005.B: Armário Despenseiro 250x2320x400: y+ -> x+
+005.B: Armário Despenseiro 570x2320x230: x- -> y+
+AMBIENTE (eletros/objetos): 5 peças
+AMBIENTE (pedra): 5 peças
+AVISO: 3 acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):
+  - Kit Batente Silicone c/ 50un  75x2x130
+  - Kit Tapa-furo 18mm c/ 28un Branco  75x2x130
+  - Kit Tapa-furo 18mm c/ 28un Chumbo  75x2x130
+AVISO: 2 peça(s) do XML não localizada(s) no DXF (abaixo do limiar de bloqueio):
+  - Tubo Silicone Chumbo  50x320x50
+  - Balcão Diagonal Direito  300x730x590
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA A: 4
+    Painel Chumbo MDP 2320x18x70
+    Painel Chumbo MDP 572x18x70
+    Tamponamento 2018x18x100
+    Tamponamento 2018x18x100
+ESCONDIDAS (fora da listagem) em VISTA B: 1
+    Painel Chumbo MDP 2320x18x70
+# QUALIDADE — ADRIANA OJEDA / Cozinha (gerado por script)
+
+- APROVADO | nº de pranchas 11 = 4 + 4 listagens + 3 cotas
+- INCERTO | itens localizados no DXF: 42/47 (3 acessório(s) sem DXF — normal)
+  - FORA DA LISTAGEM: Tubo Silicone Chumbo 50x320x50 (não localizado no DXF, logo não aparece na imagem)
+  - FORA DA LISTAGEM: Balcão Diagonal Direito 300x730x590 (não localizado no DXF, logo não aparece na imagem)
+  - ACESSÓRIO (sem DXF, normal): Kit Batente Silicone c/ 50un 75x2x130
+  - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 18mm c/ 28un Branco 75x2x130
+  - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 18mm c/ 28un Chumbo 75x2x130
+- INCERTO | XML confere com o projeto (baseado em itens localizados no DXF) — 2 item(ns) sem correspondência no DXF, ver acima
+- APROVADO | texturas dos materiais
+- VISTA A: paredes y+@-150 | 15 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA B: paredes x+@5036 | 2 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA C: paredes y-@-2165a | 15 linhas de listagem
+- VISTA D: paredes y-@-2165b | 8 linhas de listagem
+  A1: Armário Despenseiro 380x2320x580
+  A2: Armário Despenseiro 570x2320x230
+  A3: Balcão Inferior 400x730x580
+  A4: Balcão Inferior 700x730x580
+  A5: Armário 2 Portas 684x482x580
+  A6: Armário 2 Portas 672x382x350
+  A7: Armário 2 Portas 898x482x580
+  A8: Balcão 1 Porta 310x730x580
+  A9: Painel Chumbo MDP 1820x18x70
+  A10: Painel Chumbo MDP 2055x18x280
+  A11: Painel Chumbo MDP 2320x18x600
+  A12: Painel Chumbo MDP 898x18x580
+  A13: Painel Itapua MDF 2055x18x100
+  A14: Painel Itapua MDF 2019x18x350
+  A15: Tamponamento 427x18x370
+  B1: Armário Despenseiro 250x2320x400
+  B2: Painel Chumbo MDP 2060x18x70
+  C1: Balcão Inferior 399x730x320
+  C2: Armário 2 Portas 755x900x350
+  C3: Armário 2 Portas 700x830x350
+  C4: Balcão 2 Gavetões 745x730x570
+  C5: Balcão 2 Portas 605x730x300
+  C6: Balcão p/ Forno 700x730x570
+  C7: Painel Chumbo MDP 880x18x150
+  C8: Painel Chumbo MDP 880x18x1260
+  C9: Painel Chumbo MDP 880x18x460
+  C10: Painel Chumbo MDP 1521x18x70
+  C11: Tamponamento 730x18x350
+  C12: Tamponamento 730x18x100
+  C13: Tamponamento 755x18x350
+  C14: Tamponamento 830x18x70
+  C15: Tamponamento 990x18x370
+  D1: Armário Superior 470x900x350
+  D2: Armário Superior 510x900x350
+  D3: Balcão 1 Porta 470x730x540
+  D4: Painel Chumbo MDP 1030x18x70
+  D5: Tamponamento 993x18x372
+  D6: Tamponamento 730x18x100
+  D7: Tamponamento 900x18x70
+  D8: Tamponamento 1004x18x350
+OK C:\COMPIERE\CORE_MOTOR\PROJETOS TESTES\ADRIANA OJEDA\COZINHA\CADERNO - COZINHA.pdf
+Gerando: ADRIANA OJEDA / Cozinha ...
+OK: ADRIANA OJEDA / Cozinha
+
+C:\COMPIERE\CORE_MOTOR\gerar_caderno.py:1981: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}

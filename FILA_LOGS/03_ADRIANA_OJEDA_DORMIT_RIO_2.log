@@ -1,0 +1,61 @@
+CORES: 208 pecas coloridas pelo MATERIAIS (medidas no XML: 113)
+   Branco                  129 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Carvalho Treviso         63 pecas <- fabrica\Berneck\Linha Design\Carvalho_Treviso.jpg
+   Verde Floresta           11 pecas <- fabrica\duratex\Velluto\Verde_Floresta_Velluto.jpg
+   Azul                      5 pecas <- fabrica\Berneck\Linha Unicolors\azul.jpg
+005.B: Bancada 1 Porta 450x830x300: y+ -> x+
+AMBIENTE (eletros/objetos): 0 peças
+AMBIENTE (pedra): 0 peças
+MÓVEIS DIVERSOS: 2 móvel(is) de peças soltas com porta/frente detectado(s)
+AVISO: 1 acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):
+  - Kit Tapa-furo 18mm c/ 28un Branco  75x2x130
+AVISO: 1 peça(s) do XML não localizada(s) no DXF (abaixo do limiar de bloqueio):
+  - Tubo Silicone Carvallho Treviso  50x320x50
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA A: 5
+    Painel Carvalho Treviso MDF 527,5x18x70
+    Painel Carvalho Treviso MDF 1440x18x80
+    Painel Carvalho Treviso MDF 345x18x70
+    Tamponamento 1430x18x70
+    Tamponamento 2545x18x70
+ESCONDIDAS (fora da listagem) em VISTA B: 1
+    Painel Carvalho Treviso MDF 290x18x70
+# QUALIDADE — ADRIANA OJEDA / Dormitório 2 (gerado por script)
+
+- APROVADO | nº de pranchas 13 = 4 + 4 listagens + 3 cotas + 2 móvel(is) diverso(s)
+- INCERTO | itens localizados no DXF: 32/34 (1 acessório(s) sem DXF — normal)
+  - FORA DA LISTAGEM: Tubo Silicone Carvallho Treviso 50x320x50 (não localizado no DXF, logo não aparece na imagem)
+  - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 18mm c/ 28un Branco 75x2x130
+- INCERTO | XML confere com o projeto (baseado em itens localizados no DXF) — 1 item(ns) sem correspondência no DXF, ver acima
+- INCERTO | texturas dos materiais — faltando (sai cor lisa): Carvalho Treviso, Verde Floresta, Azul
+- VISTA A: paredes x-@150 | 7 linhas de listagem | CONDIÇÕES -> 2 nicho(s) em subimagem
+- VISTA B: paredes x+@2675 | 10 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA C: paredes y+@-150 | 2 linhas de listagem | CONDIÇÕES -> 2 nicho(s) em subimagem
+- VISTA D: paredes x-@2175L | 2 linhas de listagem | CONDIÇÕES -> perna do L com vista própria
+  A1: Armário Superior 600x1215x350
+  A2: Balcão Inferior 600x500x350
+  A3: Armário c/ Portas de Giro c/ Rodapé 1400x2545x580
+  A4: Painel Carvalho Treviso MDF 1440x18x70
+  A5: Painel Carvalho Treviso MDF 600x18x70
+  A6: Tamponamento 600x18x370
+  A7: Tamponamento 2545x18x70
+  B1: Nicho 300x800x200
+  B2: Armário Superior 800x750x300
+  B3: Armário Superior 845x480x300
+  B4: Balcão Inferior 1946x165x480
+  B5: Armário 1 Porta 425x480x300
+  B6: Bancada 1 Porta 450x830x300
+  B7: Painel Carvalho Treviso MDF 2123x18x70
+  B8: Tamponamento 480x18x70
+  B9: Tamponamento 685x18x70
+  B10: Tamponamento 175x18x100
+  C1: Nicho 300x1197x165
+  C2: Bancada 1 Porta 430x665x500
+  D1: Painel Carvalho Treviso MDF 1303x18x300
+  D2: Painel Carvalho Treviso MDF 2302x18x500
+OK C:\COMPIERE\CORE_MOTOR\PROJETOS TESTES\ADRIANA OJEDA\DORMITÓRIO 2\CADERNO - DORMITÓRIO 2.pdf
+Gerando: ADRIANA OJEDA / Dormitório 2 ...
+OK: ADRIANA OJEDA / Dormitório 2
+
+C:\COMPIERE\CORE_MOTOR\gerar_caderno.py:1981: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}

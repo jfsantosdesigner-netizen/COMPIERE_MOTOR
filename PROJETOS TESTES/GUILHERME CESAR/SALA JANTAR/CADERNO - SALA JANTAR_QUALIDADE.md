@@ -1,14 +1,10 @@
 # QUALIDADE — GUILHERME CESAR / Sala Jantar (gerado por script)
 
-- APROVADO | nº de pranchas 6 = 4 + 1 listagens + 0 divisões + 1 cotas (sem extras/especiais)
-- APROVADO | itens localizados no DXF: 9/9
-- APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | nº de pranchas 7 = 4 + 1 listagens + 1 cotas + 1 móvel(is) diverso(s)
+- INCERTO | itens localizados no DXF: 7/9
+  - FORA DA LISTAGEM: Tampo Acab Curvo R155 1653x18x400 (não localizado no DXF, logo não aparece na imagem)
+  - FORA DA LISTAGEM: Módulo Acab. Curvo R150 250x300x400 (não localizado no DXF, logo não aparece na imagem)
+- INCERTO | XML confere com o projeto (baseado em itens localizados no DXF) — 2 item(ns) sem correspondência no DXF, ver acima
 - APROVADO | texturas dos materiais
-- VISTA A: paredes y+@-1320 | 7 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA A: paredes y+@-1320 | 1 linhas de listagem
   A1: Balcão 1 Gaveta 700x300x378
-  A2: Módulo Acab. Curvo R150 250x300x400
-  A3: Tamponamento 320x18x378
-  A4: Tamponamento 320x18x664
-  A5: Tamponamento 320x18x700
-  A6: Tamponamento 300x18x70
-  A7: Tamponamento 744x18x400

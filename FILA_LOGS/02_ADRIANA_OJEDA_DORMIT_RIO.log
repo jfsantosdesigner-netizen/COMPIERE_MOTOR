@@ -1,0 +1,43 @@
+CORES: 128 pecas coloridas pelo MATERIAIS (medidas no XML: 67)
+   Branco                  102 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Carvalho Treviso         16 pecas <- fabrica\Berneck\Linha Design\Carvalho_Treviso.jpg
+   Cinza Cristal            10 pecas <- fabrica\arauco\Cores_e_Tecidos\Chess\Cinza_Cristal.jpg
+005.B: Armário c/ Portas de Giro c/ Rodapé 550x2550x300: x+ -> y-
+AMBIENTE (eletros/objetos): 0 peças
+AMBIENTE (pedra): 0 peças
+MÓVEIS DIVERSOS: 1 móvel(is) de peças soltas com porta/frente detectado(s)
+AVISO: 1 acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):
+  - Kit Tapa-furo 18mm c/ 28un Branco  75x2x130
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA A: 1
+    Painel Carvalho Treviso MDF 580x18x70
+ESCONDIDAS (fora da listagem) em VISTA B: 4
+    Painel Carvalho Treviso MDF 598x18x80
+    Painel Carvalho Treviso MDF 1300x18x80
+    Painel Carvalho Treviso MDF 580x18x70
+    Tamponamento 2550x18x70
+# QUALIDADE — ADRIANA OJEDA / Dormitório (gerado por script)
+
+- APROVADO | nº de pranchas 8 = 4 + 2 listagens + 1 cotas + 1 móvel(is) diverso(s)
+- APROVADO | itens localizados no DXF: 18/19 (1 acessório(s) sem DXF — normal)
+  - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 18mm c/ 28un Branco 75x2x130
+- APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- INCERTO | texturas dos materiais — faltando (sai cor lisa): Cinza Cristal, Carvalho Treviso
+- VISTA A: paredes x+@2847 | 6 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA B: paredes y-@-2512 | 4 linhas de listagem
+  A1: Armário Despenseiro 400x1215x580
+  A2: Balcão Inferior 400x500x580
+  A3: Armário Canto L Direito 950x2550x920
+  A4: Painel Carvalho Treviso MDF 1062x25x250
+  A5: Painel Carvalho Treviso MDF 770x18x70
+  A6: Tamponamento 402x18x600
+  B1: Armário c/ Portas de Giro c/ Rodapé 550x2550x300
+  B2: Armário c/ Portas de Giro c/ Rodapé 660x2550x580
+  B3: Painel Carvalho Treviso MDF 1355x18x70
+  B4: Tamponamento 2470x18x323
+OK C:\COMPIERE\CORE_MOTOR\PROJETOS TESTES\ADRIANA OJEDA\DORMITÓRIO\CADERNO - DORMITÓRIO.pdf
+Gerando: ADRIANA OJEDA / Dormitório ...
+OK: ADRIANA OJEDA / Dormitório
+
+C:\COMPIERE\CORE_MOTOR\gerar_caderno.py:1981: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}

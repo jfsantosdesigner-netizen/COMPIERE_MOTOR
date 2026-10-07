@@ -1,0 +1,47 @@
+CORES: 137 pecas coloridas pelo MATERIAIS (medidas no XML: 72)
+   Branco                   94 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Nude                     43 pecas <- fabrica\Berneck\Linha Trend Colors\Nude.jpg
+AMBIENTE (eletros/objetos): 0 peças
+AMBIENTE (pedra): 0 peças
+AVISO: 1 acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):
+  - Kit Tapa-furo 13mm c/ 27un Nude PARAFUSO  75x2x130
+AVISO: 2 peça(s) do XML não localizada(s) no DXF (abaixo do limiar de bloqueio):
+  - Amário Canto Reto Direito  1100x2380x663
+  - Amário Canto Reto Esquerdo  1100x2380x663
+PUXADORES: 0 (regra desligada; o DXF não traz puxador)
+ESCONDIDAS (fora da listagem) em VISTA C: 1
+    Painel 600x18x60
+ESCONDIDAS (fora da listagem) em VISTA D: 1
+    Painel 610x18x60
+# QUALIDADE — CLOSET / 01 (gerado por script)
+
+- APROVADO | nº de pranchas 10 = 4 + 4 listagens + 2 cotas
+- INCERTO | itens localizados no DXF: 15/18 (1 acessório(s) sem DXF — normal)
+  - FORA DA LISTAGEM: Amário Canto Reto Direito 1100x2380x663 (não localizado no DXF, logo não aparece na imagem)
+  - FORA DA LISTAGEM: Amário Canto Reto Esquerdo 1100x2380x663 (não localizado no DXF, logo não aparece na imagem)
+  - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 13mm c/ 27un Nude PARAFUSO 75x2x130
+- INCERTO | XML confere com o projeto (baseado em itens localizados no DXF) — 2 item(ns) sem correspondência no DXF, ver acima
+- APROVADO | texturas dos materiais
+- VISTA A: paredes x+@3226L | 2 linhas de listagem | CONDIÇÕES -> perna do L com vista própria
+- VISTA B: paredes y-@1545 | 6 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA C: paredes x-@-304 | 3 linhas de listagem
+- VISTA D: paredes y+@4138 | 2 linhas de listagem
+  A1: Painel 1300x18x110
+  A2: Painel 2500x18x90
+  B1: Balcão Inferior 500x670x530
+  B2: Painel 1632x18x100
+  B3: Painel 1632x18x150
+  B4: Painel 2152x18x60
+  B5: Painel 750x18x550
+  B6: Painel 2170x25x550
+  C1: Armário c/ Portas de Giro c/ Rodapé 1252x2380x580
+  C2: Painel 1518x18x60
+  C3: Painel 560x18x60
+  D1: Armário c/ Portas de Giro c/ Rodapé 1290x2380x580
+  D2: Painel 1850x18x60
+OK C:\COMPIERE\CORE_MOTOR\PROJETOS TESTES\CLOSET\01\CADERNO - 01.pdf
+Gerando: CLOSET / 01 ...
+OK: CLOSET / 01
+
+C:\COMPIERE\CORE_MOTOR\gerar_caderno.py:1981: DeprecationWarning: Testing an element's truth value will always return True in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+  rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}

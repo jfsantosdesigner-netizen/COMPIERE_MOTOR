@@ -1,0 +1,26 @@
+CORES: 190 pecas coloridas pelo MATERIAIS (medidas no XML: 100)
+   Branco                  150 pecas <- ..\..\..\AGENTES COMPIERE\core_motor\MATERIAIS\fabrica\BrasilPost\branco.jpg
+   Carvalho Treviso         40 pecas <- fabrica\Berneck\Linha Design\Carvalho_Treviso.jpg
+005.B: Armário c/ Portas de Giro c/ Rodapé 250x2355x580: y- -> x+
+AMBIENTE (eletros/objetos): 1 peças
+AMBIENTE (pedra): 0 peças
+AVISO: 2 acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):
+  - Kit Batente Silicone c/ 50un  75x2x130
+  - Kit Tapa-furo 18mm c/ 28un Branco  75x2x130
+Gerando: ADRIANA OJEDA / Suíte Casal ...
+FALHOU — ver mensagens acima: ADRIANA OJEDA / Suíte Casal
+
+======================================================================
+ERRO CRITICO: 4 item(ns) do XML nao foram localizados no DXF.
+CADERNO NAO GERADO (Regra 1: Bloqueio Total).
+Ambiente: ADRIANA OJEDA / Suíte Casal
+----------------------------------------------------------------------
+ITENS FALTANDO NO DXF:
+  - Tubo Silicone Carvallho Treviso  50x320x50
+  - Painel Carvalho Treviso MDF  1547x18x80
+  - Painel Carvalho Treviso MDF  1598x18x80
+  - Painel Carvalho Treviso MDF  2140x18x80
+----------------------------------------------------------------------
+Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas
+do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).
+======================================================================
