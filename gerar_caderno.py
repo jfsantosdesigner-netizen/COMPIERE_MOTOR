@@ -49,122 +49,33 @@ def preparar(P):
         p_['fq'] = [[[c[i] for i in f_], n_, [True] * 4] for f_, n_ in zip(F, N)]
 preparar(P)
 
-# ===== CORES REAIS: XML (cor de cada peça) -> pasta MATERIAIS (textura) -> cor média =====
-import unicodedata as _ud, collections as _col
-def _norm(t):
-    t = _ud.normalize('NFKD', t).encode('ascii', 'ignore').decode().lower()
-    return re.sub(r'[^a-z0-9]+', ' ', t).strip()
-_MD = os.path.dirname(os.path.abspath(__file__))
-# REGRA (v23, João): o motor procura as cores/texturas SOZINHO, primeiro na pasta MATERIAIS dentro
-# do próprio motor, depois no caminho que vier no config.
-# REGRA (v34, João): o motor NÃO busca referência fora dele. Material vem da pasta MATERIAIS
-# dentro do próprio motor ou do caminho que o config mandar. Nenhum caminho de máquina no código.
-_MAT = next((c_ for c_ in (os.path.join(_MD, 'MATERIAIS'),
-                           (cfg.get('materiais') if cfg.get('materiais') and os.path.isabs(cfg.get('materiais')) else os.path.join(_MD, cfg.get('materiais') or 'MATERIAIS')))
-             if os.path.isdir(c_)), os.path.join(_MD, 'MATERIAIS'))
-# REGRA (João, 06/10/2026): a pasta MATERIAIS (biblioteca) é lida AO VIVO a cada rodada: o motor varre a pasta, acha o
-# JPEG de cada cor do XML, usa na memória e não grava cópia nenhuma. A ÚNICA memória permitida é a das CORES e da
-# BIBLIOTECA: materiais_cores.json guarda a cor média de cada JPEG [caminho relativo, nome, [r,g,b]]; JPEG novo
-# achado na pasta entra nele (ver _gravar_biblioteca).
-_MC = os.path.join(_MD, 'materiais_cores.json')
-_lib = {}
-if os.path.exists(_MC):
-    for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')): _lib[rel_] = [rel_, st_, rgb_]
-_rgbx = {}; _idx = []; _lib_novos = {}
-if os.path.isdir(_MAT):
-    for d_, ds_, fs_ in os.walk(_MAT):
-        ds_.sort()
-        for f_ in sorted(fs_):
-            if f_.lower().endswith(('.jpg', '.jpeg', '.png')):
-                full_ = os.path.join(d_, f_); rel_ = os.path.relpath(full_, _MAT)
-                _idx.append([full_, _lib[rel_][1] if rel_ in _lib else _norm(os.path.splitext(f_)[0])])
-                if rel_ in _lib and _lib[rel_][2]: _rgbx[full_] = _lib[rel_][2]
-else:   # pasta ausente: a biblioteca guardada ainda serve para a cor (sem textura)
-    for rel_, (_r, st_, rgb_) in _lib.items():
-        _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
-    print('AVISO: pasta MATERIAIS não encontrada em', _MAT, '- só as cores da biblioteca guardada, sem textura')
-def _gravar_biblioteca():
-    if not _lib_novos: return
-    _lib.update(_lib_novos)
-    json.dump([_lib[k] for k in sorted(_lib)], open(_MC, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
-    print(f'BIBLIOTECA: {len(_lib_novos)} cor(es) nova(s) gravada(s) em materiais_cores.json')
-_cc = {}   # REGRA (BLINDAGEM): cor/textura por material vive só na memória desta rodada; nada é lido nem gravado em disco
-_PREF = ('duratex', 'arauco', 'guararapes', 'berneck', 'eucatex', 'masisa', 'stelben')
-def _parecido(a, b):
-    # REGRA (v15): nome do XML com letra a mais/a menos ou cortado ("Metallic Sued" = "Metalic Suede")
-    if a == b: return True
-    if min(len(a), len(b)) >= 4 and (a.startswith(b) or b.startswith(a)) and abs(len(a) - len(b)) <= 2: return True
-    if abs(len(a) - len(b)) > 1 or min(len(a), len(b)) < 5: return False
-    i = 0
-    while i < min(len(a), len(b)) and a[i] == b[i]: i += 1
-    return a[i + 1:] == b[i + 1:] or a[i + 1:] == b[i:] or a[i:] == b[i + 1:]
-def cor_material(nome):
-    if not nome: return None
-    if _cc.get(nome): return tuple(_cc[nome][0])   # 'sem textura' antigo não bloqueia nova busca
-    tk = _norm(nome).split(); best = None
-    for cand in ([tk] + ([tk[:-1]] if len(tk) > 1 else [])):
-        n = ' '.join(cand)
-        for path_, st in _idx:
-            ws = st.split()
-            if st == n: sc = 100
-            elif all(t in ws for t in cand): sc = 60 - len(ws)
-            elif len(ws) == len(cand) and all(any(_parecido(t, w_) for w_ in ws) for t in cand): sc = 40 - len(ws)
-            else: continue
-            pl = path_.lower(); sc += sum(5 for w in _PREF if w in pl) + (2 if '\\fabrica\\' in pl else 0)
-            if best is None or sc > best[0]: best = (sc, path_)
-        if best: break
-    rgb = tuple(_rgbx[best[1]]) if best and _rgbx.get(best[1]) else None
-    if best and not rgb:
-        try:
-            px = fz.Pixmap(best[1])
-            if px.colorspace is None or px.colorspace.n != 3: px = fz.Pixmap(fz.csRGB, px)
-            if px.alpha: px = fz.Pixmap(px, 0)
-            sm = px.samples; npx = len(sm) // 3; st_ = max(1, npx // 6000); r = g = b = c = 0
-            for i_ in range(0, npx, st_): r += sm[3 * i_]; g += sm[3 * i_ + 1]; b += sm[3 * i_ + 2]; c += 1
-            rgb = (r / c / 255, g / c / 255, b / c / 255)
-        except Exception: rgb = None
-    _cc[nome] = [list(rgb), best[1]] if rgb else None
-    if rgb and best and best[1] not in _rgbx and os.path.isdir(_MAT):
-        _rl = os.path.relpath(best[1], _MAT); _lib_novos[_rl] = [_rl, _norm(os.path.splitext(os.path.basename(best[1]))[0]), list(rgb)]
-    return rgb
-# ===== TEXTURAS REAIS (veio da madeira) no 3D: imagem do material aplicada em perspectiva em cada face =====
+# ===== ETAPA 5 ? MATERIAIS/CORES =====
+import collections as _col
+import cores as _cores
+_norm = _cores.normalizar  # compatibilidade: normaliza??o textual tamb?m ? usada por regras legadas
 try:
     from PIL import Image as _Im, ImageDraw as _ImD
     import numpy as _np
 except Exception:
     _Im = None
-_TXD = os.path.join(_MD, 'texturas')              # ASSET oficial, versionado: o motor SÓ LÊ, nunca escreve
-_txc = {}
-def textura(nome):
-    # REGRA (João, 06/10/2026): o JPEG vem AO VIVO da pasta MATERIAIS, é usado só em memória e nada é gravado.
-    # texturas/ (asset versionado, só leitura) é reserva quando a pasta MATERIAIS não está acessível.
-    if _Im is None or not nome: return None
-    if nome in _txc: return _txc[nome]
-    im = None; ref = (_cc.get(nome) or [None, None])[1]
-    if ref:
-        fn = ref.replace('\\', '/').split('/')[-1].lower()
-        ofi = os.path.join(_TXD, fn)              # reserva: asset oficial versionado (só leitura)
-        try:
-            if os.path.exists(ref):               # JPEG puxado AO VIVO da pasta MATERIAIS, só em memória
-                im = _Im.open(ref).convert('RGB'); im.thumbnail((1024, 1024))
-            elif os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
-        except Exception: im = None
-    _txc[nome] = im; return im
-# A associação XML × DXF pertence à Unificação; esta etapa apenas resolve RGB.
+_MD = os.path.dirname(os.path.abspath(__file__))
+_BIB = _cores.Biblioteca(_MD, cfg, pixmap=fz, image=_Im)
+_MAT = _BIB.pasta; _MC = _BIB.cache_path; _TXD = _BIB.reserva; _cc = _BIB.cache
+def cor_material(nome): return _BIB.cor_material(nome)
+def textura(nome): return _BIB.textura(nome)
+def _gravar_biblioteca():
+    n_ = _BIB.gravar_cache_cores()
+    if n_: print(f"BIBLIOTECA: {n_} cor(es) nova(s) gravada(s) em materiais_cores.json")
 _MATERIAIS_XML = unificacao.materiais_por_peca(P, _XML)
-_nc = 0; _usadas = _col.Counter()
-for p_ in P:
-    nm_ = _MATERIAIS_XML.get(p_['i'])
-    if nm_:
-        rgb = cor_material(nm_)
-        if rgb: p_['rgb'] = rgb; p_['mat'] = nm_; _nc += 1; _usadas[nm_] += 1
+PROJETO = unificacao.construir(P, _XML, _MATERIAIS_XML)
+_RES_CORES = _cores.aplicar(PROJETO, _BIB)
+_nc = _RES_CORES['coloridas']; _usadas = _RES_CORES['usadas']
 print('CORES: %d pecas coloridas pelo MATERIAIS (medidas no XML: %d)' % (_nc, len(_XML['materiais_dimensoes'])))
-TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.path.join(d_, _cc[m_][1].replace('\\', '/').split('/')[-1].lower())) for d_ in (_TXD,))]
+TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.path.join(d_, _cc[m_][1].replace(chr(92), '/').split('/')[-1].lower())) for d_ in (_TXD,))]
 for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q_, os.path.relpath(_cc[nm_][1], _MAT)))
 _todas_mats = {r_ for c_ in _XML['materiais_dimensoes'].values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
-# Saída canônica da Etapa 4: nenhum consumidor volta a cruzar XML com DXF.
-PROJETO = unificacao.construir(P, _XML, _MATERIAIS_XML)
+
 inst = PROJETO['itens']; AMBIENTE = PROJETO['ambiente']
 if not inst:
     raise SystemExit('UNIFICAÇÃO BLOQUEADA: nenhum item do XML foi localizado no DXF. Confira o par XML montado + DXF exportado.')
