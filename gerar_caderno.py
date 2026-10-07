@@ -347,11 +347,11 @@ paredes = _juntar_paredes(paredes)
 _usadas = {pi for i in inst for pi in i['pecas']}
 # REGRA (v26): peça do DXF que NÃO está na listagem e ocupa o MESMO lugar de uma peça listada (cópia do painel,
 # ex.: painel usinado 1580 sobre o painel 1530 da lista) = duplicada -> não é desenhada (cobria o painel de cinza).
-# AMBIENTE (alvenaria/estrutura) = MÓDULO À PARTE: ambiente.py (contrato em CONTRATO_AMBIENTE.md).
-# O gerar_caderno só CONSOME: pedra, paredes, eletros, piso e duplicadas vêm prontos daí.
-import ambiente
+# AMBIENTE = MÓDULOS À PARTE (contrato em CONTRATO_AMBIENTE.md): ambiente.py e ambientemodu.py leem SÓ o DXF e
+# entregam candidatos; unificacao.py aplica o XML (peças usadas e caixas dos móveis) e fecha o resultado.
+import ambiente, ambientemodu, unificacao
 from ambiente import _n, PEDRA_COR, PAREDE_COR, PISO_COR, ELETRO_COR
-AMBIENTE = ambiente.construir(P, _usadas, [i_['bb'] for i_ in inst])
+AMBIENTE = unificacao.fechar(P, ambiente.construir(P), ambientemodu.construir(P), _usadas, [i_['bb'] for i_ in inst])
 DUP_I = AMBIENTE['duplicadas']; AMB = AMBIENTE['pedra']; MALHA_PAR = AMBIENTE['malha_par']; ELETROS = AMBIENTE['eletros']
 PAR_DXF = AMBIENTE['par_dxf']; PAREDES_PECAS = AMBIENTE['paredes_pecas']; ZP = AMBIENTE['piso_z']
 AMB_I = {p_['i'] for p_ in AMB}; MALHA_I = {p_['i'] for p_ in MALHA_PAR}; ELETRO_I = {p_['i'] for p_ in ELETROS}
