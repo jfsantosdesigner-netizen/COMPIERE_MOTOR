@@ -15,7 +15,7 @@ RED = (0.545, 0, 0); CR = (0.9, 0, 0); PRETO = (0, 0, 0)
 BRANCO = (1, 1, 1); MADEIRA = (0.80, 0.63, 0.42); CINZA = (0.93, 0.93, 0.93)
 MM = 72 / 25.4
 # REGRA (João, 28/09/2026): threshold "40%" que decide se uma face frontal esta COBERTA (=tem porta/frente,
-# nao e nicho) ou ABERTA (=nicho). Usado em 3 lugares: _tem_frente_solto(), tem_porta(), nichos().
+# nao e nicho) ou ABERTA (=nicho). Usado em 2 lugares: tem_porta(), nichos().
 # Ajustar aqui muda o comportamento das 3 regras de uma vez. Valor original era 0.4 hardcoded.
 NICHO_MIN_RATIO = 0.4
 ESC = [15, 20, 25, 30, 40, 50, 75, 100, 125, 150]
@@ -273,7 +273,32 @@ TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.p
 for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q_, os.path.relpath(_cc[nm_][1], _MAT)))
 _todas_mats = {r_ for c_ in _dm.values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
+def _adotar_orfas(inst, P):
+    # REGRA (João, 06/10/2026): chapa do DXF SEM item no XML, encostada num módulo e que cabe nas medidas do XML
+    # dele, é peça DO módulo (ex.: base, tampo e fundo do "Nicho 300x800x200", que o casamento não achou).
+    # Só chapa (fina em um eixo, <= 30 mm): horizontal (base/tampo/prateleira) ou vertical de fundo (<= 10 mm).
+    # Vertical de 15-21 mm pode ser porta/frente: não é adotada. Determinístico: ordem do DXF, primeiro módulo que serve.
+    usadas = {pi for i in inst for pi in i['pecas']}
+    mods = [i for i in inst if i['tipo'] == 'mod']
+    adotadas = []
+    for p_ in P:
+        if p_['i'] in usadas: continue
+        b = p_['bb']; ext = [b[k + 3] - b[k] for k in range(3)]
+        e = min(ext)
+        if e > 30 or sorted(ext)[1] < 50: continue
+        if ext.index(e) != 2 and e > 10: continue
+        for m in mods:
+            mb = m['bb']
+            if any(min(b[k + 3], mb[k + 3]) - max(b[k], mb[k]) < -3 for k in range(3)): continue
+            U = geo.uniao(mb, b)
+            u = sorted(U[k + 3] - U[k] for k in range(3)); d = sorted(geo.parse_dim(m['dim']))
+            if any(u[r] > d[r] + 3 for r in range(3)): continue
+            m['pecas'].append(p_['i']); m['bb'] = list(U); usadas.add(p_['i']); adotadas.append((m['desc'], m['dim'], p_['i']))
+            break
+    return adotadas
 inst = geo.casar(P, linhas, QT)
+_ADOTADAS = _adotar_orfas(inst, P)
+if _ADOTADAS: print(f"ORFAS ADOTADAS: {len(_ADOTADAS)} chapa(s) sem item no XML incorporada(s) ao módulo que a contém")
 # 005.A.3 (v37): casa porta avulsa (POR_* vidro/espelho/alumínio) e porta Euronobre (EUR_*_POR_*)
 # com módulo cuja W×H batem (tolerância 15 mm). Sobrepõe o chute A2 (dobradiça=mdf) quando o material
 # da porta é vidro/espelho/alumínio.
@@ -723,66 +748,6 @@ for b in _blocos:
     nw = dict(key=fr_['key'], plano=pl_, itens=its_, id=f"BLOCO@{round(pl_)}", divisoria=True, bloco='PAINEL COM NICHOS' if nicho_ else 'CONJUNTO DE PAINÉIS')
     for i in its_: i['parede'] = nw['id']
     paredes.append(nw); BLOCOS.append(nw)
-# 6b) CONDIÇÃO (v35, João): MÓVEL DIVERSO — peças soltas (sem módulo) que formam um MÓVEL COM PORTA/FRENTE/GAVETA.
-#    Detecção: grupo de componentes encostados onde pelo menos uma peça fina (≤30mm na profundidade da parede)
-#    cobre ≥40% da face frontal do conjunto = tem porta/frente. Esse móvel SAI das vistas normais e ganha
-#    prancha própria "MÓVEIS DIVERSOS" no final (após todas as vistas). Layout: listagem + ambiente pequeno
-#    (sem portas) à esquerda, móvel isolado grande na diagonal com balões à direita. SEM COTAS.
-MOVEIS_DIVERSOS = []
-def _tem_frente_solto(its_, w_):
-    """Testa se um grupo de peças soltas tem porta/frente (≥40% da face frontal coberta por peça fina)."""
-    f_ = FV[w_['key']]; ad = 0 if f_[0] else 1; al = 1 - ad; sg_ = f_[ad]
-    # bounding box do conjunto
-    al0 = min(i['bb'][al] for i in its_); al1 = max(i['bb'][al + 3] for i in its_)
-    z0 = min(i['bb'][2] for i in its_); z1 = max(i['bb'][5] for i in its_)
-    area_frontal = (al1 - al0) * (z1 - z0)
-    if area_frontal <= 0: return False
-    # frente do conjunto
-    fr = min(min(i['bb'][ad] * sg_, i['bb'][ad + 3] * sg_) for i in its_)
-    # peças finas na frente (até 60mm da frente do conjunto)
-    cob = 0.0
-    for i in its_:
-        b = i['bb']
-        if b[ad + 3] - b[ad] > 30: continue  # não é fina
-        perto = min(b[ad] * sg_, b[ad + 3] * sg_)
-        if abs(perto - fr) > 60: continue  # não está na frente
-        ov_al = max(0, min(b[al + 3], al1) - max(b[al], al0))
-        ov_z = max(0, min(b[5], z1) - max(b[2], z0))
-        cob += ov_al * ov_z
-    return cob >= NICHO_MIN_RATIO * area_frontal
-
-# Varrer todas as paredes (incluindo blocos) em busca de grupos de componentes com porta/frente
-_fora_md = set()
-for w in list(paredes):
-    comps_w = [i for i in w['itens'] if i['tipo'] == 'comp' and id(i) not in _fora]
-    if not comps_w: continue
-    # Agrupar componentes encostados (flood fill com tolerância de 6mm)
-    _vis_md = set()
-    for i in comps_w:
-        if id(i) in _vis_md: continue
-        g_ = [i]; _vis_md.add(id(i)); k_ = 0
-        while k_ < len(g_):
-            for o in comps_w:
-                if id(o) not in _vis_md and _toca(g_[k_], o, 6):
-                    g_.append(o); _vis_md.add(id(o))
-            k_ += 1
-        # Mínimo 3 peças e tem porta/frente
-        if len(g_) >= 3 and _tem_frente_solto(g_, w):
-            MOVEIS_DIVERSOS.append(dict(itens=g_, parede_id=w['id'], key=w['key'], plano=w['plano']))
-            _fora_md |= {id(i) for i in g_}
-# Remover dos BLOCOS os que viraram MÓVEL DIVERSO
-for md in MOVEIS_DIVERSOS:
-    for blk in list(BLOCOS):
-        if any(id(i) in _fora_md for i in blk['itens']):
-            blk['itens'] = [i for i in blk['itens'] if id(i) not in _fora_md]
-            if not blk['itens']:
-                BLOCOS.remove(blk); paredes.remove(blk)
-# Remover das paredes normais
-if _fora_md:
-    for w in paredes: w['itens'] = [i for i in w['itens'] if id(i) not in _fora_md]
-    paredes = [w for w in paredes if w['itens']]
-if MOVEIS_DIVERSOS:
-    print(f"MÓVEIS DIVERSOS: {len(MOVEIS_DIVERSOS)} móvel(is) de peças soltas com porta/frente detectado(s)")
 PW = {w['id']: w for w in paredes}
 
 # GANCHO DE TESTE (Fase 1 - classificacao.py) — nunca ativo em producao.
@@ -800,7 +765,6 @@ if os.environ.get('COMPIERE_TESTE_CLASSIFICACAO'):
             print(f"CLASSIFICACAO\t{_tipo}\t{_it['desc']}\t{_it['dim']}")
     sys.exit(0)
 
-_MD_I = {pi for md in MOVEIS_DIVERSOS for i in md['itens'] for pi in i['pecas']}
 # 7) CONDIÇÃO (v26): PAINEL USINADO. Painel em pé na FRENTE de uma estrutura de nichos aberta (2 laterais + 3 ou mais
 #    prateleiras logo atrás, até 150 mm) = painel com VÃOS usinados alinhados aos nichos (o DXF traz o painel inteiro).
 #    Vão = largura livre entre as laterais x altura livre entre prateleiras (> 150 mm). O painel é desenhado com os vãos.
@@ -1544,7 +1508,8 @@ def tem_porta(m, w):
         if not _eh_porta(b, mb, w): continue
         cob += max(0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * max(0, min(b[5], mb[5]) - max(b[2], mb[2]))
     if cob >= NICHO_MIN_RATIO * area_: return True
-    return bool(m.get('xml_tem_porta'))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
+    # REGRA (João, 06/10/2026): frente = gaveta, porta = armário. Nome com Porta/Portas/Gaveta/Gavetas/Gaveteiro/Basculante = tem frente.
+    return bool(m.get('xml_tem_porta')) or classificacao._nome_tem_porta(m.get('desc', ''))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
 
 def _fundo_nicho_face(its, f):
     # REGRA (João, 06/10/2026): o nicho sem peça de fundo (aberto para a parede) é desenhado com FUNDO da cor
@@ -1579,22 +1544,9 @@ def _nichos_classificados(w):
 
 def detalhes(w):
     # nichos de painéis + módulos abertos; grupos que se encostam viram UM detalhe só
-    # ORDEM 006 (v37.2): módulos com porta ausente no DXF (xml_tem_porta=True) viram subimagem própria.
-    def _portas_faltando(w):
-        out = []
-        f_ = FV[w['key']]; ad = 0 if f_[0] else 1; al = 1 - ad
-        for m in [i for i in w['itens'] if i['tipo'] == 'mod' and i.get('xml_tem_porta')]:
-            mb = m['bb']; area_ = (mb[al + 3] - mb[al]) * (mb[5] - mb[2])
-            if area_ <= 0: continue
-            cob = 0.0
-            for p_ in P:
-                if not _eh_porta(p_['bb'], mb, w): continue
-                b = p_['bb']
-                cob += max(0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * max(0, min(b[5], mb[5]) - max(b[2], mb[2]))
-            if cob >= NICHO_MIN_RATIO * area_: continue   # tem porta real: não precisa subimagem
-            out.append([m])
-        return out
-    gs = [list(g) for g in nichos(w) + abertos(w) + _portas_faltando(w) + _nichos_classificados(w)]
+    # REGRA (João, 06/10/2026): módulo com porta de vidro/espelho (fora do DXF) continua ARMÁRIO: fica na vista
+    # principal com a porta desenhada (face sintética) e o balão dele. Não vira subimagem.
+    gs = [list(g) for g in nichos(w) + abertos(w) + _nichos_classificados(w)]
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -5 for k in range(3))
     mudou = True
     while mudou:
@@ -1717,8 +1669,6 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         if _iso is not None and p_['i'] not in _iso: continue
         if kw.get('sem_portas') and p_['i'] in _portas(): continue
         if p_['i'] in DUP_I: continue
-        # REGRA (João, 28/09/2026 - skill P3): móvel diverso SAI da imagem da vista (vai para a prancha extra)
-        if ctx and p_['i'] in _MD_I and p_['i'] not in _tg: continue
         if p_['i'] in AMB_I or p_['i'] in ELETRO_I:
             if itens: continue   # detalhe (nicho/costas): só os móveis, sem pedra/eletros
             if (dentro_(b, p_['i']) if ctx else all(b[k] <= E[k + 3] and b[k + 3] >= E[k] for k in range(3))):
@@ -1742,7 +1692,7 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     # Não se aplica em cotas (sem_portas=True) nem em subimagens de nicho (itens!=None).
     # ORDEM 006 (v37.2): face sintética liberada também em subimagem de porta ausente (xml_tem_porta).
     # Subimagem de nicho/aberto continua sem face sintética (seus 'its' não têm xml_tem_porta).
-    _permite_face = (not itens) or any(_i.get('xml_tem_porta') for _i in its if _i.get('tipo') == 'mod')
+    _permite_face = not itens
     if not kw.get('sem_portas') and _permite_face:
         _w0 = PW[pids[0]]; _axd = 0 if f[0] else 1; _axl = 1 - _axd
         for _m in its:
@@ -2255,18 +2205,16 @@ for v in V:
             # ORDEM 006 (v37.2): módulo com porta ausente no DXF (xml_tem_porta=True) vai FRONTAL (ang=0)
             # para mostrar a face sintética; nicho/aberto segue com ângulo.
             p.draw_rect(r_, color=PRETO, width=0.5)
-            _porta_ausente = any(i.get('xml_tem_porta') for i in c)
-            _rotulo_sub = 'DETALHE - PORTA AUSENTE' if _porta_ausente else 'DETALHE - NICHO'
-            p.insert_text((r_.x0 + 4, r_.y0 + 10), _rotulo_sub, fontname='hebo', fontsize=7.5, color=RED)
+            p.insert_text((r_.x0 + 4, r_.y0 + 10), 'DETALHE - NICHO', fontname='hebo', fontsize=7.5, color=RED)
             fw_ = FV[PW[w]['key']]; ax_ = 1 if fw_[0] else 0
             cm_ = sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in PW[w]['itens']) / len(PW[w]['itens'])
             cn_ = sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in c) / len(c)
             r_dir = (fw_[1], -fw_[0])
             lado = (cm_ - cn_) * r_dir[ax_]
             larg_ = max(i['bb'][ax_ + 3] for i in c) - min(i['bb'][ax_] for i in c)
-            _ang_sub = 0 if _porta_ausente else (-1 if lado > 0 else 1) * (28 if larg_ < 1000 else 14)
+            _ang_sub = (-1 if lado > 0 else 1) * (28 if larg_ < 1000 else 14)
             render3d(p, fz.Rect(r_.x0 + 2, r_.y0 + 14, r_.x1 - 2, r_.y1 - 2), [w], letra=s_['letra'], itens=c,
-                     ang=_ang_sub, dmin=2200, margem=60, isolado=True, fundo_nicho=not _porta_ausente)
+                     ang=_ang_sub, dmin=2200, margem=60, isolado=True, fundo_nicho=True)
         if nis:
             # REGRA (ajuste, pedido João): largura da tabela é sempre fixa (248pt, já era assim).
             # A altura da tabela acompanha a quantidade de itens (até 15 linhas por prancha, já
@@ -2333,30 +2281,6 @@ def _prancha_peca(g_, titulo, rotulo):
 for g_ in GAVETAS: _prancha_peca(g_, 'GAVETA MONTADA COM PAINÉIS', 'GAVETA')
 for g_ in DIVISORES: _prancha_peca(g_, 'DIVISOR DE GAVETA', 'DIVISOR')
 
-# REGRA (v35, João): MÓVEIS DIVERSOS — prancha própria para cada móvel montado por peças soltas
-# com porta/frente/gaveta. Layout: esquerda = listagem + imagem pequena do ambiente (sem portas);
-# direita = imagem grande do móvel isolado na diagonal com balões. SEM COTAS.
-# REGRA (João, 28/09/2026 - skill P3): móvel diverso = prancha EXTRA com LISTAGEM E COTAS JUNTAS, imagem ISOLADA
-# (sem parede, sem chão, sem outros móveis, fundo branco). Esquerda: tabela + 3D isolado com balões.
-# Direita: elevação 2D frontal com cotas (sem portas). Sai a "visão do ambiente" (v35).
-for k_md, md in enumerate(MOVEIS_DIVERSOS, 1):
-    its_ = md['itens']
-    n += 1; p = nova_prancha(doc, n, 'MÓVEIS DIVERSOS')
-    lt_ = letras[_nl] if _nl < len(letras) else chr(ord('A') + _nl)
-    _nl += 1
-    wid_ = f"DIVERSO{k_md}"
-    # vista FRONTAL do móvel = olhando para o lado mais comprido dele (a mesa aparece com o tampo inteiro na cota)
-    _dx = max(i['bb'][3] for i in its_) - min(i['bb'][0] for i in its_); _dy = max(i['bb'][4] for i in its_) - min(i['bb'][1] for i in its_)
-    _k = md['key'] if (md['key'][0] == 'y') == (_dx >= _dy) else ('y+' if _dx >= _dy else 'x+')
-    _pl = geo.plano(_k, [min(i['bb'][0] for i in its_), min(i['bb'][1] for i in its_), 0, max(i['bb'][3] for i in its_), max(i['bb'][4] for i in its_), 0])
-    PW[wid_] = dict(key=_k, plano=md['plano'] if _k == md['key'] else _pl, itens=its_, id=wid_)
-    for i in its_: i['parede'] = wid_
-    yb = tabela(p, _numerar(sorted(its_, key=lambda i: i['n']), lt_), AREA_IN.x0, AREA_IN.y0)
-    r3 = fz.Rect(AREA_IN.x0, yb + 10, AREA_IN.x0 + 248, AREA_IN.y1)
-    p.draw_rect(r3, color=PRETO, width=0.5)
-    render3d(p, fz.Rect(r3.x0 + 2, r3.y0 + 2, r3.x1 - 2, r3.y1 - 2), [wid_], letra=lt_, itens=its_, ang=30, elev=20, dmin=2400, margem=60, isolado=True)
-    _cotas_em(p, [geom_parede(PW[wid_])], fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1), ['MÓVEL DIVERSO'])
-
 # ===== CAPA (design fixo: quadro externo + logo + cliente + EXECUTIVO - AMBIENTE) =====
 _W, _H = doc[0].rect.width, doc[0].rect.height
 doc.delete_page(0); cp = doc.new_page(0, width=_W, height=_H)
@@ -2384,9 +2308,9 @@ except Exception:
     import time as _t; cfg['saida'] = os.path.splitext(cfg['saida'])[0] + _t.strftime('_%H%M%S') + '.pdf'; doc.save(cfg['saida'], garbage=3, deflate=True)
 
 # ---------------- QUALIDADE (nível 1, por script) ----------------
-esperado = 4 + len(VW) + _extra + len(V) - sum(1 for v in V if v.get('divisoria')) + len(DIVISORES) + len(GAVETAS) + len(MOVEIS_DIVERSOS)
+esperado = 4 + len(VW) + _extra + len(V) - sum(1 for v in V if v.get('divisoria')) + len(DIVISORES) + len(GAVETAS)
 q = [f"# QUALIDADE — {cfg['dados']['cliente']} / {cfg['dados']['ambiente']} (gerado por script)", '',
-     f"- {'APROVADO' if n == esperado else 'REPROVADO'} | nº de pranchas {n} = 4 + {len(VW)} listagens + {len(V)} cotas" + (f" + {len(DIVISORES)} divisor(es) de gaveta" if DIVISORES else '') + (f" + {len(GAVETAS)} gaveta(s) em painéis" if GAVETAS else '') + (f" + {len(MOVEIS_DIVERSOS)} móvel(is) diverso(s)" if MOVEIS_DIVERSOS else '') + (f" | divisória ripada: {len(DIVISORIAS)}" if DIVISORIAS else ''),
+     f"- {'APROVADO' if n == esperado else 'REPROVADO'} | nº de pranchas {n} = 4 + {len(VW)} listagens + {len(V)} cotas" + (f" + {len(DIVISORES)} divisor(es) de gaveta" if DIVISORES else '') + (f" + {len(GAVETAS)} gaveta(s) em painéis" if GAVETAS else '') + (f" | divisória ripada: {len(DIVISORIAS)}" if DIVISORIAS else ''),
      f"- {'APROVADO' if not _faltando_real else 'INCERTO'} | itens localizados no DXF: {len(linhas) - len(nao_achados)}/{len(linhas)}" + (f" ({len(_acessorios)} acessório(s) sem DXF — normal)" if _acessorios else '')]
 for d, dm in _faltando_real: q.append(f"  - FORA DA LISTAGEM: {d} {dm} (não localizado no DXF, logo não aparece na imagem)")
 for d, dm in _acessorios: q.append(f"  - ACESSÓRIO (sem DXF, normal): {d} {dm}")

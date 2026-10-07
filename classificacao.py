@@ -65,7 +65,7 @@ def classificar_peca(peca, contexto):
 
 def _nome_tem_porta(desc):
     d = ' ' + _norm(desc) + ' '
-    return ' porta ' in d or ' portas ' in d
+    return any(' ' + k + ' ' in d for k in ('porta', 'portas', 'gaveta', 'gavetas', 'gaveteiro', 'basculante'))
 
 
 def _norm(s):
@@ -154,12 +154,61 @@ def _cobertura_frontal_max(peca, P):
     return max(fracoes) if fracoes else 0.0
 
 
+def _eh_porta(b, mb, f):
+    """Porta/frente de gaveta/basculante/porta de correr = chapa fina (<= 30 mm na profundidade)
+    na FRENTE do modulo (150 mm a frente ate 80 mm para dentro), dentro da largura/altura do modulo
+    (folga 60 mm). Nao e porta: chapa que vai da base ao topo do modulo e cobre >= metade da largura
+    (lateral/fechamento do proprio modulo). f = direcao do olhar (dx, dy). Mesma regra do motor antigo."""
+    ad = 0 if f[0] else 1
+    al = 1 - ad
+    sg = f[ad]
+    perto = lambda bb: min(bb[ad] * sg, bb[ad + 3] * sg)
+    fr = perto(mb)
+    if b[ad + 3] - b[ad] > 30 or (b[al + 3] - b[al]) < 100 or (b[5] - b[2]) < 60:
+        return False
+    if not (fr - 150 <= perto(b) <= fr + 80):
+        return False
+    if b[al] < mb[al] - 60 or b[al + 3] > mb[al + 3] + 60 or b[2] < mb[2] - 60 or b[5] > mb[5] + 60:
+        return False
+    if perto(b) >= fr - 1 and abs(b[2] - mb[2]) <= 2 and abs(b[5] - mb[5]) <= 2 \
+            and (b[al + 3] - b[al]) >= 0.5 * (mb[al + 3] - mb[al]):
+        return False
+    return True
+
+
+def _cobertura_portas(peca, contexto):
+    """Fracao da face frontal do modulo coberta por portas/frentes (pecas do DXF, proprias ou nao)."""
+    f = contexto.get('eixo_vista')
+    if not f:
+        return 0.0
+    mb = peca['bb']
+    al = 1 if f[0] else 0
+    area = (mb[al + 3] - mb[al]) * (mb[5] - mb[2])
+    if area <= 0:
+        return 0.0
+    cob = 0.0
+    for p in contexto['P']:
+        b = p['bb']
+        if not _eh_porta(b, mb, f):
+            continue
+        cob += max(0.0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * \
+               max(0.0, min(b[5], mb[5]) - max(b[2], mb[2]))
+    return cob / area
+
+
 def _eh_nicho_modulo(peca, contexto):
+    """Modulo sem porta e sem frente. Frente (gaveta) ou porta (armario) => nunca e nicho.
+    Porta de vidro/espelho nao esta no DXF: o XML (xml_tem_porta) ou o nome decide."""
     b = peca['bb']
     if max(b[3] - b[0], b[4] - b[1]) > NICHO_LARG_MAX or (b[5] - b[2]) > NICHO_ALT_MAX:
         return False
     if peca.get('xml_tem_porta') or _nome_tem_porta(peca.get('desc', '')):
         return False
+    f = contexto.get('eixo_vista')
+    if f and any(_eh_porta(contexto['P'][pi]['bb'], b, f) for pi in peca.get('pecas', [])):
+        return False   # tem frente/porta propria (mesmo parcial: gaveta, basculante) => nao e nicho
+    if _cobertura_portas(peca, contexto) >= NICHO_MIN_RATIO:
+        return False   # porta de outra peca (avulsa) cobrindo a face
     return _cobertura_frontal_max(peca, contexto['P']) < NICHO_MIN_RATIO
 
 
