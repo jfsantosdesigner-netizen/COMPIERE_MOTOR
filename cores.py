@@ -106,10 +106,13 @@ def aplicar(projeto, biblioteca):
         if not nome: continue
         rgb=biblioteca.cor_material(nome)
         if rgb:
-            p['rgb']=rgb;p['mat']=nome;coloridas+=1;usadas[nome]+=1
+            ref=(biblioteca.cache.get(nome) or [None,None])[1]
+            p['rgb']=rgb;p['mat']=nome
+            if ref: p['textura']=ref
+            coloridas+=1;usadas[nome]+=1
             projeto['materiais'].setdefault(p['i'],{})['nome']=nome
             projeto['materiais'][p['i']]['rgb']=rgb
-            projeto['materiais'][p['i']]['textura']=(biblioteca.cache.get(nome) or [None,None])[1]
+            projeto['materiais'][p['i']]['textura']=ref
     # Apar?ncia faz parte da identidade can?nica. Recalcula a assinatura sem
     # repetir XML x DXF: usa itens/ambiente/portas j? decididos pela Etapa 4.
     novo=projeto_unificado.construir(projeto['pecas'], projeto['itens'], projeto['ambiente'],
