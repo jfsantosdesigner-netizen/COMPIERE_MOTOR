@@ -123,7 +123,7 @@ def rodar_projeto(dirpath, pj_path, xml_path):
     lim = geo.limites(inst)
     linhas_saida = []
     for w in paredes:
-        ctx = dict(P=P, lim=lim, mods=[i for i in inst if i['tipo'] == 'mod'], eixo_vista=geo.PAREDES.get(w['key']))
+        ctx = dict(P=P, lim=lim, moveis={p for i in inst for p in i.get('pecas', [])}, soltas=w['itens'] + [i for i in inst if i['tipo'] == 'mod'], eixo_vista=geo.PAREDES.get(w['key']))
         for it in w['itens']:
             tipo = C.classificar_peca(it, ctx)
             desc_real = gabarito.get((it['desc'], it['dim']), it['desc'])

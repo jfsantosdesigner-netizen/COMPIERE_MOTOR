@@ -59,6 +59,11 @@ def classificar_peca(peca, contexto):
     return 'MODULO_COMUM'
 
 
+def _nome_tem_porta(desc):
+    d = ' ' + _norm(desc) + ' '
+    return ' porta ' in d or ' portas ' in d
+
+
 def _norm(s):
     s = unicodedata.normalize('NFD', s.lower())
     return ''.join(c for c in s if unicodedata.category(c) != 'Mn')
@@ -149,7 +154,7 @@ def _eh_nicho_modulo(peca, contexto):
     b = peca['bb']
     if max(b[3] - b[0], b[4] - b[1]) > NICHO_LARG_MAX or (b[5] - b[2]) > NICHO_ALT_MAX:
         return False
-    if peca.get('xml_tem_porta'):
+    if peca.get('xml_tem_porta') or _nome_tem_porta(peca.get('desc', '')):
         return False
     return _cobertura_frontal_max(peca, contexto['P']) < NICHO_MIN_RATIO
 
