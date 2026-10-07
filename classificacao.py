@@ -25,7 +25,9 @@ NICHO_MIN_HORIZ  = 2
 CANTO_TOL_PAREDE = 200.0   # folga real medida ate o limite do ambiente: ate ~180 mm
 CANTO_EXT_MIN    = 300.0
 
-RODAPE_ALT_MAX    = 250.0
+RODAPE_PISO_TOL   = 30.0   # peca apoiada no piso: z0 ate 30 mm acima do piso
+RODAPE_SOBRE_TOL  = 20.0   # modulo em cima: z0 do modulo >= topo da peca - 20 mm
+RODAPE_SOBREPOSICAO = 0.5  # fracao da planta da peca coberta pelo modulo
 OCLUSAO_MIN_RATIO = 0.6
 CASCA_MIN_RATIO   = 0.9    # peca que cobre >=90% do ambiente nos 2 eixos = casca, nao oclui
 
@@ -49,8 +51,7 @@ def classificar_peca(peca, contexto):
 
     if peca.get('tipo') == 'comp':
         if _eh_oculto(peca, contexto):
-            b = peca['bb']
-            return 'RODAPE_OCULTO' if (b[5] - b[2]) <= RODAPE_ALT_MAX else 'PAINEL_OCULTO'
+            return 'RODAPE_OCULTO' if _eh_rodape(peca, contexto) else 'PAINEL_OCULTO'
         return 'MODULO_COMUM'
 
     return 'MODULO_COMUM'
@@ -196,3 +197,26 @@ def _eh_oculto(peca, contexto):
         if r[2] > r[0] and r[3] > r[1]:
             rects.append(r)
     return (_area_uniao(rects) / area_face) >= OCLUSAO_MIN_RATIO
+
+
+def _piso_z(P):
+    """Cota do piso = topo da placa LAYER0 do ambiente (0 se nao houver)."""
+    return max([p['bb'][5] for p in P if p['layer'] == 'LAYER0'] or [0.0])
+
+
+def _eh_rodape(peca, contexto):
+    """Rodape/base = peca oculta, apoiada no piso, com modulo em cima dela
+    (balcao, guarda-roupa, criado-mudo...). Oculta fora disso = PAINEL_OCULTO."""
+    b = peca['bb']
+    if b[2] - _piso_z(contexto['P']) > RODAPE_PISO_TOL:
+        return False
+    area = max(1.0, (b[3] - b[0]) * (b[4] - b[1]))
+    for m in contexto['mods']:
+        mb = m['bb']
+        if mb[2] < b[5] - RODAPE_SOBRE_TOL:
+            continue
+        ox = max(0.0, min(mb[3], b[3]) - max(mb[0], b[0]))
+        oy = max(0.0, min(mb[4], b[4]) - max(mb[1], b[1]))
+        if ox * oy / area >= RODAPE_SOBREPOSICAO:
+            return True
+    return False
