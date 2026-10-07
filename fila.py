@@ -9,13 +9,15 @@ Uso:
 
 Ambiente = pasta com *.xml (fora xplod) + *.dxf direto nela.
 Cada ambiente roda pelo mesmo caminho do launcher: novo_ambiente.py <pasta>.
-Saida: FILA_RELATORIO.txt (resumo) e FILA_LOGS/<n>_<ambiente>.log (saida completa de cada um).
+Modo BLINDADO: cada ambiente e limpo (fica so XML + DXF) e gera so PDF + _QUALIDADE.md.
+Saida da fila: um unico FILA_RELATORIO.txt (resumo + alertas). Nao existe mais FILA_LOGS.
 """
-import sys, os, re, subprocess, time, glob
+import sys, os, re, subprocess, time, glob, shutil
+
+sys.dont_write_bytecode = True
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 PADRAO = os.path.join(AQUI, 'PROJETOS TESTES')
-LOGS = os.path.join(AQUI, 'FILA_LOGS')
 RELATORIO = os.path.join(AQUI, 'FILA_RELATORIO.txt')
 ALERTA = re.compile(r'AVISO|ATEN|ERRO|FALTA|FALHOU|Traceback|n[ãa]o bateu|n[ãa]o encontrad|CONFERIR', re.I)
 
@@ -54,25 +56,24 @@ def paginas(pdf):
 
 def rodar(pasta, n):
     t0 = time.time()
-    r = subprocess.run([sys.executable, os.path.join(AQUI, 'novo_ambiente.py'), pasta],
-                       cwd=AQUI, capture_output=True, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+    r = subprocess.run([sys.executable, '-B', os.path.join(AQUI, 'novo_ambiente.py'), pasta],
+                       cwd=AQUI, capture_output=True, env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1'))
     dur = time.time() - t0
     saida = (r.stdout + b'\n' + r.stderr).decode('utf-8', 'replace')
-    os.makedirs(LOGS, exist_ok=True)
     nome = os.path.relpath(pasta, PADRAO) if pasta.startswith(PADRAO) else os.path.basename(pasta)
-    log = os.path.join(LOGS, f"{n:02d}_{re.sub(r'[^0-9A-Za-z]+', '_', nome)}.log")
-    open(log, 'w', encoding='utf-8').write(saida)
     pdfs = sorted(glob.glob(os.path.join(pasta, 'CADERNO*.pdf')), key=os.path.getmtime, reverse=True)
     pdfs = [p for p in pdfs if os.path.getmtime(p) >= t0 - 1]
     pdf = pdfs[0] if pdfs else None
     alertas = [l.strip()[:160] for l in saida.splitlines() if ALERTA.search(l)]
     return dict(nome=nome, rc=r.returncode, dur=dur, pdf=pdf, pag=paginas(pdf) if pdf else None,
-                kb=(os.path.getsize(pdf) // 1024) if pdf else None, alertas=alertas, log=log)
+                kb=(os.path.getsize(pdf) // 1024) if pdf else None, alertas=alertas,
+                fim=[l for l in saida.splitlines() if l.strip()][-6:])
 
 
 def main(argv):
     so_listar = '--listar' in argv
     raizes = [a for a in argv if a != '--listar'] or [PADRAO]
+    shutil.rmtree(os.path.join(AQUI, 'FILA_LOGS'), ignore_errors=True)   # legado: nao existe mais log por ambiente
     fila = expandir(raizes)
     print(f'Fila: {len(fila)} ambiente(s)')
     for i, p in enumerate(fila, 1):
@@ -94,8 +95,10 @@ def main(argv):
     L.append('')
     for x in res:
         if x['alertas'] or x not in ok:
-            L.append(f"--- {x['nome']}  (log: {x['log']})")
+            L.append(f"--- {x['nome']}")
             L.extend('  ' + a for a in x['alertas'][:12])
+            if x not in ok:
+                L.extend('  > ' + l[:160] for l in x['fim'])
     open(RELATORIO, 'w', encoding='utf-8').write('\n'.join(L) + '\n')
     print(f'\nResumo: OK {len(ok)} / {len(res)}  |  relatorio: {RELATORIO}')
     return 0 if len(ok) == len(res) else 1

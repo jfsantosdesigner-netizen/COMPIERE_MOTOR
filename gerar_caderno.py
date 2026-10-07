@@ -1,5 +1,6 @@
 # GERADOR DE CADERNO v2 — Compiere. Um comando: python gerar_caderno.py config.json
 # XML/listagem -> DXF (posição real) -> vistas automáticas -> listagem por vista + balões -> elevações com cotas -> PDF + QUALIDADE
+import sys as _sys0; _sys0.dont_write_bytecode = True   # BLINDAGEM: nao gera __pycache__
 import sys, os, re, json, subprocess, xml.etree.ElementTree as ET
 from collections import OrderedDict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -119,13 +120,10 @@ linhas_xml, cores, puxs, ferrs, mods_com_porta, mods_porta_mat, por_avulsas, por
 linhas = linhas_xml
 
 pj = cfg['pecas_json']
-# REGRA (v27): a leitura guardada do DXF só vale se o DXF for o MESMO (confere pelo hash); mudou -> lê de novo
-import hashlib as _hl
-_hx = _hl.md5(open(cfg['dxf'], 'rb').read()).hexdigest() if cfg.get('dxf') and os.path.exists(cfg['dxf']) else ''
-if os.path.exists(pj) and _hx and (not os.path.exists(pj + '.md5') or open(pj + '.md5').read().strip() != _hx): os.remove(pj)
-if not os.path.exists(pj) and _hx: open(pj + '.md5', 'w').write(_hx)
-if not os.path.exists(pj):
-    subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
+# REGRA (BLINDAGEM, João, 06/10/2026): SEM CACHE. As peças são lidas do DXF a cada rodada; o json intermediário
+# fica numa pasta temporária (criada e apagada pelo novo_ambiente) e nunca na pasta do projeto.
+if os.path.exists(pj): os.remove(pj)
+subprocess.run([sys.executable, '-B', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
 P = geo.carregar(pj)
 
 import math
@@ -157,22 +155,18 @@ _MD = os.path.dirname(os.path.abspath(__file__))
 _MAT = next((c_ for c_ in (os.path.join(_MD, 'MATERIAIS'),
                            (cfg.get('materiais') if cfg.get('materiais') and os.path.isabs(cfg.get('materiais')) else os.path.join(_MD, cfg.get('materiais') or 'MATERIAIS')))
              if os.path.isdir(c_)), os.path.join(_MD, 'MATERIAIS'))
-_MI = os.path.join(_MD, 'materiais_index.json')
 _MC = os.path.join(_MD, 'materiais_cores.json')  # [caminho relativo a MATERIAIS, nome, [r,g,b]]: cores prontas, dispensa a pasta MATERIAIS
 _rgbx = {}
 if os.path.exists(_MC):
     _idx = []
     for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')):
         _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
-elif os.path.exists(_MI): _idx = json.load(open(_MI, encoding='utf-8'))
 else:
     _idx = []
     for d_, ds_, fs_ in os.walk(_MAT):
         for f_ in fs_:
             if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
-    json.dump(_idx, open(_MI, 'w', encoding='utf-8'))
-_CC = os.path.join(_MD, 'cores_cache.json')
-_cc = json.load(open(_CC, encoding='utf-8')) if os.path.exists(_CC) else {}
+_cc = {}   # REGRA (BLINDAGEM): cor/textura por material vive só na memória desta rodada; nada é lido nem gravado em disco
 _PREF = ('duratex', 'arauco', 'guararapes', 'berneck', 'eucatex', 'masisa', 'stelben')
 def _parecido(a, b):
     # REGRA (v15): nome do XML com letra a mais/a menos ou cortado ("Metallic Sued" = "Metalic Suede")
@@ -208,7 +202,6 @@ def cor_material(nome):
             rgb = (r / c / 255, g / c / 255, b / c / 255)
         except Exception: rgb = None
     _cc[nome] = [list(rgb), best[1]] if rgb else None
-    json.dump(_cc, open(_CC, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
     return rgb
 # ===== TEXTURAS REAIS (veio da madeira) no 3D: imagem do material aplicada em perspectiva em cada face =====
 try:
@@ -217,7 +210,6 @@ try:
 except Exception:
     _Im = None
 _TXD = os.path.join(_MD, 'texturas')              # ASSET oficial, versionado: o motor SÓ LÊ, nunca escreve
-_TXC = os.path.join(_MD, '_cache_texturas')       # miniatura derivada do MATERIAIS (no .gitignore)
 _txc = {}
 def textura(nome):
     # REGRA (v32, João): a pasta texturas/ é ENTRADA do motor, não cache. Ela nunca é reescrita pela
@@ -230,15 +222,12 @@ def textura(nome):
     if ref:
         fn = ref.replace('\\', '/').split('/')[-1].lower()
         ofi = os.path.join(_TXD, fn)              # asset oficial
-        cch = os.path.join(_TXC, fn)              # cache derivado
         try:
             if os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
-            elif os.path.exists(cch): im = _Im.open(cch).convert('RGB')
             else:
                 full = ref if os.path.exists(ref) else os.path.join(_MAT, ref.split('MATERIAIS', 1)[-1].lstrip('/\\'))
                 if os.path.exists(full):
                     im = _Im.open(full).convert('RGB'); im.thumbnail((1024, 1024))
-                    os.makedirs(_TXC, exist_ok=True); im.save(cch, quality=82)
         except Exception: im = None
     _txc[nome] = im; return im
 _dm = {}; _ord = {}
@@ -269,7 +258,7 @@ for p_ in P:
         nm_ = c_.most_common(1)[0][0]; rgb = cor_material(nm_)
         if rgb: p_['rgb'] = rgb; p_['mat'] = nm_; _nc += 1; _usadas[nm_] += 1
 print('CORES: %d pecas coloridas pelo MATERIAIS (medidas no XML: %d)' % (_nc, len(_dm)))
-TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.path.join(d_, _cc[m_][1].replace('\\', '/').split('/')[-1].lower())) for d_ in (_TXD, _TXC))]
+TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.path.join(d_, _cc[m_][1].replace('\\', '/').split('/')[-1].lower())) for d_ in (_TXD,))]
 for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q_, os.path.relpath(_cc[nm_][1], _MAT)))
 _todas_mats = {r_ for c_ in _dm.values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
@@ -2302,10 +2291,7 @@ while fz.get_text_length(_nm, 'hebo', fs_) > fr.width - 140: fs_ -= 1
 cp.insert_text((cx - fz.get_text_length(_nm, 'hebo', fs_) / 2, y + 50), _nm, fontname='hebo', fontsize=fs_, color=CZ)
 _sb = 'EXECUTIVO - ' + cfg['dados']['ambiente'].upper()
 cp.insert_text((cx - fz.get_text_length(_sb, 'helv', 16) / 2, y + 82), _sb, fontname='helv', fontsize=16, color=AC)
-try:
-    doc.save(cfg['saida'], garbage=3, deflate=True)
-except Exception:
-    import time as _t; cfg['saida'] = os.path.splitext(cfg['saida'])[0] + _t.strftime('_%H%M%S') + '.pdf'; doc.save(cfg['saida'], garbage=3, deflate=True)
+doc.save(cfg['saida'], garbage=3, deflate=True)   # BLINDAGEM: nome fixo; se falhar, falha (sem arquivo com horário)
 
 # ---------------- QUALIDADE (nível 1, por script) ----------------
 esperado = 4 + len(VW) + _extra + len(V) - sum(1 for v in V if v.get('divisoria')) + len(DIVISORES) + len(GAVETAS)
@@ -2327,6 +2313,4 @@ for v in VW:
 q += [f"  {v['letra']}{i}: {d} {dm}" for v in VW for i, (d, dm, m_) in enumerate(v['linhas'], 1)]
 open(os.path.splitext(cfg['saida'])[0] + '_QUALIDADE.md', 'w', encoding='utf-8').write('\n'.join(q))
 print('\n'.join(q))
-for i in range(len(doc)):
-    doc[i].get_pixmap(dpi=80).save(os.path.join(os.path.dirname(cfg['saida']), f'_prev_{i + 1}.png'))
 print('OK', cfg['saida'])

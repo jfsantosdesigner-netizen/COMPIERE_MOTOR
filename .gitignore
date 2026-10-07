@@ -1,3 +1,13 @@
-MATERIAIS/
+﻿# Blindagem: nada gerado em rodada vai para o Git
 __pycache__/
 *.pyc
+MATERIAIS/
+FILA_LOGS/
+FILA_RELATORIO.txt
+_config.json
+_pecas_dxf.json
+_pecas_dxf.json.md5
+_prev_*.png
+*_CAMERAS.json
+*_INTEGRIDADE.json
+core_motor.zip
