@@ -5,24 +5,72 @@
 > (Guilherme/Suíte Casal, Priscila/Dormitório, Tiago/Dormitório) falham igual nas duas versões pelo erro crítico
 > "itens do XML não localizados no DXF" — dado do projeto, não regressão.
 
-## 0. Sequência-alvo (decisão do João, 06/10/2026 — FINAL)
-Princípio: **o XML só entra na hora de fazer o caderno** (listagem e cotas). Nada antes carrega ou cruza XML.
+## 0. Sequência-alvo (decisão do João, 06/10/2026 — FINAL, substitui as anteriores)
 ```
-LINHA A — só DXF (nenhum XML)                         LINHA B — caderno
-  ambiente.py     parede, piso, janela, abertura (SEM pedra)            gerar_caderno.py  (XML entra aqui, 1 cruzamento)
-  ambientemodu.py módulos, paredes, casamento espacial        layout, capa, contrato, listagem, cotas
-  render.py       vistas 3D + elevações 2D                    + vistas da Linha A  ->  auditoria  ->  PDF
-  => AMBIENTE PRONTO (geometria + vistas) ------------------>
+ 1. DXF
+ 2. ambiente.py       só DXF: parede, piso, janela, abertura
+ 3. ambientemodu.py   só DXF: móveis (módulos, painéis, eletros) e pedra, posicionados pelo DXF
+ 4. UNIFICAÇÃO        cruzamento XML x DXF (ÚNICO ponto onde o XML entra; confirma MDF x pedra)
+ 5. cores.py          cores/materiais (biblioteca MATERIAIS ao vivo)
+ 6. puxadores.py
+ 7. portas de vidro
+ 8. COMPATIBILIZAÇÃO  vistas (parede/ilha, câmeras, nicho, o que sai/fica em cada prancha)
+ 9. RENDER            motor Blender: 3D e 2D
+10. gerar_caderno.py  pranchas: layout, capa, contrato, posicionamento, listagem e cotas
+11. auditoria
+12. entrega (PDF + relatório)
 ```
 Decisões:
-- Mudar imagem/render/foto **não toca** o gerar_caderno nem o XML: só a Linha A.
-- Eletros ficam com os móveis (Linha A, `ambientemodu`). Aparecem nas listagens 3D, não nas cotas.
-- Parede, piso, janela, abertura não se apoiam em móvel; todos posicionados pelo DXF.
-- **PEDRA (decisão final):** vem no DXF junto com os móveis e só o XML a diferencia. Pedra = peça do DXF que não casa com o XML
-  e passa no critério de pedra. Quem classifica é o `gerar_caderno` (Linha B), no único cruzamento XML x DXF. A Linha A não desenha pedra.
-- Listagem: ambiente completo. Cotas: sem ambiente, só móveis.
-- Medido (06/10/2026, 27 projetos): nenhum traço do DXF (layer, faces, espessura, ordem, cor ACI) separa pedra de MDF; por isso a pedra fica na Linha B.
-- Pendente: nas cotas, o piso fica só como número de altura ou sai?
+- Etapas 2 e 3 não leem XML. Mudar imagem/render não mexe nelas nem no cruzamento.
+- Eletros ficam com os móveis (etapa 3). Listagem 3D: ambiente completo. Cotas 2D: **sem ambiente e sem piso**, só móveis (eletros fora).
+- Parede, piso, janela, abertura, pedra e móveis são peças soltas posicionadas pelo DXF; nada se apoia em móvel.
+- Pedra na etapa 3 é *provável* (geometria): sem XML, 86 peças de MDF viram "pedra" nos 27 projetos de teste; nenhum traço do DXF
+  (layer, faces, espessura, ordem, cor ACI) separa. A **Unificação (4)** corrige: o que casa com o XML é MDF.
+- Render com Blender deve ser determinístico (mesma entrada, mesma imagem): amostragem/seed fixos, sem GPU variável, sem timestamp.
+- Piso nas cotas: não existe (decidido). A altura de referência (`piso_z`) deixa de ser desenhada; fica só como número se alguma cota precisar.
+
+## 0.1 Contrato das etapas 2 e 3 (só DXF) e da 4 (Unificação)
+Entrada comum: `P` = lista de peças do DXF (`i`, `layer`, `bb`, `dim`, `faces`; 1 layer = 1 peça). Saída: só **índices** de `P` e números.
+
+**`ambiente.construir(P)`** (etapa 2)
+| Chave | O que é |
+|---|---|
+| `piso` | placa(s) de piso: menor lado do plano >1500, espessura ≤60, base ≤1 mm |
+| `piso_z` | altura do topo do piso (mm) |
+| `malha_par` | parede/casca em peça única (altura ≥1800, comprimento ≥1000, espessura >400) — usa as faces reais, com vãos |
+| `fontes_parede` | `malha_par` + paredes finas altas (espessura 60–400, altura ≥1800, comprimento ≥1000) |
+| `par_dxf` | candidatas a parede em peça (espessura 60–400, altura ≥100, comprimento <20000, não é peça baixa no chão) |
+| `paredes_pecas` | paredes altas em peça (altura ≥2000, espessura 80–400, comprimento ≥1000) |
+
+**`ambientemodu.construir(P, amb)`** (etapa 3)
+| Chave | O que é |
+|---|---|
+| `moveis` | tudo que sobra sem `piso`, `malha_par` e `paredes_pecas`, na ordem do DXF; cada peça traz a posição (`bb`) do DXF |
+| `pedra` | placa 15–100 mm, ≥500×250, base entre 700 e 1100 mm (**candidata**) |
+| `eletro_a` | objeto com forma (≥10 faces), tamanho de eletro, até 2300 mm de altura (**candidato**) |
+| `eletro_b` | objeto baixo (até 1300 mm), sem material, a confirmar que encosta num móvel (**candidato**) |
+
+**`unificacao.fechar(P, amb, modu, usadas, bbs_moveis)`** (etapa 4, único ponto com XML)
+- `usadas` = índices de `P` que o XML reconhece; `bbs_moveis` = caixas dos itens do XML.
+- Remove dos candidatos o que está em `usadas` (corrige a pedra que é MDF), recalcula `faces_parede_real` só com o que sobrou,
+  aplica "encostado no móvel" e "sobre a pedra" aos eletros e devolve `duplicadas, pedra, malha_par, eletros, par_dxf,
+  paredes_pecas, piso_z, faces_parede_real` (o dicionário que o `gerar_caderno` consome).
+- Regras que **não** podem entrar em `ambiente`/`ambientemodu`: qualquer uso de `usadas`, de `bbs_moveis` ou de nome/categoria do XML.
+
+**Ainda aberto (decisão do João):** o DXF não marca onde um módulo começa e termina (1 layer = 1 peça). Hoje o agrupamento em
+módulos (`geo.casar`, órfãs, nichos) precisa das linhas do XML e continua na Unificação. Agrupar módulos só pelo DXF
+(vizinhança geométrica) não foi feito e não foi medido.
+
+### Mapa do que já existe -> etapa
+| Hoje | Vai para |
+|---|---|
+| `ambiente.py` (parede, piso, malha, par_dxf, pedra, eletros) | 2 (parede/piso/abertura) e 3 (pedra, eletros) |
+| `geo.casar`, `classificacao.py`, órfãs, nichos | 3 e 4 |
+| materiais/cores em `gerar_caderno` | 5 |
+| puxadores, porta de vidro em `gerar_caderno` | 6 e 7 |
+| `faces_parede_real`, câmeras, subimagem de nicho | 8 |
+| `render3d` (PyMuPDF/desenho próprio) | 9 (Blender) |
+| pranchas, layout, listagem, cotas | 10 |
 
 Separação entre **móvel** (XML + DXF → `gerar_caderno.py`) e **ambiente** (alvenaria/estrutura → `ambiente.py`).
 Regra: o `gerar_caderno` **não constrói** ambiente; ele **consome** o contrato. Quem produz o ambiente pode ser

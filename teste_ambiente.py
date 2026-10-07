@@ -21,7 +21,7 @@ def cena():
 
 def rodar():
     P = cena(); P[1]['bb'] = [0, 0, 0, 4000, 3000, 5]; P[1]['dim'] = [4000, 3000, 5]
-    return P, A.fechar(P, ambiente.construir(P), ambientemodu.construir(P), {0}, [P[0]['bb']])
+    return P, A.fechar(P, ambiente.construir(P), ambientemodu.construir(P, ambiente.construir(P)), {0}, [P[0]['bb']])
 
 
 P, amb = rodar()
@@ -40,7 +40,10 @@ assert amb2['duplicadas'] == amb['duplicadas'] and amb2['piso_z'] == amb['piso_z
 
 # ambiente e ambientemodu sao DXF-only: nao dependem de usadas; o movel 0 e candidato a pedra? (nao: 600x500x700, z0=0)
 assert 3 in [P[i]['i'] for i in ambiente.construir(P)['paredes_pecas']]
-assert ambientemodu.construir(P)['pedra'] == [2]
+_a = ambiente.construir(P); _m = ambientemodu.construir(P, _a)
+assert _m['pedra'] == [2]
+assert _m['moveis'] == [0, 2, 4]      # sem piso (1) e sem parede (3)
+assert ambiente.construir(P)['piso'] == [1]
 
 # reprodutibilidade: mesma entrada, mesma saida
 assert json.dumps(A.para_json(rodar()[1]), sort_keys=True) == json.dumps(A.para_json(rodar()[1]), sort_keys=True)

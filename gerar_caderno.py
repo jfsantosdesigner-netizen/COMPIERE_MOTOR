@@ -351,7 +351,8 @@ _usadas = {pi for i in inst for pi in i['pecas']}
 # entregam candidatos; unificacao.py aplica o XML (peças usadas e caixas dos móveis) e fecha o resultado.
 import ambiente, ambientemodu, unificacao
 from ambiente import _n, PEDRA_COR, PAREDE_COR, PISO_COR, ELETRO_COR
-AMBIENTE = unificacao.fechar(P, ambiente.construir(P), ambientemodu.construir(P), _usadas, [i_['bb'] for i_ in inst])
+_AMB1 = ambiente.construir(P)
+AMBIENTE = unificacao.fechar(P, _AMB1, ambientemodu.construir(P, _AMB1), _usadas, [i_['bb'] for i_ in inst])
 DUP_I = AMBIENTE['duplicadas']; AMB = AMBIENTE['pedra']; MALHA_PAR = AMBIENTE['malha_par']; ELETROS = AMBIENTE['eletros']
 PAR_DXF = AMBIENTE['par_dxf']; PAREDES_PECAS = AMBIENTE['paredes_pecas']; ZP = AMBIENTE['piso_z']
 AMB_I = {p_['i'] for p_ in AMB}; MALHA_I = {p_['i'] for p_ in MALHA_PAR}; ELETRO_I = {p_['i'] for p_ in ELETROS}

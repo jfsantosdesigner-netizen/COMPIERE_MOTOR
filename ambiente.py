@@ -7,6 +7,7 @@ ambiente.py — ETAPA 2: o AMBIENTE (parede, piso, janela/abertura) lido SÓ do 
     fontes_parede indices: malha_par + paredes finas altas (espessura 60-400, altura>=1800, comprimento>=1000)
     par_dxf       indices: candidatas a parede em peça (espessura 60-400, altura>=100, comprimento<20000)
     paredes_pecas indices: paredes altas (altura>=2000, espessura 80-400, comprimento>=1000)
+    piso          indices: placa(s) de piso (placa fina grande no chao)
     piso_z        altura do piso (mm)
 São CANDIDATAS: sem o XML não dá para saber se uma peça alta é parede ou móvel. A Unificação (unificacao.py) descarta as
 que casam com o XML. Pura: não lê/escreve arquivo, não guarda estado.
@@ -67,6 +68,7 @@ def construir(P):
            and max(p_['dim'][0], p_['dim'][1]) >= 100 and p_['dim'][2] >= 100 and max(p_['dim'][0], p_['dim'][1]) < 20000
            and not (p_['bb'][2] < 50 and p_['dim'][2] < 1000)]   # peça baixa no chão (rodapé solto) não é parede
     paredes_pecas = [p_ for p_ in P if p_['dim'][2] >= 2000 and 80 <= min(p_['dim'][0], p_['dim'][1]) <= 400 and max(p_['dim'][0], p_['dim'][1]) >= 1000]
-    zp = max([p_['bb'][5] for p_ in P if min(p_['dim'][0], p_['dim'][1]) > 1500 and p_['dim'][2] <= 60 and p_['bb'][2] <= 1] or [0])
-    return dict(malha_par=[p_['i'] for p_ in malha], fontes_parede=[p_['i'] for p_ in malha + finas],
+    pisos = [p_ for p_ in P if min(p_['dim'][0], p_['dim'][1]) > 1500 and p_['dim'][2] <= 60 and p_['bb'][2] <= 1]
+    zp = max([p_['bb'][5] for p_ in pisos] or [0])
+    return dict(piso=[p_['i'] for p_ in pisos], malha_par=[p_['i'] for p_ in malha], fontes_parede=[p_['i'] for p_ in malha + finas],
                 par_dxf=[p_['i'] for p_ in par], paredes_pecas=[p_['i'] for p_ in paredes_pecas], piso_z=zp)
