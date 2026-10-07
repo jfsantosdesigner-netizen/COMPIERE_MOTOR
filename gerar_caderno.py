@@ -8,7 +8,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 import pymupdf as fz, geo, classificacao
 
 
-cfg = json.load(open(sys.argv[1], encoding='utf-8'))
+# BLINDAGEM: a configuracao chega como TEXTO JSON no argumento (sem arquivo _config.json). Arquivo ainda aceito p/ uso manual.
+cfg = json.loads(sys.argv[1]) if sys.argv[1].lstrip().startswith('{') else json.load(open(sys.argv[1], encoding='utf-8'))
 # REGRA (v27): PROIBIDO puxar listagem/imagens de PDF — tudo sai do XML + DXF
 for _k in ('listagem_pdf', 'imagens', 'capa_img'): cfg.pop(_k, None)
 AREA = fz.Rect(19, 142, 823, 577); IN = 7
@@ -119,12 +120,13 @@ def ler_xml(path):
 linhas_xml, cores, puxs, ferrs, mods_com_porta, mods_porta_mat, por_avulsas, por_euronobre = ler_xml(cfg['xml'])
 linhas = linhas_xml
 
-pj = cfg['pecas_json']
-# REGRA (BLINDAGEM, João, 06/10/2026): SEM CACHE. As peças são lidas do DXF a cada rodada; o json intermediário
-# fica numa pasta temporária (criada e apagada pelo novo_ambiente) e nunca na pasta do projeto.
-if os.path.exists(pj): os.remove(pj)
-subprocess.run([sys.executable, '-B', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
-P = geo.carregar(pj)
+# REGRA (BLINDAGEM, João, 06/10/2026): SEM CACHE e SEM ARQUIVO INTERMEDIARIO. As peças são lidas do DXF a cada rodada
+# e ficam só na memória (o leitor devolve o JSON pela saída padrão).
+_r = subprocess.run([sys.executable, '-B', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dxf_pecas(motor core).py'), cfg['dxf'], '-'],
+                    capture_output=True)
+if _r.returncode != 0: sys.exit('ERRO ao ler o DXF:\n' + _r.stderr.decode('utf-8', 'replace')[-1500:])
+P = json.loads(_r.stdout.decode('utf-8'))
+for _i, _p in enumerate(P): _p['i'] = _i
 
 import math
 def _n(a, b, c):
@@ -155,17 +157,32 @@ _MD = os.path.dirname(os.path.abspath(__file__))
 _MAT = next((c_ for c_ in (os.path.join(_MD, 'MATERIAIS'),
                            (cfg.get('materiais') if cfg.get('materiais') and os.path.isabs(cfg.get('materiais')) else os.path.join(_MD, cfg.get('materiais') or 'MATERIAIS')))
              if os.path.isdir(c_)), os.path.join(_MD, 'MATERIAIS'))
-_MC = os.path.join(_MD, 'materiais_cores.json')  # [caminho relativo a MATERIAIS, nome, [r,g,b]]: cores prontas, dispensa a pasta MATERIAIS
-_rgbx = {}
+# REGRA (João, 06/10/2026): a pasta MATERIAIS (biblioteca) é lida AO VIVO a cada rodada: o motor varre a pasta, acha o
+# JPEG de cada cor do XML, usa na memória e não grava cópia nenhuma. A ÚNICA memória permitida é a das CORES e da
+# BIBLIOTECA: materiais_cores.json guarda a cor média de cada JPEG [caminho relativo, nome, [r,g,b]]; JPEG novo
+# achado na pasta entra nele (ver _gravar_biblioteca).
+_MC = os.path.join(_MD, 'materiais_cores.json')
+_lib = {}
 if os.path.exists(_MC):
-    _idx = []
-    for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')):
-        _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
-else:
-    _idx = []
+    for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')): _lib[rel_] = [rel_, st_, rgb_]
+_rgbx = {}; _idx = []; _lib_novos = {}
+if os.path.isdir(_MAT):
     for d_, ds_, fs_ in os.walk(_MAT):
-        for f_ in fs_:
-            if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
+        ds_.sort()
+        for f_ in sorted(fs_):
+            if f_.lower().endswith(('.jpg', '.jpeg', '.png')):
+                full_ = os.path.join(d_, f_); rel_ = os.path.relpath(full_, _MAT)
+                _idx.append([full_, _lib[rel_][1] if rel_ in _lib else _norm(os.path.splitext(f_)[0])])
+                if rel_ in _lib and _lib[rel_][2]: _rgbx[full_] = _lib[rel_][2]
+else:   # pasta ausente: a biblioteca guardada ainda serve para a cor (sem textura)
+    for rel_, (_r, st_, rgb_) in _lib.items():
+        _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
+    print('AVISO: pasta MATERIAIS não encontrada em', _MAT, '- só as cores da biblioteca guardada, sem textura')
+def _gravar_biblioteca():
+    if not _lib_novos: return
+    _lib.update(_lib_novos)
+    json.dump([_lib[k] for k in sorted(_lib)], open(_MC, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    print(f'BIBLIOTECA: {len(_lib_novos)} cor(es) nova(s) gravada(s) em materiais_cores.json')
 _cc = {}   # REGRA (BLINDAGEM): cor/textura por material vive só na memória desta rodada; nada é lido nem gravado em disco
 _PREF = ('duratex', 'arauco', 'guararapes', 'berneck', 'eucatex', 'masisa', 'stelben')
 def _parecido(a, b):
@@ -202,6 +219,8 @@ def cor_material(nome):
             rgb = (r / c / 255, g / c / 255, b / c / 255)
         except Exception: rgb = None
     _cc[nome] = [list(rgb), best[1]] if rgb else None
+    if rgb and best and best[1] not in _rgbx and os.path.isdir(_MAT):
+        _rl = os.path.relpath(best[1], _MAT); _lib_novos[_rl] = [_rl, os.path.splitext(os.path.basename(best[1]))[0] and _norm(os.path.splitext(os.path.basename(best[1]))[0]), list(rgb)]
     return rgb
 # ===== TEXTURAS REAIS (veio da madeira) no 3D: imagem do material aplicada em perspectiva em cada face =====
 try:
@@ -221,13 +240,11 @@ def textura(nome):
     im = None; ref = (_cc.get(nome) or [None, None])[1]
     if ref:
         fn = ref.replace('\\', '/').split('/')[-1].lower()
-        ofi = os.path.join(_TXD, fn)              # asset oficial
+        ofi = os.path.join(_TXD, fn)              # reserva: asset oficial versionado (só leitura)
         try:
-            if os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
-            else:
-                full = ref if os.path.exists(ref) else os.path.join(_MAT, ref.split('MATERIAIS', 1)[-1].lstrip('/\\'))
-                if os.path.exists(full):
-                    im = _Im.open(full).convert('RGB'); im.thumbnail((1024, 1024))
+            if os.path.exists(ref):               # JPEG puxado AO VIVO da pasta MATERIAIS, só em memória
+                im = _Im.open(ref).convert('RGB'); im.thumbnail((1024, 1024))
+            elif os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
         except Exception: im = None
     _txc[nome] = im; return im
 _dm = {}; _ord = {}
@@ -2291,6 +2308,7 @@ while fz.get_text_length(_nm, 'hebo', fs_) > fr.width - 140: fs_ -= 1
 cp.insert_text((cx - fz.get_text_length(_nm, 'hebo', fs_) / 2, y + 50), _nm, fontname='hebo', fontsize=fs_, color=CZ)
 _sb = 'EXECUTIVO - ' + cfg['dados']['ambiente'].upper()
 cp.insert_text((cx - fz.get_text_length(_sb, 'helv', 16) / 2, y + 82), _sb, fontname='helv', fontsize=16, color=AC)
+_gravar_biblioteca()
 doc.save(cfg['saida'], garbage=3, deflate=True)   # BLINDAGEM: nome fixo; se falhar, falha (sem arquivo com horário)
 
 # ---------------- QUALIDADE (nível 1, por script) ----------------

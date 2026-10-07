@@ -218,6 +218,9 @@ def main():
                     'bb': [round(x, 1) for x in b],
                     'dim': [round(b[i + 3] - b[i], 1) for i in range(3)],
                     'faces': p['faces']})
+    if sys.argv[2] == '-':   # BLINDAGEM: sem arquivo; o JSON sai pela saida padrao e quem chamou le em memoria
+        sys.stdout.write(json.dumps(out, separators=(',', ':')))
+        return
     json.dump(out, open(sys.argv[2], 'w'), separators=(',', ':'))
     print('pecas', len(out))
 

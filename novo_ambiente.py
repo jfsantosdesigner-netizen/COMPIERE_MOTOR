@@ -5,9 +5,9 @@
 # REGRA (BLINDAGEM, Joao, 06/10/2026):
 #   ENTRADA : so o .xml e o .dxf originais da pasta. Todo o resto da pasta e APAGADO antes de gerar.
 #   SAIDA   : so "CADERNO - <AMBIENTE>.pdf" e "CADERNO - <AMBIENTE>_QUALIDADE.md" (o relatorio).
-#   Json intermediario, config e pecas do DXF vivem numa pasta temporaria que e apagada ao final.
+#   Nada temporario: config vai como texto no argumento e as pecas do DXF ficam so em memoria.
 #   Nenhum __pycache__, nenhum cache de cor/textura/material, nenhum arquivo com horario no nome.
-import sys, os, glob, json, re, subprocess, tempfile, shutil
+import sys, os, glob, json, re, subprocess, shutil
 
 sys.dont_write_bytecode = True
 sys.stdout.reconfigure(encoding='utf-8')
@@ -86,23 +86,19 @@ def processar(pasta):
     print(f'LIMPEZA: {len(apagados)} arquivo(s) apagado(s); ficaram só XML + DXF' + (f' | subpastas intocadas: {", ".join(subpastas)}' if subpastas else ''))
     for a in apagados:
         print('   apagado:', a)
-    tmp = tempfile.mkdtemp(prefix='compiere_')
-    ok = False
+    # BLINDAGEM: nenhum arquivo ou pasta temporaria. A configuracao vai como texto no argumento e as pecas do DXF ficam em memoria.
+    cfg = {'tipo_caderno': pad['tipo_caderno'], 'dados': dados,
+           'layout': pad.get('layout') or os.path.join(_ASSETS, 'LAYOUT_FIXO.pdf'),
+           'contrato_fonte': pad.get('contrato_fonte') or os.path.join(_ASSETS, 'CONTRATO.pdf'),
+           'xml': xml, 'dxf': dxf, 'vistas': [],
+           'logo': pad.get('logo') or os.path.join(_ASSETS, 'LOGO.png'), 'materiais': pad.get('materiais'),
+           'saida': os.path.join(pasta, f'CADERNO - {amb.upper()}.pdf')}
+    print('Gerando:', dados['cliente'], '/', amb, '...')
     try:
-        cfg = {'tipo_caderno': pad['tipo_caderno'], 'dados': dados,
-               'layout': pad.get('layout') or os.path.join(_ASSETS, 'LAYOUT_FIXO.pdf'),
-               'contrato_fonte': pad.get('contrato_fonte') or os.path.join(_ASSETS, 'CONTRATO.pdf'),
-               'xml': xml, 'dxf': dxf, 'pecas_json': os.path.join(tmp, '_pecas_dxf.json'), 'vistas': [],
-               'logo': pad.get('logo') or os.path.join(_ASSETS, 'LOGO.png'), 'materiais': pad.get('materiais'),
-               'saida': os.path.join(pasta, f'CADERNO - {amb.upper()}.pdf')}
-        cj = os.path.join(tmp, '_config.json')
-        json.dump(cfg, open(cj, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-        print('Gerando:', dados['cliente'], '/', amb, '...')
-        r = subprocess.run([sys.executable, '-B', os.path.join(M, 'gerar_caderno.py'), cj],
+        r = subprocess.run([sys.executable, '-B', os.path.join(M, 'gerar_caderno.py'), json.dumps(cfg, ensure_ascii=False)],
                            env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'))
         ok = (r.returncode == 0 and os.path.exists(cfg['saida']))
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
         limpar_motor()
     # confere a saida: so PDF + relatorio; qualquer outra coisa criada no caminho e removida
     for nome in sorted(os.listdir(pasta)):
