@@ -5,29 +5,24 @@
 > (Guilherme/Suíte Casal, Priscila/Dormitório, Tiago/Dormitório) falham igual nas duas versões pelo erro crítico
 > "itens do XML não localizados no DXF" — dado do projeto, não regressão.
 
-## 0. Sequência-alvo (decisão do João, 06/10/2026)
+## 0. Sequência-alvo (decisão do João, 06/10/2026 — FINAL)
+Princípio: **o XML só entra na hora de fazer o caderno** (listagem e cotas). Nada antes carrega ou cruza XML.
 ```
-XML + DXF
-  1. MODULAÇÃO  — cruza XML × DXF UMA vez: módulos e painéis de MDF  (reconhece o que é móvel)
-  2. AMBIENTE   — o resto do DXF: parede, piso, janela, abertura, pedra   (peças soltas, sem vínculo com móvel)
-  3. GERAR CADERNO — organiza os móveis no ambiente (posição vem do DXF) e monta TODAS as pranchas 3D de listagem
-  4. Depois retira o ambiente e faz as pranchas de COTAS 2D, só dos móveis
+LINHA A — só DXF (nenhum XML)                         LINHA B — caderno
+  ambiente.py     parede, piso, janela, abertura (SEM pedra)gerar_caderno.py  (XML entra aqui, 1 cruzamento)
+  ambientemodu.py módulos, paredes, casamento espacial        layout, capa, contrato, listagem, cotas
+  render.py       vistas 3D + elevações 2D                    + vistas da Linha A  ->  auditoria  ->  PDF
+  => AMBIENTE PRONTO (geometria + vistas) ------------------>
 ```
 Decisões:
-- **Eletros ficam com os móveis** (não são ambiente). Aparecem nas listagens 3D, não nas cotas.
-- **Pedra, parede, piso, janela não se apoiam em móvel.** Cada um é posicionado pelo DXF, independente.
-- **O cruzamento XML × DXF acontece uma vez** (etapa 1) e o `gerar_caderno` recebe o resultado; ele não cruza de novo.
-- O XML **não tem** pedra, parede, piso, janela nem eletro (verificado nos projetos de teste): o ambiente só existe no DXF.
-  Pela geometria sozinha, o critério atual de pedra erraria 86 peças de MDF nos 21 projetos; por isso o MDF é reconhecido
-  primeiro (etapa 1) e o ambiente é o restante.
-- Cotas sem ambiente: some o limite parede a parede e o teto; **pendente:** o piso permanece só como número de referência (altura) ou sai?
-
-### O que falta para chegar lá (nesta ordem)
-1. Extrair a **modulação** (leitura do XML, `casar`, órfãs, porta de vidro, porta avulsa) do `gerar_caderno` para módulo próprio.
-2. Mover **eletros** de `ambiente.py` para a modulação (hoje dependem de "encostado em móvel" e de "sobre a pedra").
-3. Tirar do `ambiente.py` a dependência de móvel (`usadas`, `bbs_moveis`), ficando só `pedra`, `paredes`, `piso`, `janelas/aberturas`.
-4. `gerar_caderno` passa a ler os dois contratos prontos; pranchas de cotas deixam de usar `paredes`/`piso` do ambiente.
-
+- Mudar imagem/render/foto **não toca** o gerar_caderno nem o XML: só a Linha A.
+- Eletros ficam com os móveis (Linha A, `ambientemodu`). Aparecem nas listagens 3D, não nas cotas.
+- Parede, piso, janela, abertura não se apoiam em móvel; todos posicionados pelo DXF.
+- **PEDRA (decisão final):** vem no DXF junto com os móveis e só o XML a diferencia. Pedra = peça do DXF que não casa com o XML
+  e passa no critério de pedra. Quem classifica é o `gerar_caderno` (Linha B), no único cruzamento XML x DXF. A Linha A não desenha pedra.
+- Listagem: ambiente completo. Cotas: sem ambiente, só móveis.
+- Medido (06/10/2026, 27 projetos): nenhum traço do DXF (layer, faces, espessura, ordem, cor ACI) separa pedra de MDF; por isso a pedra fica na Linha B.
+- Pendente: nas cotas, o piso fica só como número de altura ou sai?
 
 Separação entre **móvel** (XML + DXF → `gerar_caderno.py`) e **ambiente** (alvenaria/estrutura → `ambiente.py`).
 Regra: o `gerar_caderno` **não constrói** ambiente; ele **consome** o contrato. Quem produz o ambiente pode ser
