@@ -9,7 +9,7 @@
 Princípio: **o XML só entra na hora de fazer o caderno** (listagem e cotas). Nada antes carrega ou cruza XML.
 ```
 LINHA A — só DXF (nenhum XML)                         LINHA B — caderno
-  ambiente.py     parede, piso, janela, abertura (SEM pedra)gerar_caderno.py  (XML entra aqui, 1 cruzamento)
+  ambiente.py     parede, piso, janela, abertura (SEM pedra)            gerar_caderno.py  (XML entra aqui, 1 cruzamento)
   ambientemodu.py módulos, paredes, casamento espacial        layout, capa, contrato, listagem, cotas
   render.py       vistas 3D + elevações 2D                    + vistas da Linha A  ->  auditoria  ->  PDF
   => AMBIENTE PRONTO (geometria + vistas) ------------------>
