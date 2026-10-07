@@ -1,0 +1,38 @@
+ADRIANA OJEDA\DORMITÓRIO: rc=0 nicho_antigo=0 
+ADRIANA OJEDA\DORMITÓRIO 2: rc=0 nicho_antigo=0 
+ADRIANA OJEDA\SUÍTE CASAL: rc=2 nicho_antigo=0 ------------------------------------------------------------------
+Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas
+do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).
+======================================================================
+
+CLOSET\01: rc=0 nicho_antigo=0 
+FELIPE_COZINHA: rc=0 nicho_antigo=0 
+GUILHERME CESAR\SALA JANTAR: rc=0 nicho_antigo=0 
+GUILHERME CESAR\SUÍTE CASAL: rc=2 nicho_antigo=0 ------------------------------------------------------------------
+Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas
+do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).
+======================================================================
+
+LETICIA MATEUS: rc=0 nicho_antigo=0 
+PRISCILA CLAUDINO\COZINHA: rc=0 nicho_antigo=0 
+PRISCILA CLAUDINO\DORMIT´ÓRIO: rc=2 nicho_antigo=0 ------------------------------------------------------------------
+Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas
+do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).
+======================================================================
+
+PRISCILA CLAUDINO\SALA: rc=0 nicho_antigo=0 
+PRISCILA CLAUDINO\SUÍTE CASAL: rc=0 nicho_antigo=0 
+RAFAEL CLARET\AREA_SERVICO: rc=0 nicho_antigo=0 
+RAFAEL CLARET\COZINHA2: rc=0 nicho_antigo=0 
+RAFAEL CLARET\ESCRITORIO: rc=0 nicho_antigo=0 
+RAFAEL CLARET\SALA_VARANDA: rc=0 nicho_antigo=0 
+RAFAEL CLARET\SUITE_CASAL: rc=0 nicho_antigo=0 
+RENAN\Nova pasta: rc=0 nicho_antigo=0 
+TIAGO VOLPI\COZINHA: rc=0 nicho_antigo=0 
+TIAGO VOLPI\DORMITÓIRIO: rc=2 nicho_antigo=0 ------------------------------------------------------------------
+Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas
+do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).
+======================================================================
+
+TIAGO VOLPI\DORMITÓRIO CASAL: rc=0 nicho_antigo=0 
+salvo saida_nicho_antigo.tsv

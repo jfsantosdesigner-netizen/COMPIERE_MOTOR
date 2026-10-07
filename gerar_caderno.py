@@ -4,7 +4,7 @@ import sys, os, re, json, subprocess, xml.etree.ElementTree as ET
 from collections import OrderedDict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding='utf-8')
-import pymupdf as fz, geo
+import pymupdf as fz, geo, classificacao
 
 
 cfg = json.load(open(sys.argv[1], encoding='utf-8'))
@@ -791,7 +791,9 @@ PW = {w['id']: w for w in paredes}
 if os.environ.get('COMPIERE_TESTE_CLASSIFICACAO'):
     import classificacao
     for _w in paredes:
-        _ctx = dict(P=P, lim=geo.limites(inst), paredes_existentes={_x['key'] for _x in paredes},
+        _ctx = dict(P=P, lim=geo.limites(inst),
+                    moveis={_p for _i in inst for _p in _i.get('pecas', [])},
+                    soltas=_w['itens'] + [_i for _i in inst if _i['tipo'] == 'mod'],
                     eixo_vista=geo.PAREDES.get(_w['key']))
         for _it in _w['itens']:
             _tipo = classificacao.classificar_peca(_it, _ctx)
@@ -1544,6 +1546,17 @@ def tem_porta(m, w):
     if cob >= NICHO_MIN_RATIO * area_: return True
     return bool(m.get('xml_tem_porta'))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
 
+def _nichos_classificados(w):
+    # REGRA (João, 06/10/2026): TODO nicho (estrutura SEM porta, módulo ou grupo de painéis soltos) vira subimagem.
+    # A decisão é classificacao.classificar_peca (função pura); aqui só se monta o contexto e se agrupam as peças.
+    ctx = dict(P=P, lim=geo.limites(inst), moveis={p_ for i_ in inst for p_ in i_.get('pecas', [])},
+               soltas=w['itens'] + [i_ for i_ in inst if i_['tipo'] == 'mod'], eixo_vista=geo.PAREDES.get(w['key']))
+    out = []
+    for it in w['itens']:
+        if classificacao.classificar_peca(it, ctx) != 'NICHO': continue
+        out.append(classificacao._grupo_de(it, ctx) if it['tipo'] == 'comp' else [it])
+    return out
+
 def detalhes(w):
     # nichos de painéis + módulos abertos; grupos que se encostam viram UM detalhe só
     # ORDEM 006 (v37.2): módulos com porta ausente no DXF (xml_tem_porta=True) viram subimagem própria.
@@ -1561,7 +1574,7 @@ def detalhes(w):
             if cob >= NICHO_MIN_RATIO * area_: continue   # tem porta real: não precisa subimagem
             out.append([m])
         return out
-    gs = [list(g) for g in nichos(w) + abertos(w) + _portas_faltando(w)]
+    gs = [list(g) for g in nichos(w) + abertos(w) + _portas_faltando(w) + _nichos_classificados(w)]
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -5 for k in range(3))
     mudou = True
     while mudou:
@@ -1571,6 +1584,8 @@ def detalhes(w):
                 if any(toca(a['bb'], b['bb']) for a in gs[i0] for b in gs[j0]):
                     gs[i0] += gs.pop(j0); mudou = True; break
             if mudou: break
+    for k_ in range(len(gs)):   # mesma peça vinda das duas regras entra uma vez só
+        vistos_ = set(); gs[k_] = [i for i in gs[k_] if not (id(i) in vistos_ or vistos_.add(id(i)))]
     return gs
 
 def abertos(w):
@@ -1622,6 +1637,14 @@ def nichos(w):
                for m in w['itens'] if m['tipo'] == 'mod'): continue
         out.append(g)
     return out
+
+# --- GANCHO DE TESTE (Fase 2a): so com COMPIERE_TESTE_NICHO=1; imprime o nicho do motor ATUAL e termina antes de desenhar.
+if os.environ.get('COMPIERE_TESTE_NICHO'):
+    for _w in paredes:
+        for _g in nichos(_w) + abertos(_w):
+            for _i in _g:
+                print(f"NICHO_ANTIGO\t{_w['id']}\t{_i['tipo']}\t{_i['desc']}\t{_i['dim']}")
+    sys.exit(0)
 
 def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, contexto=False, **kw):
     # contexto=True (REGRA João): mostra o AMBIENTE em volta (móveis e pedra das paredes vizinhas, perto desta parede)

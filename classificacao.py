@@ -29,6 +29,10 @@ RODAPE_PISO_TOL   = 30.0   # peca apoiada no piso: z0 ate 30 mm acima do piso
 RODAPE_SOBRE_TOL  = 20.0   # modulo em cima: z0 do modulo >= topo da peca - 20 mm
 RODAPE_SOBREPOSICAO = 0.5  # fracao da planta da peca coberta pelo modulo
 OCLUSAO_MIN_RATIO = 0.6
+ARQ_ESP_MIN       = 60.0   # peca sem item no XML com as 3 dimensoes >= 60 mm = parede/pilar/casca, nao movel (tampo e frente sao finos)
+ILHA_ALT_MAX      = 1300.0  # modulo baixo (balcao/ilha)
+ILHA_FOLGA        = 30.0    # painel encostado na traseira do modulo
+ILHA_PAREDE_MIN   = 300.0   # menos que isso atras = ha parede, nao e ilha
 GRUPO_TOL         = 5.0    # pecas soltas se tocam se a folga entre bbs <= 5 mm
 
 TIPOS = ('MODULO_COMUM', 'CANTO_L_ESQ', 'CANTO_L_DIR', 'CANTO_RETO',
@@ -195,6 +199,14 @@ def _eh_nicho_conjunto(itens, contexto):
     return visiveis * 2 >= len(itens)
 
 
+def _eh_arquitetura(o, moveis):
+    """Peca fora do XML e grossa nas 3 dimensoes (parede, pilar, casca) ou o piso.
+    Frente de porta/gaveta tambem nao casa com o XML, mas e fina: continua cobrindo."""
+    if o['i'] in moveis:
+        return False
+    return o['layer'] == 'LAYER0' or min(o['dim']) >= ARQ_ESP_MIN
+
+
 def _eh_oculto(peca, contexto):
     eixo = contexto.get('eixo_vista')
     if eixo is None:
@@ -206,10 +218,10 @@ def _eh_oculto(peca, contexto):
     face = b[ad] if sinal > 0 else b[ad + 3]
     area_face = max(1.0, (b[al + 3] - b[al]) * (b[5] - b[2]))
     excluir = set(peca.get('pecas', []))
-    moveis = contexto['moveis']   # indices das pecas casadas com itens do XML; arquitetura fica fora
+    moveis = contexto['moveis']   # indices das pecas casadas com itens do XML
     rects = []
     for o in contexto['P']:
-        if o['i'] in excluir or o['i'] not in moveis:
+        if o['i'] in excluir or _eh_arquitetura(o, moveis):
             continue
         ob = o['bb']
         frente_o = ob[ad] if sinal > 0 else ob[ad + 3]
@@ -244,3 +256,46 @@ def _eh_rodape(peca, contexto):
         if ox * oy / area >= RODAPE_SOBREPOSICAO:
             return True
     return False
+
+
+def painel_traseiro_ilha(peca, contexto):
+    """True se a peca e painel de acabamento ATRAS de uma ilha: oculta, encostada
+    (<= ILHA_FOLGA) na traseira de modulos baixos que cobrem >= 50% da sua largura, e SEM
+    parede/pilar/casca a menos de ILHA_PAREDE_MIN atras dela. O tipo continua PAINEL_OCULTO;
+    o desenho usa este indicador para gerar a subimagem da traseira da ilha."""
+    eixo = contexto.get('eixo_vista')
+    if eixo is None or peca.get('tipo') != 'comp' or not _eh_oculto(peca, contexto):
+        return False
+    ad = 0 if eixo[0] else 1
+    al = 1 - ad
+    sinal = eixo[ad]
+    b = peca['bb']
+    frente = b[ad] if sinal > 0 else b[ad + 3]      # face voltada para a camera
+    fundo = b[ad + 3] if sinal > 0 else b[ad]       # face voltada para a parede
+    cobertos = 0.0
+    for m in contexto['soltas']:
+        if m['tipo'] != 'mod' or m['bb'][5] > ILHA_ALT_MAX:
+            continue
+        mb = m['bb']
+        traseira = mb[ad + 3] if sinal > 0 else mb[ad]
+        if abs(traseira - frente) > ILHA_FOLGA:
+            continue
+        cobertos += max(0.0, min(mb[al + 3], b[al + 3]) - max(mb[al], b[al]))
+    if cobertos < 0.5 * (b[al + 3] - b[al]):
+        return False
+    moveis = contexto['moveis']
+    for o in contexto['P']:
+        if o['i'] in moveis or not _eh_arquitetura(o, moveis) or o['layer'] == 'LAYER0':
+            continue
+        ob = o['bb']
+        if min(ob[al + 3], b[al + 3]) - max(ob[al], b[al]) <= 0:
+            continue
+        if ob[ad] <= b[ad] and ob[ad + 3] >= b[ad + 3]:        # casca que contem a peca
+            dist = (ob[ad + 3] - fundo) if sinal > 0 else (fundo - ob[ad])
+        else:                                                  # parede/pilar atras
+            dist = (ob[ad] - fundo) if sinal > 0 else (fundo - ob[ad + 3])
+            if dist < -5:
+                continue
+        if dist < ILHA_PAREDE_MIN:
+            return False
+    return True
