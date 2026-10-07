@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Testes deterministicos de ambiente.py (pecas sinteticas, sem DXF/XML/PDF). Rodar: python teste_ambiente.py"""
-import os, sys, json
+import os, sys, json, copy
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ambiente, ambientemodu, unificacao as A
 
@@ -21,7 +21,10 @@ def cena():
 
 def rodar():
     P = cena(); P[1]['bb'] = [0, 0, 0, 4000, 3000, 5]; P[1]['dim'] = [4000, 3000, 5]
-    return P, A.fechar(P, ambiente.construir(P), ambientemodu.construir(P, ambiente.construir(P)), {0}, [P[0]['bb']])
+    antes = copy.deepcopy(P)
+    res = A.fechar(P, ambiente.construir(P), ambientemodu.construir(P, ambiente.construir(P)), {0}, [P[0]['bb']])
+    assert P == antes, 'unificacao.fechar modificou a entrada P'
+    return P, res
 
 
 P, amb = rodar()
@@ -42,7 +45,7 @@ assert amb2['duplicadas'] == amb['duplicadas'] and amb2['piso_z'] == amb['piso_z
 assert 3 in [P[i]['i'] for i in ambiente.construir(P)['paredes_pecas']]
 _a = ambiente.construir(P); _m = ambientemodu.construir(P, _a)
 assert _m['pedra'] == [2]
-assert _m['moveis'] == [0, 2, 4]      # sem piso (1) e sem parede (3)
+assert _m['moveis'] == [0, 2, 3, 4]   # só piso sai; parede ainda é candidata até a unificação
 assert ambiente.construir(P)['piso'] == [1]
 
 # reprodutibilidade: mesma entrada, mesma saida
@@ -51,6 +54,27 @@ assert json.dumps(A.para_json(rodar()[1]), sort_keys=True) == json.dumps(A.para_
 # versao errada e rejeitada
 try:
     A.de_json({'versao': 99}, P2); raise SystemExit('deveria recusar')
+except ValueError:
+    pass
+
+# Armário alto com geometria de parede: a etapa 2 o considera candidato, mas o XML vence na unificação.
+P3 = cena() + [peca(5, [2000, 0, 0, 2150, 1200, 2400])]
+P3[1]['bb'] = [0, 0, 0, 4000, 3000, 5]; P3[1]['dim'] = [4000, 3000, 5]
+a3 = ambiente.construir(P3); m3 = ambientemodu.construir(P3, a3)
+assert 5 in a3['paredes_pecas'] and 5 in m3['moveis']
+r3 = A.fechar(P3, a3, m3, {0, 5}, [P3[0]['bb'], P3[5]['bb']])
+assert 5 not in [p['i'] for p in r3['paredes_pecas']]
+
+# O contrato serializado só pode ser restaurado sobre as mesmas peças do mesmo DXF.
+P_errado = copy.deepcopy(P2); P_errado[0]['bb'][0] += 1
+try:
+    A.de_json(j, P_errado); raise SystemExit('deveria recusar contrato de outro DXF')
+except ValueError:
+    pass
+
+# Entradas fora do esquema falham cedo e de forma explícita.
+try:
+    ambiente.construir([{'i': 0}]); raise SystemExit('deveria recusar peça incompleta')
 except ValueError:
     pass
 print('OK: testes de ambiente/ambientemodu/unificacao')

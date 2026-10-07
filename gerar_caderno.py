@@ -1,11 +1,12 @@
 # GERADOR DE CADERNO v2 — Compiere. Um comando: python gerar_caderno.py config.json
 # XML/listagem -> DXF (posição real) -> vistas automáticas -> listagem por vista + balões -> elevações com cotas -> PDF + QUALIDADE
 import sys as _sys0; _sys0.dont_write_bytecode = True   # BLINDAGEM: nao gera __pycache__
-import sys, os, re, json, subprocess, xml.etree.ElementTree as ET
+import sys, os, re, json, subprocess
 from collections import OrderedDict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding='utf-8')
 import pymupdf as fz, geo, classificacao
+import compatibilizacao
 
 
 # BLINDAGEM: a configuracao chega como TEXTO JSON no argumento (sem arquivo _config.json). Arquivo ainda aceito p/ uso manual.
@@ -29,104 +30,13 @@ def fmt(v):
     v = round(v * 2) / 2
     return str(int(round(v))) if abs(v - round(v)) < 0.01 else ('%.1f' % v).replace('.', ',')
 
-# ---------------- entrada ----------------
-def modelo(it):
-    refs = it.find('REFERENCES')
-    if refs is None: return ''
-    for tag in ('MODEL', 'COR', 'MAT'):
-        e = refs.find(tag)
-        if e is not None and e.get('REFERENCE'): return e.get('REFERENCE')
-    return ''
+# ---------------- entrada única ----------------
+import entrada_xml
+_XML=entrada_xml.ler(cfg['xml'])
 
-QT = {}
-def ler_xml(path):
-    root = ET.parse(path).getroot()
-    mods, comps, cores, pux, ferr = OrderedDict(), OrderedDict(), {}, OrderedDict(), OrderedDict()
-    mods_com_porta = set()  # (desc, dim) de módulos com sub-item _POR_ no XML (porta de vidro não exportada no DXF)
-    mods_porta_mat = {}    # (desc, dim) → material da porta lido do XML: 'vidro', 'mdf', 'mdp', etc.
-    por_avulsas = []       # 005.A: POR_* com material inferido do ID (vidro/espelho/alumínio/mdf) e dimensões
-    por_euronobre = []     # 005.A: EUR_*_POR_* (porta Euronobre pronta) com material e dimensões
-    for cat in root.iter('CATEGORY'):
-        items = cat.find('ITEMS')
-        if items is None: continue
-        cn = (cat.get('DESCRIPTION') or '').upper()
-        for it in items.findall('ITEM'):
-            a = it.attrib; U = a.get('ID', '').upper(); d = a.get('DESCRIPTION', ''); m = modelo(it)
-            if not m:
-                for ch in it.iter('ITEM'):
-                    if re.search(r'lat|bas', ch.get('ID', ''), re.I) and modelo(ch): m = modelo(ch); break
-            if 'EUR_' in U and '_POR_' in U:
-                # 005.A.1: porta Euronobre pronta — material inferido do ID
-                _me = 'vidro'  # EU32, EU_GLA, EU_VID → vidro (default p/ Euronobre)
-                if '_ALU' in U or '_METAL' in U: _me = 'aluminio'
-                elif '_ESP' in U or 'ESPELHO' in U: _me = 'espelho'
-                try: _pw = float(a.get('WIDTH', 0) or 0); _ph = float(a.get('HEIGHT', 0) or 0); _pd = float(a.get('DEPTH', 0) or 0)
-                except (ValueError, TypeError): _pw = _ph = _pd = 0
-                por_euronobre.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _me})
-                continue
-            if 'EURONOBRE' in cn or 'PUX' in U: pux[d.split('(')[0].strip()] = 1; continue
-            if 'FERRAG' in cn: ferr[d.strip()] = 1; continue
-            if re.match(r'\s*cunha', d, re.I): continue   # REGRA (v26, João): barrote/cunha não faz parte, lista só material
-            if 'ACESS' in cn or U.startswith('ACE') or U.startswith('EUR_'): continue
-            if '_POR_' in U or U.startswith('POR_'):   # REGRA (v26): porta avulsa do XML (POR_INF_CUR) = porta, não entra na listagem
-                if m: cores.setdefault('porta', OrderedDict())[m] = 1
-                # 005.A.2: material inferido pelo ID da porta avulsa (vidro/espelho/alumínio/mdf)
-                _ma = 'mdf'
-                if 'GLA' in U or 'VID' in U or 'GLASS' in U: _ma = 'vidro'
-                elif 'ESP' in U or 'ESPELHO' in U: _ma = 'espelho'
-                elif 'ALU' in U or 'METAL' in U: _ma = 'aluminio'
-                try: _pw = float(a.get('WIDTH', 0) or 0); _ph = float(a.get('HEIGHT', 0) or 0); _pd = float(a.get('DEPTH', 0) or 0)
-                except (ValueError, TypeError): _pw = _ph = _pd = 0
-                por_avulsas.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _ma})
-                continue
-            desc = re.sub(r'\s+\d+(?:[.,]\d+)?x\d+(?:[.,]\d+)?x\d+(?:[.,]\d+)?mm\s*$', '', d).strip()
-            dim = 'x'.join(fmt(float(a[k])) for k in ('WIDTH', 'HEIGHT', 'DEPTH'))
-            qq = int(float(a.get('QUANTITY') or 1)); QT[(desc, dim)] = QT.get((desc, dim), 0) + qq
-            if U.startswith(('PAI', 'COM_COZ_DIV')):
-                comps[(desc, dim)] = 1
-                if m: cores.setdefault('tamp', OrderedDict())[m] = 1
-            else:
-                mods[(desc, dim)] = 1
-                if m: cores.setdefault('caixa', OrderedDict())[m] = 1
-                # REGRA (vidro): sub-item _POR_ no XML mas sem DXF = porta ausente; marca para tem_porta não classificar como nicho.
-                # Material lido do XML: tag VIDRO (com REFERENCE) → 'vidro'; tag MAT → valor lido (ex.: 'mdf', 'mdp').
-                _mat_porta = None
-                for _ch in it.iter('ITEM'):
-                    _cu = _ch.get('ID', '').upper()
-                    if not ('_POR_' in _cu or _cu.startswith('POR_')): continue
-                    _refs = _ch.find('REFERENCES')
-                    if _refs is not None:
-                        _v = _refs.find('VIDRO')
-                        if _v is not None and _v.get('REFERENCE', ''):
-                            _mat_porta = 'vidro'; break        # porta de vidro/alumínio (ex.: Euronobre)
-                        _mt = _refs.find('MAT')
-                        if _mt is not None and _mt.get('REFERENCE', ''):
-                            _mat_porta = _mt.get('REFERENCE', '').lower(); break   # ex.: 'mdf', 'mdp'
-                    _mat_porta = 'mdf'; break                  # POR_ sem tags de material → assume MDF
-                # A2 (v36, GROUPENTITY/DOBRADICA): módulo com ID='GROUPENTITY' sem _POR_ no XML
-                # mas com sub-item de dobradiça (REFERENCES/DOBRADICA preenchida) → tem porta de dobradiça.
-                if _mat_porta is None and U == 'GROUPENTITY':
-                    for _ch in it.iter('ITEM'):
-                        _refs = _ch.find('REFERENCES')
-                        if _refs is None: continue
-                        _dob = _refs.find('DOBRADICA')
-                        if _dob is not None and _dob.get('REFERENCE', ''):
-                            _mat_porta = 'mdf'; break
-                if _mat_porta is not None:
-                    mods_com_porta.add((desc, dim))
-                    mods_porta_mat[(desc, dim)] = _mat_porta
-    return list(mods) + list(comps), cores, list(pux), list(ferr), mods_com_porta, mods_porta_mat, por_avulsas, por_euronobre
-
-linhas_xml, cores, puxs, ferrs, mods_com_porta, mods_porta_mat, por_avulsas, por_euronobre = ler_xml(cfg['xml'])
-linhas = linhas_xml
-
-# REGRA (BLINDAGEM, João, 06/10/2026): SEM CACHE e SEM ARQUIVO INTERMEDIARIO. As peças são lidas do DXF a cada rodada
-# e ficam só na memória (o leitor devolve o JSON pela saída padrão).
-_r = subprocess.run([sys.executable, '-B', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dxf_pecas(motor core).py'), cfg['dxf'], '-'],
-                    capture_output=True)
-if _r.returncode != 0: sys.exit('ERRO ao ler o DXF:\n' + _r.stderr.decode('utf-8', 'replace')[-1500:])
-P = json.loads(_r.stdout.decode('utf-8'))
-for _i, _p in enumerate(P): _p['i'] = _i
+import entrada_projeto
+import unificacao, projeto_unificado
+P = entrada_projeto.ler_dxf(cfg['dxf'])
 
 import math
 def preparar(P):
@@ -140,7 +50,7 @@ def preparar(P):
 preparar(P)
 
 # ===== CORES REAIS: XML (cor de cada peça) -> pasta MATERIAIS (textura) -> cor média =====
-import unicodedata as _ud, collections as _col, xml.etree.ElementTree as _ET2
+import unicodedata as _ud, collections as _col
 def _norm(t):
     t = _ud.normalize('NFKD', t).encode('ascii', 'ignore').decode().lower()
     return re.sub(r'[^a-z0-9]+', ' ', t).strip()
@@ -240,85 +150,30 @@ def textura(nome):
             elif os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
         except Exception: im = None
     _txc[nome] = im; return im
-_dm = {}; _ord = {}
-for e in _ET2.parse(cfg['xml']).iter('ITEM'):
-    m_ = next((g for ch in e if ch.tag != 'ITEM' for g in ch if g.tag == 'MODEL'), None)
-    if m_ is None or not m_.get('REFERENCE'): continue
-    try: k_ = tuple(sorted(round(float(e.get(a))) for a in ('WIDTH', 'HEIGHT', 'DEPTH')))
-    except Exception: continue
-    _dm.setdefault(k_, _col.Counter())[m_.get('REFERENCE')] += 1
-    if e.get('COMPONENT') == 'Y' and e.get('UNIQUEPARENTID') == '-2': _ord.setdefault(k_, []).append(m_.get('REFERENCE'))
-# Peças soltas de MESMA medida e cores diferentes (ex.: 2 tamponamentos 2350x18x70, um Preto e um Chumbo):
-# o DXF traz as camadas na ordem inversa do XML -> casa pela ordem.
-_fixa = {}; _gp = {}
-for p_ in P: _gp.setdefault(tuple(sorted(round(x) for x in p_['dim'])), []).append(p_)
-for k_, refs_ in _ord.items():
-    g_ = _gp.get(k_, [])
-    if len(set(refs_)) > 1 and len(g_) == len(refs_):
-        for p_, r_ in zip(sorted(g_, key=lambda t: t['i']), reversed(refs_)): _fixa[p_['i']] = r_
+# A associação XML × DXF pertence à Unificação; esta etapa apenas resolve RGB.
+_MATERIAIS_XML = unificacao.materiais_por_peca(P, _XML)
 _nc = 0; _usadas = _col.Counter()
 for p_ in P:
-    k_ = tuple(sorted(round(x) for x in p_['dim'])); c_ = _dm.get(k_)
-    if p_['i'] in _fixa: c_ = _col.Counter({_fixa[p_['i']]: 1})
-    if not c_:
-        for dd in ((1, 0, 0), (0, 1, 0), (0, 0, 1), (-1, 0, 0), (0, -1, 0), (0, 0, -1)):
-            c_ = _dm.get(tuple(sorted(a + b for a, b in zip(k_, dd))))
-            if c_: break
-    if c_:
-        nm_ = c_.most_common(1)[0][0]; rgb = cor_material(nm_)
+    nm_ = _MATERIAIS_XML.get(p_['i'])
+    if nm_:
+        rgb = cor_material(nm_)
         if rgb: p_['rgb'] = rgb; p_['mat'] = nm_; _nc += 1; _usadas[nm_] += 1
-print('CORES: %d pecas coloridas pelo MATERIAIS (medidas no XML: %d)' % (_nc, len(_dm)))
+print('CORES: %d pecas coloridas pelo MATERIAIS (medidas no XML: %d)' % (_nc, len(_XML['materiais_dimensoes'])))
 TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.path.join(d_, _cc[m_][1].replace('\\', '/').split('/')[-1].lower())) for d_ in (_TXD,))]
 for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q_, os.path.relpath(_cc[nm_][1], _MAT)))
-_todas_mats = {r_ for c_ in _dm.values() for r_ in c_}
+_todas_mats = {r_ for c_ in _XML['materiais_dimensoes'].values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
-def _adotar_orfas(inst, P):
-    # REGRA (João, 06/10/2026): chapa do DXF SEM item no XML, encostada num módulo e que cabe nas medidas do XML
-    # dele, é peça DO módulo (ex.: base, tampo e fundo do "Nicho 300x800x200", que o casamento não achou).
-    # Só chapa (fina em um eixo, <= 30 mm): horizontal (base/tampo/prateleira) ou vertical de fundo (<= 10 mm).
-    # Vertical de 15-21 mm pode ser porta/frente: não é adotada. Determinístico: ordem do DXF, primeiro módulo que serve.
-    usadas = {pi for i in inst for pi in i['pecas']}
-    mods = [i for i in inst if i['tipo'] == 'mod']
-    adotadas = []
-    for p_ in P:
-        if p_['i'] in usadas: continue
-        b = p_['bb']; ext = [b[k + 3] - b[k] for k in range(3)]
-        e = min(ext)
-        if e > 30 or sorted(ext)[1] < 50: continue
-        if ext.index(e) != 2 and e > 10: continue
-        for m in mods:
-            mb = m['bb']
-            if any(min(b[k + 3], mb[k + 3]) - max(b[k], mb[k]) < -3 for k in range(3)): continue
-            U = geo.uniao(mb, b)
-            u = sorted(U[k + 3] - U[k] for k in range(3)); d = sorted(geo.parse_dim(m['dim']))
-            if any(u[r] > d[r] + 3 for r in range(3)): continue
-            m['pecas'].append(p_['i']); m['bb'] = list(U); usadas.add(p_['i']); adotadas.append((m['desc'], m['dim'], p_['i']))
-            break
-    return adotadas
-inst = geo.casar(P, linhas, QT)
-_ADOTADAS = _adotar_orfas(inst, P)
+# Saída canônica da Etapa 4: nenhum consumidor volta a cruzar XML com DXF.
+PROJETO = unificacao.construir(P, _XML, _MATERIAIS_XML)
+inst = PROJETO['itens']; AMBIENTE = PROJETO['ambiente']
+if not inst:
+    raise SystemExit('UNIFICAÇÃO BLOQUEADA: nenhum item do XML foi localizado no DXF. Confira o par XML montado + DXF exportado.')
+PORTAS_XML = PROJETO['portas']['pecas_xml']
+linhas = PROJETO['xml']['linhas']; cores = PROJETO['xml']['cores']
+puxs = PROJETO['xml']['puxadores']; ferrs = PROJETO['xml']['ferragens']
+_ADOTADAS = PROJETO['diagnostico']['orfas_adotadas']
 if _ADOTADAS: print(f"ORFAS ADOTADAS: {len(_ADOTADAS)} chapa(s) sem item no XML incorporada(s) ao módulo que a contém")
-# 005.A.3 (v37): casa porta avulsa (POR_* vidro/espelho/alumínio) e porta Euronobre (EUR_*_POR_*)
-# com módulo cuja W×H batem (tolerância 15 mm). Sobrepõe o chute A2 (dobradiça=mdf) quando o material
-# da porta é vidro/espelho/alumínio.
-for _i in inst:
-    if _i['tipo'] != 'mod': continue
-    _wm, _hm, _dm = geo.parse_dim(_i['dim'])
-    _mod_lado = sorted([_wm, _hm])[::-1]  # [maior, menor] entre W e H
-    for _p in (por_euronobre + por_avulsas):
-        _pdims = sorted([_p['dim'][0], _p['dim'][1], _p['dim'][2]])[::-1]  # ignora a menor (profundidade)
-        _por_lado = _pdims[:2]
-        if abs(_por_lado[0] - _mod_lado[0]) <= 15 and abs(_por_lado[1] - _mod_lado[1]) <= 15:
-            mods_com_porta.add((_i['desc'], _i['dim']))
-            mods_porta_mat[(_i['desc'], _i['dim'])] = _p['mat']
-            break
-# REGRA (vidro): módulos com porta ausente do DXF (sub-item _POR_ no XML) marcados aqui para tem_porta reconhecer.
-# xml_mat_porta: material lido do XML ('vidro', 'mdf', 'mdp', ...) — usado na face sintética para cor correta.
-for _i in inst:
-    if _i['tipo'] == 'mod' and (_i.get('desc', ''), _i.get('dim', '')) in mods_com_porta:
-        _i['xml_tem_porta'] = True
-        _i['xml_mat_porta'] = mods_porta_mat.get((_i.get('desc', ''), _i.get('dim', '')), 'mdf')
-paredes = geo.definir_paredes(inst, P)
+paredes = compatibilizacao.definir_paredes(inst, P, PORTAS_XML)
 # REGRA: mesma parede com módulos de profundidades diferentes (ex.: armário raso 200 mm + balcão 600 mm)
 # = UMA parede só. Junta paredes do mesmo lado com planos a até 600 mm e trechos que se tocam/sobrepõem.
 def _juntar_paredes(paredes):
@@ -344,18 +199,18 @@ paredes = _juntar_paredes(paredes)
 # AMBIENTE (referência, NUNCA cotado): peças do DXF que não são móvel do XML nem parede/piso.
 # Hoje: PEDRA / bancada / rodabanca = placa horizontal (15–100 mm) na altura da bancada (700–1100 mm).
 # Desenhada com as faces reais do DXF (pedra em L sai em L).
-_usadas = {pi for i in inst for pi in i['pecas']}
+# Planta conserva a projeção anterior: portas avulsas não entram como corpo.
+_usadas = PROJETO['moveis'] - PORTAS_XML
 # REGRA (v26): peça do DXF que NÃO está na listagem e ocupa o MESMO lugar de uma peça listada (cópia do painel,
 # ex.: painel usinado 1580 sobre o painel 1530 da lista) = duplicada -> não é desenhada (cobria o painel de cinza).
 # AMBIENTE = MÓDULOS À PARTE (contrato em CONTRATO_AMBIENTE.md): ambiente.py e ambientemodu.py leem SÓ o DXF e
 # entregam candidatos; unificacao.py aplica o XML (peças usadas e caixas dos móveis) e fecha o resultado.
-import ambiente, ambientemodu, unificacao
+import ambiente
 from ambiente import _n, PEDRA_COR, PAREDE_COR, PISO_COR, ELETRO_COR
-_AMB1 = ambiente.construir(P)
-AMBIENTE = unificacao.fechar(P, _AMB1, ambientemodu.construir(P, _AMB1), _usadas, [i_['bb'] for i_ in inst])
 DUP_I = AMBIENTE['duplicadas']; AMB = AMBIENTE['pedra']; MALHA_PAR = AMBIENTE['malha_par']; ELETROS = AMBIENTE['eletros']
 PAR_DXF = AMBIENTE['par_dxf']; PAREDES_PECAS = AMBIENTE['paredes_pecas']; ZP = AMBIENTE['piso_z']
 AMB_I = {p_['i'] for p_ in AMB}; MALHA_I = {p_['i'] for p_ in MALHA_PAR}; ELETRO_I = {p_['i'] for p_ in ELETROS}
+_AMBIENTE_POR_I = {p_['i']: p_ for p_ in AMB + ELETROS + MALHA_PAR}
 if DUP_I: print('PEÇAS DUPLICADAS NO DXF (não desenhadas):', len(DUP_I))
 print('AMBIENTE (eletros/objetos):', len(ELETROS), 'peças')
 print('AMBIENTE (pedra):', len(AMB), 'peças')
@@ -437,25 +292,10 @@ if _FR:
                     _it['parede'] = dono_['id']
                     dono_['itens'].append(_it)
         paredes = _juntar_paredes(paredes)
-# ELETROS / objetos do ambiente (geladeira, micro-ondas, forno, coifa, revestimento...): peça do DXF que não é móvel,
-# parede, pedra, piso nem forro. Só referência (faces reais, cinza médio), NUNCA cotado.
-# REGRA (v30): PORTA/FRENTE AVULSA do XML (POR_...) não entra na listagem (v26), mas É DESENHADA junto do móvel onde encosta
-# (ex.: frente de gaveta do criado-mudo). Casa pela medida (±1 mm) com peça do DXF ainda sem dono, encostada no móvel.
-_por = set()
-for e in _ET2.parse(cfg['xml']).iter('ITEM'):
-    U_ = (e.get('ID') or '').upper()
-    if U_.startswith('POR_') or '_POR_' in U_:
-        try: _por.add(tuple(sorted(round(float(e.get(a).replace(',', '.'))) for a in ('WIDTH', 'HEIGHT', 'DEPTH'))))
-        except Exception: pass
-_dono = {pi for i in inst for pi in i['pecas']}
-PORTAS_XML = set()   # REGRA (bloco cotas 28/09/2026): peças do DXF casadas com porta/frente avulsa do XML (POR_) = PORTA (sai das cotas)
-for p_ in P:
-    if p_['i'] in _dono or not p_['faces']: continue
-    k_ = tuple(sorted(round(x) for x in p_['dim']))
-    if not any(all(abs(a - b) <= 1 for a, b in zip(k_, q_)) for q_ in _por): continue
-    alvo_ = min(inst, key=lambda i: geo.dist_caixas(p_['bb'], i['bb']), default=None)
-    if alvo_ is not None and geo.dist_caixas(p_['bb'], alvo_['bb']) <= 5:
-        alvo_['pecas'].append(p_['i']); _dono.add(p_['i']); PORTAS_XML.add(p_['i'])
+# Vistas e desenho consomem o projeto encerrado acima.
+import cena_render
+import compatibilizacao_camera
+import renderizador
 # REGRA (v28, João): móvel feito com GEOMETRIA no Promob (vem no DXF, não no XML) que ENCOSTA num móvel do projeto
 # = referência na imagem (como a pedra): forma real, sem listagem/balão/cota.
 # v29: peça com medida+cor do XML é PEÇA DE MÓVEL (porta/frente), nunca geometria.
@@ -674,7 +514,7 @@ if os.environ.get('COMPIERE_TESTE_CLASSIFICACAO'):
                     soltas=_w['itens'] + [_i for _i in inst if _i['tipo'] == 'mod'],
                     eixo_vista=geo.PAREDES.get(_w['key']))
         for _it in _w['itens']:
-            _tipo = classificacao.classificar_peca(_it, _ctx)
+            _tipo = compatibilizacao.classificar(_it, _ctx)
             print(f"CLASSIFICACAO\t{_tipo}\t{_it['desc']}\t{_it['dim']}")
     sys.exit(0)
 
@@ -746,7 +586,7 @@ if _rx_ancora and grupos:
         print(f"SEQUÊNCIA ESPACIAL: ambiente '{cfg['dados'].get('ambiente')}' -> início na parede com a âncora (grupo {_idx_ancora})")
 
 _DIVW = [w['id'] for w in paredes if w.get('divisoria')]
-nao_achados = [(d, dm) for n, (d, dm) in enumerate(linhas, 1) if not any(i['n'] == n for i in inst)]
+nao_achados = [tuple(linha) for linha in PROJETO['diagnostico']['itens_nao_localizados']]
 
 # REGRA (v35.3): itens que não são peças de mobiliário (ferragens, acessórios, kits) existem no XML
 # mas NUNCA terão geometria no DXF. Filtrá-los antes da Regra 1 evita bloqueio falso.
@@ -1220,7 +1060,8 @@ def geom_parede(w):
     umin_ = min(b['u0'] for b in boxes); umax_ = max(b['u1'] for b in boxes); zmax_ = max(b['z1'] for b in boxes)
     vmin_, vmax_, ztop_ = umin_ - 100, umax_ + 100, zmax_ + 50
     faces.sort(key=lambda t: -t[0])
-    return dict(w=w, f=f, faces=faces, boxes=boxes, umin=umin_, umax=umax_, zmax=zmax_, vmin=vmin_, vmax=vmax_, ztop=ztop_)
+    _cena = cena_render.construir(PROJETO, 'cota', w['itens'], [w['id']], portas_geometricas=_pc)
+    return dict(w=w, f=f, faces=faces, boxes=boxes, umin=umin_, umax=umax_, zmax=zmax_, vmin=vmin_, vmax=vmax_, ztop=ztop_, cena=_cena)
 
 def _ordem_pecas(fcs, bbs, cam):
     # Ordem de desenho POR PEÇA (pintor): A antes de B quando B está na frente de A.
@@ -1334,19 +1175,7 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
 # Porta/frente = chapa fina na frente do módulo (geometria). Porta de giro: puxador VERTICAL do lado OPOSTO às dobradiças
 # (dobradiças do DXF), 40 mm da borda; alto (armário) na altura da mão (~1,05 m), balcão perto do topo, aéreo perto de baixo.
 # Gaveta/basculante (mais larga que alta): HORIZONTAL centrado, perto do topo (aéreo: perto de baixo).
-def _puxador_xml():
-    for e in ET.parse(cfg['xml']).iter('ITEM'):
-        d_ = e.get('DESCRIPTION', '')
-        if d_.lower().startswith('puxador'):
-            if re.search(r'perfil|cava|aba|embutid|usinad', d_, re.I): return None
-            try: L_ = float(e.get('WIDTH') or 150)
-            except Exception: L_ = 150.0
-            n_ = d_.lower()
-            cor_ = (0.80, 0.70, 0.52) if 'champ' in n_ else (0.83, 0.68, 0.33) if ('dourad' in n_ or 'ouro' in n_) else \
-                   (0.12, 0.12, 0.12) if 'preto' in n_ else (0.62, 0.52, 0.46) if 'rose' in n_ else (0.74, 0.74, 0.76)
-            return dict(L=max(60.0, min(L_, 1200.0)), cor=cor_)
-    return None
-PUX_TIPO = _puxador_xml() if cfg.get('xml') else None
+PUX_TIPO = PROJETO['xml']['puxador_tipo']
 _DOBR = [p_ for p_ in P if (lambda d: 12 <= d[0] <= 32 and 40 <= d[1] <= 65 and 65 <= d[2] <= 95)(sorted(p_['dim']))]
 def _gerar_puxadores():
     out = []
@@ -1420,7 +1249,7 @@ def tem_porta(m, w):
         cob += max(0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * max(0, min(b[5], mb[5]) - max(b[2], mb[2]))
     if cob >= NICHO_MIN_RATIO * area_: return True
     # REGRA (João, 06/10/2026): frente = gaveta, porta = armário. Nome com Porta/Portas/Gaveta/Gavetas/Gaveteiro/Basculante = tem frente.
-    return bool(m.get('xml_tem_porta')) or classificacao._nome_tem_porta(m.get('desc', ''))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
+    return bool(m.get('xml_tem_porta')) or compatibilizacao.nome_tem_porta(m.get('desc', ''))
 
 def _fundo_nicho_face(its, f):
     # REGRA (João, 06/10/2026): o nicho sem peça de fundo (aberto para a parede) é desenhado com FUNDO da cor
@@ -1449,8 +1278,8 @@ def _nichos_classificados(w):
                soltas=w['itens'] + [i_ for i_ in inst if i_['tipo'] == 'mod'], eixo_vista=geo.PAREDES.get(w['key']))
     out = []
     for it in w['itens']:
-        if classificacao.classificar_peca(it, ctx) != 'NICHO': continue
-        out.append(classificacao._grupo_de(it, ctx) if it['tipo'] == 'comp' else [it])
+        if compatibilizacao.classificar(it, ctx) != 'NICHO': continue
+        out.append(compatibilizacao.grupo(it, ctx) if it['tipo'] == 'comp' else [it])
     return out
 
 def detalhes(w):
@@ -1540,18 +1369,17 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     if len(pids) > 1:
         f2 = FV[PW[pids[1]]['key']]; a = math.radians(22 if f[0] * f2[1] - f[1] * f2[0] >= 0 else -22)
     if ang is not None: a = math.radians(ang)
-    hx = f[0] * math.cos(a) - f[1] * math.sin(a); hy = f[0] * math.sin(a) + f[1] * math.cos(a)
-    # REGRA (v33, João): a vista frontal fica EXATAMENTE no centro - sem inclinação nenhuma.
-    # Câmera na altura do meio do móvel e sem elevação: as arestas verticais saem no prumo.
-    e = math.radians(kw.get('elev', 0 if (contexto and not itens) else 9))
-    fw = (hx * math.cos(e), hy * math.cos(e), -math.sin(e))
-    rn = math.hypot(hy, hx); r = (hy / rn, -hx / rn, 0.0)
-    up = (r[1] * fw[2] - r[2] * fw[1], r[2] * fw[0] - r[0] * fw[2], r[0] * fw[1] - r[1] * fw[0])
+    _cam = compatibilizacao_camera.calcular(f, U, len(pids), math.degrees(a), kw.get('elev'), dmin, contexto, bool(itens))
+    fw, r, up = _cam['frente'], _cam['direita'], _cam['acima']
     dot = lambda a_, b_: a_[0] * b_[0] + a_[1] * b_[1] + a_[2] * b_[2]
-    tc = ((U[0] + U[3]) / 2, (U[1] + U[4]) / 2, (U[2] + U[5]) / 2)
-    D = max(max(U[3] - U[0], U[4] - U[1], U[5] - U[2]) * 1.9, dmin)
-    if contexto and not itens and len(pids) == 1: D = max(D, 7000)   # com ambiente: câmera mais longe (menos distorção)  # parede pequena: câmera não chega perto demais (sem distorção)
-    cam = (tc[0] - fw[0] * D, tc[1] - fw[1] * D, tc[2] - fw[2] * D)
+    tc, D, cam = _cam['alvo'], _cam['distancia'], _cam['posicao']
+    _finalidade = kw.get('finalidade', 'vista')
+    _cena = cena_render.construir(PROJETO, _finalidade, its, pids, contexto=contexto,
+                                  isolado=bool(kw.get('isolado')),
+                                  camera={'posicao': cam, 'alvo': tc,
+                                          'modo': 'perspectiva_interior' if _finalidade == 'visao_geral' else 'frontal',
+                                          'altura_mm': cam[2], 'foco_altura_mm': tc[2]})
+    cam = tuple(_cena['camera']['posicao']); tc = tuple(_cena['camera']['alvo'])
     ctx = contexto and not itens and len(pids) == 1
     if ctx:
         w0 = PW[pids[0]]; axd = 0 if f[0] else 1; axl = 1 - axd; sg = f[axd]
@@ -1575,6 +1403,8 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
     src = []; shell = []; _pmat = {}; _pidx = {}
     _iso = {pi for i in its for pi in i['pecas']} if kw.get('isolado') else None   # REGRA (v18): móvel complexo SOZINHO
     for p_ in P:
+        # O contrato de ambiente é puro: faces preparadas e arestas ficam na saída.
+        p_ = _AMBIENTE_POR_I.get(p_['i'], p_)
         b = p_['bb']
         sd_ = sorted(p_['dim'])
         if _iso is not None and p_['i'] not in _iso: continue
@@ -1736,7 +1566,11 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             b_ = _bx[pc_]; area_ = max(1.0, (b_[2] - b_[0]) * (b_[3] - b_[1]) * _s * _s)
             if c_ >= 40 and c_ / area_ >= 0.05: kw['visiveis'].add(_pidx[pc_])   # peça aparece DE VERDADE (15%+ dela)
         if kw.get('so_visiveis'): return
-    if _Im is not None and cfg.get('textura', True) and any(textura(m_) for m_ in _pmat.values()):
+    if os.environ.get('COMPIERE_RENDER','').lower() == 'blender':
+        page.insert_image(rect, stream=renderizador.renderizar_blender(PROJETO, _cena,
+                          max(640, int(rect.width*2)), max(480, int(rect.height*2)),
+                          int(os.environ.get('COMPIERE_BLENDER_AMOSTRAS', '64'))))
+    elif _Im is not None and cfg.get('textura', True) and any(textura(m_) for m_ in _pmat.values()):
         _raster3d(page, rect, fcs, T, _pmat)
     else:
         if ctx: _tmp = fz.open(); _tp = _tmp.new_page(width=page.rect.width, height=page.rect.height); sh = _tp.new_shape()
@@ -1836,56 +1670,7 @@ p.draw_rect(esp, color=PRETO, width=0.6)
 # como CONFERIR (ENGENHARIA.pdf Parte 2, item 4). Acessórios sem DXF são normais e não afetam.
 confere = not _faltando_real
 # REGRA (João): especificações no modelo fixo, preenchidas com o que está no XML (nome exato). Sem item no projeto = em branco.
-def _espec(xml):
-    lim = lambda t: re.sub(r'[^\w)\]]+$', '', re.sub(r'\s+', ' ', t or '')).strip()
-    root_ = ET.parse(xml).getroot()
-    cor_, esp_ = {}, {}
-    def add(cl, c, e):
-        cor_.setdefault(cl, _col.Counter())[c] += 1
-        esp_.setdefault(cl, set()).add(e)
-    for it in root_.iter('ITEM'):
-        its_ = it.find('ITEMS')
-        if its_ is None: continue
-        ch = [c for c in its_.findall('ITEM') if re.match(r'Chapa .+ Espessura', c.get('DESCRIPTION', ''))]
-        if not ch: continue
-        m_ = re.match(r'Chapa (.+?) Espessura ([\d.,]+)\s*mm', ch[0].get('DESCRIPTION'))
-        if not m_: continue
-        c, e = m_.group(1).strip(), fmt(float(m_.group(2).replace(',', '.')))
-        I, D = (it.get('ID') or '').lower(), (it.get('DESCRIPTION') or '')
-        if re.search(r'(^|_)por_', I): add('porta', c, e)
-        elif '_gav' in I: continue                                   # corpo da gaveta
-        elif re.search(r'tamponamento', D, re.I): add('tamp', c, e)
-        elif re.search(r'afastador', D, re.I): add('caixa', c, e)
-        elif re.search(r'painel|tampo', D, re.I) or re.search(r'(^|_)(tam|tampo)(_|$)', I): add('painel', c, e)
-        elif '_pra' in I or re.match(r'prat', D, re.I): add('prat', c, e)
-        elif '_fun' in I: esp_.setdefault('fundo', set()).add(e)
-        else: add('caixa', c, e)
-    todos_ = [(it.get('DESCRIPTION') or '', it) for it in root_.iter('ITEM')]
-    nomes = lambda rx: list(OrderedDict((lim(d), 1) for d, _ in todos_ if re.search(rx, d, re.I)))
-    pux_n, pux_c = [], []
-    for d, it in todos_:
-        if re.match(r'puxador', d, re.I):
-            rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}
-            n_ = lim(d); lg = rf.get('LARGURA')
-            if lg and lg + 'mm' not in n_: n_ += f' - {lg}mm'
-            if n_ not in pux_n: pux_n.append(n_)
-            a_ = lim(rf.get('DESC_ACA_PER', ''))
-            if a_ and a_ not in pux_c: pux_c.append(a_)
-    esp_nome = lambda d: re.sub(r'\s*[\d.,]+\s*mm$', '', d).strip()
-    especiais = list(OrderedDict((esp_nome(lim(d)), 1) for d, it in todos_ if it.get('COMPONENT') == 'Y' and re.search(r'pist|articulad|aventos|basculant|trilho|cabideiro tubo|lixeira|cesto|porta.?tempero|sapateira|calceiro|gaveteiro aramado', d, re.I)))
-    cor = lambda k: ', '.join(c for c, _ in cor_.get(k, _col.Counter()).most_common())
-    mm = lambda k: ' e '.join(f'{e}mm' for e in sorted(esp_.get(k, ()), key=lambda t: float(t.replace(',', '.'))))
-    cx = mm('caixa') + (f" (fundo {mm('fundo')})" if esp_.get('fundo') else '')
-    return [('ESPECIFICAÇÕES DO PROJETO', None), ('CORES E ACABAMENTOS:', None),
-            ('Caixa Módulos (Interno)', cor('caixa')), ('Portas e Frentes', cor('porta')), ('Tamponamentos', cor('tamp')),
-            ('Painéis e Tampos', cor('painel')), ('Puxadores', ', '.join(pux_c)), ('Portas de Vidro', ', '.join(nomes(r'vidro|espelho'))),
-            ('FERRAGENS E ACESSÓRIOS:', None),
-            ('Dobradiças', ', '.join(nomes(r'^dobradi'))), ('Corrediças', ', '.join(nomes(r'corredi'))),
-            ('Puxadores', ', '.join(pux_n)), ('Ferragens especiais', ', '.join(especiais)),
-            ('ESPESSURAS:', None),
-            ('Caixa Módulos (Interno)', cx), ('Prateleiras internas', mm('prat')), ('Portas e Frentes', mm('porta')),
-            ('Tamponamentos', mm('tamp')), ('Painéis e Tampos e perfil', mm('painel'))]
-itens_esp = _espec(cfg['xml'])
+itens_esp = PROJETO['xml']['especificacoes']
 if not confere:
     itens_esp = [(r_, v_ if v_ is None or 'mm' in v_ else 'CONFERIR') for r_, v_ in itens_esp]
 _FH, _FB = fz.Font('helv'), fz.Font('hebo')
@@ -2019,7 +1804,7 @@ m = len(com_img); a = AREA_IN
 _nc = 1 if m == 1 else 2 if m <= 4 else 3; _nr = -(-m // _nc)
 cel = [fz.Rect(a.x0 + (i % _nc) * a.width / _nc, a.y0 + (i // _nc) * a.height / _nr, a.x0 + (i % _nc + 1) * a.width / _nc, a.y0 + (i // _nc + 1) * a.height / _nr) for i in range(m)]
 for v, c in zip(com_img, cel):
-    render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
+    render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True, finalidade='visao_geral')
     p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
 for j in range(1, _nc): p.draw_line((a.x0 + j * a.width / _nc, AREA.y0), (a.x0 + j * a.width / _nc, AREA.y1), color=PRETO, width=0.6)
 for j in range(1, _nr): p.draw_line((AREA.x0, a.y0 + j * a.height / _nr), (AREA.x1, a.y0 + j * a.height / _nr), color=PRETO, width=0.6)
@@ -2213,6 +1998,7 @@ while fz.get_text_length(_nm, 'hebo', fs_) > fr.width - 140: fs_ -= 1
 cp.insert_text((cx - fz.get_text_length(_nm, 'hebo', fs_) / 2, y + 50), _nm, fontname='hebo', fontsize=fs_, color=CZ)
 _sb = 'EXECUTIVO - ' + cfg['dados']['ambiente'].upper()
 cp.insert_text((cx - fz.get_text_length(_sb, 'helv', 16) / 2, y + 82), _sb, fontname='helv', fontsize=16, color=AC)
+projeto_unificado.validar(PROJETO)  # Auditoria final: desenho/layout não alteraram as decisões da Etapa 4.
 _gravar_biblioteca()
 doc.save(cfg['saida'], garbage=3, deflate=True)   # BLINDAGEM: nome fixo; se falhar, falha (sem arquivo com horário)
 

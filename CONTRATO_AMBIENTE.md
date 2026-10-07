@@ -1,9 +1,6 @@
-# CONTRATO DO AMBIENTE (versão 1 — extração fiel)
+# CONTRATO DO AMBIENTE (versão 2 — validado em 07/10/2026)
 
-> **Estado (06/10/2026):** `ambiente.py` é o código do ambiente **movido** do `gerar_caderno.py` sem mudar a lógica.
-> Prova: 23 cadernos gerados antes e depois são idênticos (texto, pixels e relatório). Os 3 que não geram
-> (Guilherme/Suíte Casal, Priscila/Dormitório, Tiago/Dormitório) falham igual nas duas versões pelo erro crítico
-> "itens do XML não localizados no DXF" — dado do projeto, não regressão.
+> **Estado (07/10/2026):** etapas 2–4 isoladas e validadas. A Unificação não altera `P`, elimina de todos os papéis de ambiente as peças reconhecidas pelo XML e o contrato serializado fica vinculado ao DXF por quantidade e SHA-256. Comparação Caroline Cozinha antes/depois: 10/10 páginas idênticas em texto e pixels.
 
 ## 0. Sequência-alvo (decisão do João, 06/10/2026 — FINAL, substitui as anteriores)
 ```
@@ -45,7 +42,7 @@ Entrada comum: `P` = lista de peças do DXF (`i`, `layer`, `bb`, `dim`, `faces`;
 **`ambientemodu.construir(P, amb)`** (etapa 3)
 | Chave | O que é |
 |---|---|
-| `moveis` | tudo que sobra sem `piso`, `malha_par` e `paredes_pecas`, na ordem do DXF; cada peça traz a posição (`bb`) do DXF |
+| `moveis` | toda peça com faces, exceto piso. Inclui paredes candidatas porque um armário alto pode ter a mesma geometria; a Etapa 4 decide com o XML |
 | `pedra` | placa 15–100 mm, ≥500×250, base entre 700 e 1100 mm (**candidata**) |
 | `eletro_a` | objeto com forma (≥10 faces), tamanho de eletro, até 2300 mm de altura (**candidato**) |
 | `eletro_b` | objeto baixo (até 1300 mm), sem material, a confirmar que encosta num móvel (**candidato**) |
@@ -82,7 +79,7 @@ este módulo (hoje) ou um motor próprio (amanhã), desde que entregue o mesmo c
 | `pedra` | Tampo/bancada de apoio, só desenho | placa 15–100 mm de espessura, ≥500 × ≥250 mm, base entre 700 e 1100 mm |
 | `malha_par` | Parede/casca em peça única, com vãos de porta e janela | altura ≥1800, comprimento ≥1000, espessura >400 mm (usa as **faces** reais) |
 | `par_dxf` | Parede/pilar em peça avulsa | espessura 60–400, altura ≥100, <20 m, fora da pedra e dos eletros; peça baixa no chão não conta |
-| `paredes_pecas` | Paredes altas, usadas para limites da elevação | altura ≥2000, espessura 80–400, comprimento ≥1000 (**inclui peças que são móvel do XML**: não filtra) |
+| `paredes_pecas` | Paredes altas, usadas para limites da elevação | altura ≥2000, espessura 80–400, comprimento ≥1000; peças reconhecidas pelo XML são removidas |
 | `eletros` | Objetos de apoio (geladeira, forno, cuba, coifa, revestimento) | forma real (>12 faces), fora de pedra/parede; só baixo se estiver sobre a pedra; mais as peças soltas encostadas (≤20 mm) em móvel |
 | `duplicadas` | Cópia de peça listada (mesmo lugar, ≥80% do volume) | não é desenhada |
 | `piso_z` | Nível do piso pronto (mm) | topo da maior placa fina do chão (≥1500 × ≥1500, ≤60 mm) |
@@ -90,7 +87,7 @@ este módulo (hoje) ou um motor próprio (amanhã), desde que entregue o mesmo c
 
 **Não é ambiente:** móvel, componente, porta, frente, puxador (isso é do XML). O ambiente é o que **sobra**.
 
-## 2. Entrada de `construir(P, usadas, bbs_moveis)`
+## 2. Entrada de `unificacao.fechar(P, amb, modu, usadas, bbs_moveis)`
 - `P`: peças do DXF (`i`, `layer`, `bb`, `dim`, `faces`, opcional `mat`).
 - `usadas`: índices de `P` que pertencem a itens do XML.
 - `bbs_moveis`: caixas dos itens do XML.
@@ -99,12 +96,13 @@ Sentido único da dependência: **primeiro o móvel, depois o ambiente** (o ambi
 
 ## 3. Saída (contrato)
 `construir()` devolve `dict` com as chaves: `duplicadas, pedra, malha_par, eletros, par_dxf, paredes_pecas, piso_z, faces_parede_real`.
-`para_json()` / `de_json(d, P)` serializam e restauram (versão 1 aponta peças por **índice** do DXF):
+`para_json()` / `de_json(d, P)` serializam e restauram. A versão 2 aponta peças por índice e vincula o contrato ao conjunto exato de peças:
 ```json
-{"versao": 1, "piso_z": 5.0, "duplicadas": [4], "pedra": [2], "malha_par": [], "eletros": [],
+{"versao": 2, "unidade": "mm", "quantidade_pecas": 5, "pecas_sha256": "...",
+ "piso_z": 5.0, "duplicadas": [4], "pedra": [2], "malha_par": [], "eletros": [],
  "par_dxf": [3], "paredes_pecas": [3], "faces_parede_real": [["x", -150.0, 0.0, 3000.0]]}
 ```
-Efeito colateral declarado: `pedra`, `eletros` e `malha_par` recebem `faces` em tuplas e `ft` (arestas nítidas) — preparação para o desenho.
+Sem efeito colateral: a saída recebe cópias preparadas com `faces` em tuplas e `ft` (arestas nítidas); `P` permanece byte a byte igual.
 
 ## 4. Quem consome no `gerar_caderno.py`
 | Consumidor | Usa | Para quê |
@@ -117,20 +115,22 @@ Efeito colateral declarado: `pedra`, `eletros` e `malha_par` recebem `faces` em 
 | planta (prancha de cores/vistas) | `malha_par`, `par_dxf`, `paredes_pecas` | linhas das paredes |
 
 ## 5. Invariantes
-1. Determinismo: mesma `P` + mesmos `usadas` → mesmo resultado (testado em `teste_ambiente.py`).
-2. Sem arquivo, sem cache, sem estado global; função pura.
+1. Determinismo: mesma entrada produz o mesmo resultado.
+2. Etapas 2–4 não leem nem escrevem arquivos e não modificam `P`.
 3. Nenhum índice aparece em dois papéis exclusivos (`pedra`, `malha_par`, `eletros`).
-4. `gerar_caderno` não recalcula nada disso: se precisar de outro dado de ambiente, entra no contrato.
+4. Nenhuma peça em `usadas` pode sair como `pedra`, `malha_par`, `par_dxf` ou `paredes_pecas`.
+5. O JSON só abre com versão 2, unidade `mm`, mesma quantidade e mesmo SHA-256 das peças.
+6. Entrada incompleta, índice inválido ou caixa malformada interrompe a execução com erro explícito.
 
 ## 6. Como o motor novo do ambiente entra
-1. Produzir o JSON da seção 3 (versão 1) para o mesmo DXF.
+1. Produzir o JSON da seção 3 (versão 2) para o mesmo DXF.
 2. No `gerar_caderno`, trocar `ambiente.construir(...)` por `ambiente.de_json(json, P)` (uma linha).
 3. Rodar a comparação antes × depois (`comparar-cadernos`) — as cotas externas não podem mudar.
 
-## 7. Versão 2 (quando o motor novo gerar geometria própria)
+## 7. Próxima versão (quando o motor novo gerar geometria própria)
 Hoje os papéis apontam peças **do DXF**. Se o novo motor desenhar paredes/piso/janelas que **não existem no DXF**, o contrato passa a
 carregar a geometria (cada elemento com `papel`, `bb`, `faces`). Mudança necessária no `gerar_caderno`: o laço de `render3d`
-(`for p_ in P` com teste de papel) passa a percorrer os elementos do ambiente. É a única mudança estrutural; o resto já fica pronto na v1.
+(`for p_ in P` com teste de papel) passa a percorrer os elementos do ambiente. É a única mudança estrutural; o restante do contrato atual permanece.
 
 ## 8. Pendências de unificação (regras duplicadas fora do módulo)
 | Onde | Duplicidade | Ação sugerida |

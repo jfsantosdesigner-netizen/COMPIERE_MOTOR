@@ -24,6 +24,52 @@ PAREDE_COR = (0.95, 0.94, 0.91)
 PISO_COR = (0.78, 0.78, 0.80)
 ELETRO_COR = (0.72, 0.73, 0.76)
 
+CHAVES_PECA = ('i', 'layer', 'bb', 'dim', 'faces')
+
+
+def numero_finito(v):
+    return type(v) in (int, float) and math.isfinite(v)
+
+
+def validar_caixa(b, nome='bb'):
+    if not isinstance(b, (list, tuple)) or len(b) != 6 or not all(numero_finito(v) for v in b):
+        raise ValueError(f'{nome} deve conter 6 números finitos')
+    if any(b[k + 3] < b[k] for k in range(3)):
+        raise ValueError(f'{nome} possui limites invertidos')
+
+
+def validar_pecas(P):
+    """Valida o contrato comum do DXF antes de qualquer classificação."""
+    if not isinstance(P, list):
+        raise TypeError('P deve ser uma lista de peças do DXF')
+    for pos, p_ in enumerate(P):
+        if not isinstance(p_, dict):
+            raise TypeError(f'P[{pos}] deve ser um dicionário')
+        faltam = [k for k in CHAVES_PECA if k not in p_]
+        if faltam:
+            raise ValueError(f'P[{pos}] sem chaves obrigatórias: {", ".join(faltam)}')
+        if type(p_['i']) is not int or p_['i'] != pos:
+            raise ValueError(f'P[{pos}].i={p_["i"]}; o índice deve coincidir com a posição')
+        if not isinstance(p_['layer'], str):
+            raise TypeError(f'P[{pos}].layer deve ser texto')
+        if not isinstance(p_['bb'], (list, tuple)) or len(p_['bb']) != 6:
+            raise ValueError(f'P[{pos}].bb deve ter 6 números')
+        if not isinstance(p_['dim'], (list, tuple)) or len(p_['dim']) != 3:
+            raise ValueError(f'P[{pos}].dim deve ter 3 números')
+        if not all(numero_finito(v) for v in list(p_['bb']) + list(p_['dim'])):
+            raise ValueError(f'P[{pos}].bb/dim devem conter apenas números finitos')
+        if any(p_['bb'][k + 3] < p_['bb'][k] for k in range(3)) or any(v < 0 for v in p_['dim']):
+            raise ValueError(f'P[{pos}] possui limites ou dimensões inválidos')
+        if not isinstance(p_['faces'], list):
+            raise TypeError(f'P[{pos}].faces deve ser uma lista')
+        for face in p_['faces']:
+            if not isinstance(face, (list, tuple)) or len(face) < 3:
+                raise ValueError(f'P[{pos}] possui face inválida')
+            for vertice in face:
+                if not isinstance(vertice, (list, tuple)) or len(vertice) != 3 or not all(numero_finito(v) for v in vertice):
+                    raise ValueError(f'P[{pos}] possui vértice inválido')
+    return P
+
 def _n(a, b, c):
     if len(set((a, b, c))) < 3: return (0, 0, 1)
     e1 = [b[k] - a[k] for k in range(3)]; e2 = [c[k] - a[k] for k in range(3)]
@@ -60,6 +106,7 @@ def _arestas(faces):
 
 
 def construir(P):
+    validar_pecas(P)
     malha = [p_ for p_ in P if p_['faces'] and p_['dim'][2] >= 1800
              and max(p_['dim'][0], p_['dim'][1]) >= 1000 and min(p_['dim'][0], p_['dim'][1]) > 400]
     mi = {p_['i'] for p_ in malha}

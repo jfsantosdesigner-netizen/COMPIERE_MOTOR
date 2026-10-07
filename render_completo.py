@@ -8,7 +8,7 @@ import sys, os, json, glob, subprocess
 sys.dont_write_bytecode = True
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, AQUI)
-import geo, ambiente, ambientemodu, unificacao, validar_fase1 as V
+import geo, ambiente, ambientemodu, unificacao, projeto_unificado, cena_render, entrada_xml
 from render_ambiente import pecas, caixa, blender
 
 
@@ -18,17 +18,16 @@ def main(dxf, xml, saida, final=False):
     a = ambiente.construir(P); modu = ambientemodu.construir(P, a)
     print(f"      piso={len(a['piso'])} parede(malha)={len(a['malha_par'])} moveis(cand.)={len(modu['moveis'])} pedra(cand.)={len(modu['pedra'])}")
     print('[3/5] unificacao (XML x DXF)')
-    linhas, QT, _ = V.ler_xml_min(xml)
-    inst = geo.casar(P, linhas, QT)                       # ETAPA 4: unico cruzamento XML x DXF
-    usadas = {pi for i in inst for pi in i['pecas']}
-    res = unificacao.fechar(P, a, modu, usadas, [i['bb'] for i in inst])
-    dup = res['duplicadas']
+    projeto = unificacao.construir(P, entrada_xml.ler(xml))
+    inst = projeto['itens']; usadas = projeto['moveis']; res = projeto['ambiente']
+    cena = cena_render.construir(projeto, 'visao_geral', contexto=True)
+    dup = projeto['ambiente']['duplicadas']
     ocultas = {p['i'] for k in ('pedra', 'eletros') for p in res[k]}
     g = {'parede': [f for p in res['malha_par'] for f in p['faces']] + [f for p in res['paredes_pecas'] for f in caixa(p['bb'])],
          'piso': [f for i in a['piso'] for f in P[i]['faces']],
          'pedra': [f for p in res['pedra'] for f in p['faces']],
          'eletros': [f for p in res['eletros'] for f in p['faces']],
-         'moveis': [f for i in sorted(usadas) if i not in dup and i not in ocultas for f in P[i]['faces']],
+         'moveis': [f for i in sorted(cena['pecas_visiveis']) if i not in dup and i not in ocultas for f in projeto['pecas'][i]['faces']],
          'piso_z': res['piso_z']}
     print(f"      UNIFICADO: {len(inst)} itens do XML, {len(usadas)} pecas de movel, pedra={len(res['pedra'])}, eletros={len(res['eletros'])}, "
           f"parede(malha)={len(res['malha_par'])}, duplicadas ignoradas={len(dup)}")

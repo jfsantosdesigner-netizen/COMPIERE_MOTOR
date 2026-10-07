@@ -30,8 +30,7 @@ def laterais(P, zmin=150):
     for p in P:
         dx, dy, dz = p['dim']
         if min(dx, dy) <= 26 and dz >= zmin and max(dx, dy) >= 150:
-            p['eixo'] = 'x' if dx <= dy else 'y'
-            out.append(p)
+            out.append(dict(p, eixo='x' if dx <= dy else 'y'))
     return out
 
 def casar(P, linhas, qtd=None):
@@ -48,7 +47,7 @@ def casar(P, linhas, qtd=None):
             if p['i'] in usados: continue
             if all(abs(a - b) <= 1.6 for a, b in zip(sorted(p['dim']), alvo)):
                 usados.add(p['i']); pegou += 1
-                inst.append(dict(n=n, desc=desc, dim=dm, bb=p['bb'], tipo='comp', pecas=[p['i']]))
+                inst.append(dict(n=n, desc=desc, dim=dm, bb=list(p['bb']), tipo='comp', pecas=[p['i']]))
     # 2) módulos: par de laterais
     cands = []
     for n, (desc, dm) in enumerate(linhas, 1):
@@ -156,9 +155,9 @@ def agrupar_vistas(inst, paredes):
 # ================= v2: parede pelo lado das portas =================
 def _ov(a0, a1, b0, b1): return max(0.0, min(a1, b1) - max(a0, b0))
 
-def lado_frontal(it, P, ocupadas=()):
+def lado_frontal(it, P, ocupadas=(), portas_xml=()):
     # REGRA: Prioriza portas/frentes. Se não houver, procura painéis (ilhas).
-    U = it['bb']; dentro_ = set(it['pecas']) | set(ocupadas); area = {'-x': 0, '+x': 0, '-y': 0, '+y': 0}
+    U = it['bb']; dentro_ = (set(it['pecas']) | set(ocupadas)) - set(portas_xml); area = {'-x': 0, '+x': 0, '-y': 0, '+y': 0}
     for p in P:
         if p['i'] in dentro_: continue
         b = p['bb']; dx, dy, dz = p['dim']
@@ -213,14 +212,16 @@ def _montar(inst):
         for it in w['itens']: it['parede'] = w['id']
     return paredes
 
-def definir_paredes(inst, P):
+def definir_paredes(inst, P, portas_xml=()):
     lim = limites(inst)
     mods = [i for i in inst if i['tipo'] == 'mod']
     ocup = set()
     for i in inst: ocup.update(i['pecas'])
     # 1) módulos: lado das portas
     for it in mods:
-        lf = lado_frontal(it, P, ocup)
+        # As portas avulsas agora já têm dono. Continuam sendo candidatas à frente,
+        # exatamente como antes da consolidação da Unificação.
+        lf = lado_frontal(it, P, ocup, portas_xml)
         it['frente'] = lf
         it['parede_key'] = OPOSTO[lf] if lf else parede_de(it, lim, P)
     # 2) módulos: costas encostadas no plano de uma parede já formada, largura ao longo dela
