@@ -1,0 +1,345 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Nicho",
+      "dimensoes_xml": "300x800x200",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 2,
+      "descricao": "Nicho",
+      "dimensoes_xml": "300x1197x165",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 3,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Branco",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 4,
+      "descricao": "Tubo Silicone Carvallho Treviso",
+      "dimensoes_xml": "50x320x50",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "600x1215x350",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "800x750x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 7,
+      "descricao": "Armário Superior",
+      "dimensoes_xml": "845x480x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 8,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "1946x165x480",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 9,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "600x500x350",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Armário 1 Porta",
+      "dimensoes_xml": "425x480x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1400x2545x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Bancada 1 Porta",
+      "dimensoes_xml": "450x830x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Bancada 1 Porta",
+      "dimensoes_xml": "430x665x500",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "527,5x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "830x18x498",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1440x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1440x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "290x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2123x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1303x18x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2302x18x500",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "345x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "600x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 24,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1430x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 25,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "342x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 26,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "580x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 27,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "600x18x370",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 28,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2545x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 29,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "480x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 30,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "830x18x320",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 31,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "830x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 32,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "480x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 33,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "685x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 34,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "175x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

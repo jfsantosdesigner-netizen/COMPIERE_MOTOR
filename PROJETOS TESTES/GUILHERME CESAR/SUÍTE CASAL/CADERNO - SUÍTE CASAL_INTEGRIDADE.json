@@ -1,0 +1,175 @@
+{
+  "aprovado": false,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "664x165x380",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 2,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "753x165x380",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 3,
+      "descricao": "Gaveta Corrediça Telescópica",
+      "dimensoes_xml": "601x100x350",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "390x2286x600",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário c/ Portas Deslizantes Internas c/ Rodapé c/ Divisória Interna",
+      "dimensoes_xml": "2660x2286x600",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Fechamento",
+      "dimensoes_xml": "70x2286x580",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 7,
+      "descricao": "Fechamento",
+      "dimensoes_xml": "70x500x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 8,
+      "descricao": "Fechamento",
+      "dimensoes_xml": "70x2700x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 9,
+      "descricao": "Frente Sapateira",
+      "dimensoes_xml": "564,5x70x18",
+      "quantidade_xml": 5,
+      "quantidade_dxf": 5,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Itapua MDF",
+      "dimensoes_xml": "1100x18x1749",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Itapua MDF",
+      "dimensoes_xml": "1100x18x800",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "790x18x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "183x18x400",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "701x18x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 15,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1085x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "925x18x120",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "1085x18x120",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

@@ -1,12 +1,14 @@
 # QUALIDADE — RAFAEL CLARET / Cozinha2 (gerado por script)
 
-- APROVADO | nº de pranchas 13 = 4 + 4 listagens + 1 divisões + 4 cotas (sem extras/especiais)
+- APROVADO | 12 pranchas na ordem final, incluindo paginação dinâmica de vistas, listagens e nichos
 - APROVADO | itens localizados no DXF: 41/41
 - APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | reconstruções autorizadas pelo XML: 1/3
+- APROVADO | especiais simplificados: 0 prancha(s) 2D cotada(s), sem listagem 3D
 - APROVADO | texturas dos materiais
-- VISTA A: paredes x+@2153 | 19 linhas de listagem
+- VISTA A: paredes x+@2153 | 20 linhas de listagem
 - VISTA B: paredes y+@4155 | 1 linhas de listagem
-- VISTA C: paredes y-@0 | 14 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA C: paredes y-@0 | 14 linhas de listagem
 - VISTA D: paredes x+@3918 | 7 linhas de listagem
   A1: Armário 1 Portas Basculantes 755x460x350
   A2: Armário 2 Portas 750x660x350
@@ -18,15 +20,16 @@
   A8: Painel Freijo Puro MDF 250x18x568
   A9: Painel Freijo Puro MDF 1000x18x178
   A10: Painel Freijo Puro MDF 400x18x370
-  A11: Painel Freijo Puro MDF 719x18x395
+  A11: Painel Freijo Puro MDF 719x18x364
   A12: Painel Freijo Puro MDF 719x18x450
   A13: Painel Freijo Puro MDF 719x18x370
   A14: Painel Freijo Puro MDF 250x18x132
-  A15: Painel Freijo Puro MDF 800x18x150
-  A16: Painel Freijo Puro MDF 250x18x150
-  A17: Painel Freijo Puro MDF 1000x18x150
-  A18: Painel Freijo Puro MDF 214x18x150
-  A19: Vista 2355x18x60
+  A15: Painel Freijo Puro MDF 586x18x150
+  A16: Painel Freijo Puro MDF 800x18x150
+  A17: Painel Freijo Puro MDF 250x18x150
+  A18: Painel Freijo Puro MDF 1000x18x150
+  A19: Painel Freijo Puro MDF 214x18x150
+  A20: Vista 2355x18x60
   B1: Balcão 1 Porta 540x720x613
   C1: Armário 2 Portas 942x660x400
   C2: Armário 2 Portas 970x500x400

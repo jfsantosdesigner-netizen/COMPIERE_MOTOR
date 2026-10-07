@@ -1,0 +1,305 @@
+{
+  "aprovado": false,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "490x250x280",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 2,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "920x165x380",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 3,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1234x2540x560",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 4,
+      "descricao": "PUX.BEETLE CR",
+      "dimensoes_xml": "30x20x20",
+      "quantidade_xml": 5,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 5,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "70x25x889",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "934x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 7,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "934x18x207",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 8,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "264x15x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "491x18x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "226x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "762x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "780x18x225",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "780x18x245",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "780x18x970",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1090x15x1540",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "70x25x1492",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "390x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "232x15x70",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "309x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "262x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "922x18x400",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1951x25x300",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "970x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 24,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "934x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 25,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "780x18x934",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "FALHA"
+    },
+    {
+      "n": 26,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1234x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 27,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1234x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 28,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2643x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 29,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2643x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 30,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2643x18x390",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

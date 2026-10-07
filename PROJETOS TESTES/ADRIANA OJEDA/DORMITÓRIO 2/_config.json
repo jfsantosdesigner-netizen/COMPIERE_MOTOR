@@ -1,0 +1,19 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "ADRIANA OJEDA",
+  "ambiente": "Dormitório 2",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "fontes_frescas": true,
+ "layout": "C:\\COMPIERE\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\DORMITÓRIO 2\\EXECUTIVO DORMITÓRIO FILHO 100000338.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\DORMITÓRIO 2\\DORMITÓRIO 2.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\DORMITÓRIO 2\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\DORMITÓRIO 2\\CADERNO - DORMITÓRIO 2.pdf"
+}

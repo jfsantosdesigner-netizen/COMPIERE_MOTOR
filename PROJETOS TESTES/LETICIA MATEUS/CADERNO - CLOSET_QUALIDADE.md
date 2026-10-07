@@ -1,13 +1,15 @@
 # QUALIDADE — LETICIA MATEUS / Closet (gerado por script)
 
-- APROVADO | nº de pranchas 12 = 4 + 4 listagens + 0 divisões + 4 cotas (sem extras/especiais)
-- APROVADO | itens localizados no DXF: 10/11 (1 acessório(s) sem DXF — normal)
+- APROVADO | 12 pranchas na ordem final, incluindo paginação dinâmica de vistas, listagens e nichos
+- APROVADO | itens localizados no DXF: 11/11 (1 acessório(s) sem DXF — normal)
   - ACESSÓRIO (sem DXF, normal): Kit Tapa-furo 18mm c/ 28un Branco 75x2x130
 - APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | reconstruções autorizadas pelo XML: 0/3
+- APROVADO | especiais simplificados: 1 prancha(s) 2D cotada(s), sem listagem 3D
 - APROVADO | texturas dos materiais
 - VISTA A: paredes x-@168 | 2 linhas de listagem
 - VISTA B: paredes y-@-4082 | 2 linhas de listagem
-- VISTA C: paredes x+@3194 | 5 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA C: paredes x+@3194 | 5 linhas de listagem
 - VISTA D: paredes y+@-150 | 2 linhas de listagem
   A1: Armário c/ Portas de Giro c/ Rodapé 2902x2605x580
   A2: Painel Branco MDP 2700x18x150

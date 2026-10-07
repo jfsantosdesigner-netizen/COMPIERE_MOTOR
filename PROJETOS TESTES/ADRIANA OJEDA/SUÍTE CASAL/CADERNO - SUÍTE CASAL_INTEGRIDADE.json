@@ -1,0 +1,315 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Kit Batente Silicone c/ 50un",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 2,
+      "descricao": "Kit Tapa-furo 18mm c/ 28un Branco",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 3,
+      "descricao": "Tubo Silicone Carvallho Treviso",
+      "dimensoes_xml": "50x320x50",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 4,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "500x350x432",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário 1 Porta",
+      "dimensoes_xml": "536x730x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário 2 Portas",
+      "dimensoes_xml": "1072x730x470",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 7,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1520x2550x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 8,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "250x2355x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 9,
+      "descricao": "Armário Canto L Esquerdo",
+      "dimensoes_xml": "1050x2550x800",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "2120x15x450",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "2150x15x170",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "450x15x170",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "450x15x150",
+      "quantidade_xml": 9,
+      "quantidade_dxf": 9,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "2670x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "2235x15x70",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "2606x18x135",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1800x18x1274",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1430x18x120",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "700x18x120",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1800x18x1410",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2152x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2606x18x135",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "449x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 24,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "440x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 25,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "500x18x454",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 26,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1547x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 1,
+      "obrigatorio": true,
+      "status": "RECONSTRUIDA_XML"
+    },
+    {
+      "n": 27,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "1598x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 1,
+      "obrigatorio": true,
+      "status": "RECONSTRUIDA_XML"
+    },
+    {
+      "n": 28,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2140x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 1,
+      "obrigatorio": true,
+      "status": "RECONSTRUIDA_XML"
+    },
+    {
+      "n": 29,
+      "descricao": "Painel Carvalho Treviso MDF",
+      "dimensoes_xml": "2680x18x470",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 30,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "195x18x210",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 31,
+      "descricao": "Tamponamento",
+      "dimensoes_xml": "2355x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

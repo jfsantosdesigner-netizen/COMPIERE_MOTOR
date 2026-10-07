@@ -1,12 +1,14 @@
 # QUALIDADE — FELIPE / Cozinha (gerado por script)
 
-- APROVADO | nº de pranchas 11 = 4 + 3 listagens + 1 divisões + 3 cotas (sem extras/especiais)
+- APROVADO | 11 pranchas na ordem final, incluindo paginação dinâmica de vistas, listagens e nichos
 - APROVADO | itens localizados no DXF: 30/30
 - APROVADO | XML confere com o projeto (baseado em itens localizados no DXF)
+- APROVADO | reconstruções autorizadas pelo XML: 0/3
+- APROVADO | especiais simplificados: 0 prancha(s) 2D cotada(s), sem listagem 3D
 - APROVADO | texturas dos materiais
-- VISTA A: paredes y+@-160 | 25 linhas de listagem | CONDIÇÕES -> 1 nicho(s) em subimagem
+- VISTA A: paredes y+@-160 | 26 linhas de listagem
 - VISTA B: paredes y-@-2033 | 3 linhas de listagem
-- VISTA C: paredes x-@2287 | 1 linhas de listagem
+- VISTA C: paredes x-@2287 | 2 linhas de listagem
   A1: Armário 2 Portas 720x1011x200
   A2: Armário Despenseiro 200x1714x470
   A3: Armário 1 Portas Basculantes 1019x418x450
@@ -32,7 +34,9 @@
   A23: Tamponamento 400x18x110
   A24: Vista 996x18x189
   A25: Vista 1794x18x189
+  A26: Vista 212x18x60
   B1: Balcão Inferior 500x740x300
   B2: Painel Chumbo MDP 1314x18x890
   B3: Tamponamento 740x18x70
   C1: Balcão Inferior 766x740x300
+  C2: Tamponamento 740x18x70

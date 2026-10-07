@@ -1,0 +1,19 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "RAFAEL CLARET",
+  "ambiente": "Suite_Casal",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "fontes_frescas": true,
+ "layout": "C:\\COMPIERE\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\RAFAEL CLARET\\SUITE_CASAL\\EXECUTIVO MONTADO SUITE - 10000334.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\RAFAEL CLARET\\SUITE_CASAL\\RafaelClaret_Suite.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\RAFAEL CLARET\\SUITE_CASAL\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\RAFAEL CLARET\\SUITE_CASAL\\CADERNO - SUITE_CASAL.pdf"
+}

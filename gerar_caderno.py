@@ -1,17 +1,13 @@
-﻿# GERADOR DE CADERNO v2 — Compiere. Um comando: python gerar_caderno.py config.json
+# GERADOR DE CADERNO v2 — Compiere. Um comando: python gerar_caderno.py config.json
 # XML/listagem -> DXF (posição real) -> vistas automáticas -> listagem por vista + balões -> elevações com cotas -> PDF + QUALIDADE
 import sys, os, re, json, subprocess, xml.etree.ElementTree as ET
 from collections import OrderedDict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.stdout.reconfigure(encoding='utf-8')
 import pymupdf as fz, geo
-from normal.vidros import estilo, faces_porta
-from camera_comum import posicionar, obstaculos, enquadrar, cantos
-from cotas_comum import contornos, vaos_prateleiras, assinatura_vaos
 
 
 cfg = json.load(open(sys.argv[1], encoding='utf-8'))
-XML_TREE = ET.parse(cfg['xml'])
 # REGRA (v27): PROIBIDO puxar listagem/imagens de PDF — tudo sai do XML + DXF
 for _k in ('listagem_pdf', 'imagens', 'capa_img'): cfg.pop(_k, None)
 AREA = fz.Rect(19, 142, 823, 577); IN = 7
@@ -40,11 +36,9 @@ def modelo(it):
         if e is not None and e.get('REFERENCE'): return e.get('REFERENCE')
     return ''
 
-import integridade
-FONTES_XML = {}
 QT = {}
 def ler_xml(path):
-    root = XML_TREE.getroot() if path == cfg['xml'] else ET.parse(path).getroot()
+    root = ET.parse(path).getroot()
     mods, comps, cores, pux, ferr = OrderedDict(), OrderedDict(), {}, OrderedDict(), OrderedDict()
     mods_com_porta = set()  # (desc, dim) de módulos com sub-item _POR_ no XML (porta de vidro não exportada no DXF)
     mods_porta_mat = {}    # (desc, dim) → material da porta lido do XML: 'vidro', 'mdf', 'mdp', etc.
@@ -66,7 +60,7 @@ def ler_xml(path):
                 elif '_ESP' in U or 'ESPELHO' in U: _me = 'espelho'
                 try: _pw = float(a.get('WIDTH', 0) or 0); _ph = float(a.get('HEIGHT', 0) or 0); _pd = float(a.get('DEPTH', 0) or 0)
                 except (ValueError, TypeError): _pw = _ph = _pd = 0
-                por_euronobre.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _me, 'visual': estilo(it)})
+                por_euronobre.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _me})
                 continue
             if 'EURONOBRE' in cn or 'PUX' in U: pux[d.split('(')[0].strip()] = 1; continue
             if 'FERRAG' in cn: ferr[d.strip()] = 1; continue
@@ -81,11 +75,10 @@ def ler_xml(path):
                 elif 'ALU' in U or 'METAL' in U: _ma = 'aluminio'
                 try: _pw = float(a.get('WIDTH', 0) or 0); _ph = float(a.get('HEIGHT', 0) or 0); _pd = float(a.get('DEPTH', 0) or 0)
                 except (ValueError, TypeError): _pw = _ph = _pd = 0
-                por_avulsas.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _ma, 'visual': estilo(it)})
+                por_avulsas.append({'id': U, 'desc': d, 'dim': (_pw, _ph, _pd), 'mat': _ma})
                 continue
             desc = re.sub(r'\s+\d+(?:[.,]\d+)?x\d+(?:[.,]\d+)?x\d+(?:[.,]\d+)?mm\s*$', '', d).strip()
             dim = 'x'.join(fmt(float(a[k])) for k in ('WIDTH', 'HEIGHT', 'DEPTH'))
-            FONTES_XML[(desc, dim)] = integridade.fonte(it)
             qq = int(float(a.get('QUANTITY') or 1)); QT[(desc, dim)] = QT.get((desc, dim), 0) + qq
             if U.startswith(('PAI', 'COM_COZ_DIV')):
                 comps[(desc, dim)] = 1
@@ -134,9 +127,7 @@ if not os.path.exists(pj) and _hx: open(pj + '.md5', 'w').write(_hx)
 if not os.path.exists(pj):
     subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), 'dxf_pecas(motor core).py'), cfg['dxf'], pj], check=True)
 P = geo.carregar(pj)
-# Engenharia: XML e DXF são fontes complementares do mesmo projeto.
-# Divergência dimensional não é corrigida nem tolerada automaticamente:
-# a integridade deve interromper a geração e expor o erro de leitura/processamento.
+
 import math
 def _n(a, b, c):
     if len(set((a, b, c))) < 3: return (0, 0, 1)
@@ -169,20 +160,19 @@ _MAT = next((c_ for c_ in (os.path.join(_MD, 'MATERIAIS'),
 _MI = os.path.join(_MD, 'materiais_index.json')
 _MC = os.path.join(_MD, 'materiais_cores.json')  # [caminho relativo a MATERIAIS, nome, [r,g,b]]: cores prontas, dispensa a pasta MATERIAIS
 _rgbx = {}
-if not cfg.get('fontes_frescas') and os.path.exists(_MC):
+if os.path.exists(_MC):
     _idx = []
     for rel_, st_, rgb_ in json.load(open(_MC, encoding='utf-8')):
         _idx.append([os.path.join(_MAT, rel_), st_]); _rgbx[_idx[-1][0]] = rgb_
-elif not cfg.get('fontes_frescas') and os.path.exists(_MI): _idx = json.load(open(_MI, encoding='utf-8'))
+elif os.path.exists(_MI): _idx = json.load(open(_MI, encoding='utf-8'))
 else:
     _idx = []
-    for fonte_material in (_MAT, os.path.join(_MD, 'texturas')):
-        for d_, ds_, fs_ in os.walk(fonte_material):
-            for f_ in fs_:
-                if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
+    for d_, ds_, fs_ in os.walk(_MAT):
+        for f_ in fs_:
+            if f_.lower().endswith(('.jpg', '.jpeg', '.png')): _idx.append([os.path.join(d_, f_), _norm(os.path.splitext(f_)[0])])
     json.dump(_idx, open(_MI, 'w', encoding='utf-8'))
 _CC = os.path.join(_MD, 'cores_cache.json')
-_cc = json.load(open(_CC, encoding='utf-8')) if not cfg.get('fontes_frescas') and os.path.exists(_CC) else {}
+_cc = json.load(open(_CC, encoding='utf-8')) if os.path.exists(_CC) else {}
 _PREF = ('duratex', 'arauco', 'guararapes', 'berneck', 'eucatex', 'masisa', 'stelben')
 def _parecido(a, b):
     # REGRA (v15): nome do XML com letra a mais/a menos ou cortado ("Metallic Sued" = "Metalic Suede")
@@ -243,7 +233,7 @@ def textura(nome):
         cch = os.path.join(_TXC, fn)              # cache derivado
         try:
             if os.path.exists(ofi): im = _Im.open(ofi).convert('RGB')
-            elif not cfg.get('fontes_frescas') and os.path.exists(cch): im = _Im.open(cch).convert('RGB')
+            elif os.path.exists(cch): im = _Im.open(cch).convert('RGB')
             else:
                 full = ref if os.path.exists(ref) else os.path.join(_MAT, ref.split('MATERIAIS', 1)[-1].lstrip('/\\'))
                 if os.path.exists(full):
@@ -252,7 +242,7 @@ def textura(nome):
         except Exception: im = None
     _txc[nome] = im; return im
 _dm = {}; _ord = {}
-for e in XML_TREE.iter('ITEM'):
+for e in _ET2.parse(cfg['xml']).iter('ITEM'):
     m_ = next((g for ch in e if ch.tag != 'ITEM' for g in ch if g.tag == 'MODEL'), None)
     if m_ is None or not m_.get('REFERENCE'): continue
     try: k_ = tuple(sorted(round(float(e.get(a))) for a in ('WIDTH', 'HEIGHT', 'DEPTH')))
@@ -283,58 +273,7 @@ TEX_FALTA = [m_ for m_ in _usadas if _cc.get(m_) and not any(os.path.exists(os.p
 for nm_, q_ in _usadas.most_common(): print('   %-22s %4d pecas <- %s' % (nm_, q_, os.path.relpath(_cc[nm_][1], _MAT)))
 _todas_mats = {r_ for c_ in _dm.values() for r_ in c_}
 for nm_ in [k for k, v in _cc.items() if not v and k in _todas_mats]: print('   SEM TEXTURA:', nm_)
-inst = geo.casar(P, linhas, QT, FONTES_XML)
-
-# Nova regra: tolera no máximo três ocorrências obrigatórias ausentes no casamento.
-# A geometria é reconstruída na posição da melhor evidência DXF, mas SEMPRE com
-# as dimensões declaradas no XML. Acima de três faltas, a integridade bloqueia.
-def _reproduzir_faltantes_xml():
-    import itertools
-    usados = {pi for it in inst for pi in it['pecas']}
-    conf = integridade.conferir(linhas, QT, inst)
-    faltas = [(it['n'], it['descricao'], it['dimensoes_xml'],
-               it['quantidade_xml'] - it['quantidade_dxf'])
-              for it in conf['itens'] if it['status'] == 'FALHA']
-    total = sum(max(0, q) for _, _, _, q in faltas)
-    if not total or total > 3:
-        return
-    for n_, desc_, dm_, qtd_ in faltas:
-        alvo = geo.parse_dim(dm_)
-        for _ in range(qtd_):
-            candidatos = []
-            for pc in P:
-                if pc['i'] in usados:
-                    continue
-                melhor = min((sum(abs(a-b) for a,b in zip(perm, pc['dim'])),
-                              sum(abs(a-b) <= 3 for a,b in zip(perm, pc['dim'])), perm)
-                             for perm in itertools.permutations(alvo))
-                if melhor[1] >= 2:
-                    candidatos.append((melhor[0], pc, melhor[2]))
-            if not candidatos:
-                continue
-            _, base_, eixos_ = min(candidatos, key=lambda x: x[0])
-            centro = [(base_['bb'][k] + base_['bb'][k+3]) / 2 for k in range(3)]
-            bb_ = [centro[k] - eixos_[k] / 2 for k in range(3)] + [centro[k] + eixos_[k] / 2 for k in range(3)]
-            novo_ = dict(base_)
-            novo_.update(i=len(P), dim=list(eixos_), bb=bb_, faces=[], _sintetica_xml=True)
-            P.append(novo_); preparar([novo_]); usados.add(base_['i']); usados.add(novo_['i'])
-            tipo_ = 'comp' if geo.eh_componente(desc_) or min(alvo) <= 26 else 'mod'
-            inst.append(dict(n=n_, desc=desc_, dim=dm_, bb=bb_, tipo=tipo_,
-                             pecas=[novo_['i']], sintetica_xml=True))
-            print('XML/DXF: peça reconstruída no render pela medida XML | %s | %s' % (desc_, dm_))
-
-_reproduzir_faltantes_xml()
-INTEGRIDADE = integridade.conferir(linhas, QT, inst)
-nao_achados = [(i["descricao"], i["dimensoes_xml"]) for i in INTEGRIDADE["itens"] if i["quantidade_dxf"] == 0]
-_acessorios = [(i["descricao"], i["dimensoes_xml"]) for i in INTEGRIDADE["itens"] if i["status"] == "DISPENSADO"]
-_faltando_real = [(i["descricao"], i["dimensoes_xml"]) for i in INTEGRIDADE["itens"] if i["status"] == "FALHA"]
-_integridade_path = os.path.splitext(cfg["saida"])[0] + "_INTEGRIDADE.json"
-json.dump(INTEGRIDADE, open(_integridade_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-for _item in INTEGRIDADE["itens"]:
-    print("INTEGRIDADE: %s | %s | XML=%s DXF=%s | %s" % (_item["status"], _item["descricao"], _item["quantidade_xml"], _item["quantidade_dxf"], _item["dimensoes_xml"]))
-if not INTEGRIDADE["aprovado"]:
-    print("ERRO CRITICO: integridade XML/DXF reprovada. Caderno bloqueado; nenhuma peça obrigatória pode ser omitida.", file=sys.stderr)
-    raise SystemExit(2)
+inst = geo.casar(P, linhas, QT)
 # 005.A.3 (v37): casa porta avulsa (POR_* vidro/espelho/alumínio) e porta Euronobre (EUR_*_POR_*)
 # com módulo cuja W×H batem (tolerância 15 mm). Sobrepõe o chute A2 (dobradiça=mdf) quando o material
 # da porta é vidro/espelho/alumínio.
@@ -348,7 +287,6 @@ for _i in inst:
         if abs(_por_lado[0] - _mod_lado[0]) <= 15 and abs(_por_lado[1] - _mod_lado[1]) <= 15:
             mods_com_porta.add((_i['desc'], _i['dim']))
             mods_porta_mat[(_i['desc'], _i['dim'])] = _p['mat']
-            if _p['mat'] in ('vidro','espelho','aluminio'): _i['_porta_visual']=_p['visual']
             break
 # REGRA (vidro): módulos com porta ausente do DXF (sub-item _POR_ no XML) marcados aqui para tem_porta reconhecer.
 # xml_mat_porta: material lido do XML ('vidro', 'mdf', 'mdp', ...) — usado na face sintética para cor correta.
@@ -356,8 +294,6 @@ for _i in inst:
     if _i['tipo'] == 'mod' and (_i.get('desc', ''), _i.get('dim', '')) in mods_com_porta:
         _i['xml_tem_porta'] = True
         _i['xml_mat_porta'] = mods_porta_mat.get((_i.get('desc', ''), _i.get('dim', '')), 'mdf')
-from normal.regras import preparar_itens
-preparar_itens(globals())
 paredes = geo.definir_paredes(inst, P)
 # REGRA: mesma parede com módulos de profundidades diferentes (ex.: armário raso 200 mm + balcão 600 mm)
 # = UMA parede só. Junta paredes do mesmo lado com planos a até 600 mm e trechos que se tocam/sobrepõem.
@@ -490,14 +426,6 @@ if _FR:
     _any_005b = False
     for _m in [i for i in inst if i['tipo'] == 'mod']:
         _com_real = [_k for _k in ('x-', 'x+', 'y-', 'y+') if _parede_real_atras(_m, _k, _FR) is not None]
-        # Um módulo mais raso pode ficar até 160 mm da parede real. Só corrige
-        # uma vista-fragmento quando há UMA parede candidata e nenhuma a 80 mm.
-        # Cantos conservam a parede e câmera próprias.
-        if not _com_real and 'canto' not in _norm(_m['desc']):
-            _com_real = [_k for _k in ('x-', 'x+', 'y-', 'y+')
-                         if _parede_real_atras(_m, _k, _FR, tol=160) is not None]
-            if len(_com_real) == 1:
-                print(f"VISTA-FRAGMENTO: {_m['desc']} {_m['dim']} -> parede real {_com_real[0]}")
         if len(_com_real) == 1 and _m.get('parede_key') != _com_real[0]:
             print(f"005.B: {_m['desc']} {_m['dim']}: {_m.get('parede_key')} -> {_com_real[0]}")
             _m['parede_key'] = _com_real[0]
@@ -536,7 +464,7 @@ ELETROS = [p_ for p_ in ELETROS if _eletro_ok(p_)]
 # REGRA (v30): PORTA/FRENTE AVULSA do XML (POR_...) não entra na listagem (v26), mas É DESENHADA junto do móvel onde encosta
 # (ex.: frente de gaveta do criado-mudo). Casa pela medida (±1 mm) com peça do DXF ainda sem dono, encostada no móvel.
 _por = set()
-for e in XML_TREE.iter('ITEM'):
+for e in _ET2.parse(cfg['xml']).iter('ITEM'):
     U_ = (e.get('ID') or '').upper()
     if U_.startswith('POR_') or '_POR_' in U_:
         try: _por.add(tuple(sorted(round(float(e.get(a).replace(',', '.'))) for a in ('WIDTH', 'HEIGHT', 'DEPTH'))))
@@ -593,9 +521,106 @@ PAR_DXF = [p_ for p_ in P if p_['i'] not in _usadas and p_['i'] not in {q['i'] f
            and not (p_['bb'][2] < 50 and p_['dim'][2] < 1000)]   # peça baixa no chão (rodapé solto) não é parede
 for p_ in AMB: p_['faces'] = [[tuple(v) for v in fc] for fc in p_['faces']]
 print('AMBIENTE (pedra):', len(AMB), 'peças')
-# O principal recebe apenas o conteúdo do ciclo normal. Relações e pranchas especiais ficam no pacote próprio.
-from especiais.relacoes import separar_relacoes, agrupar_paineis, separar_catalogo, _sd, _toca
-separar_relacoes(globals())
+# ===== REGRAS ESPECIAIS (v18) — só atuam quando o projeto tem esses móveis =====
+def _sd(it): return sorted(parse_dim_(it['dim']))
+def parse_dim_(dm):
+    try: return [float(x) for x in re.findall(r'[\d.]+', dm.replace(',', '.'))[:3]]
+    except Exception: return [0, 0, 0]
+def _toca(a, b, tol=6): return geo.dist_caixas(a['bb'], b['bb']) <= tol
+_comps = [i for i in inst if i['tipo'] == 'comp']
+# 1) DIVISÓRIA RIPADA: 6+ ripas (espessura <= 30, largura 60-200, comprimento >= 500) na MESMA faixa de profundidade,
+#    enfileiradas ao longo de um eixo. Vira um BLOCO PRÓPRIO (listagem + cotas só dela), fora das paredes.
+DIVISORIAS = []
+_rip = [i for i in _comps if (lambda d: d[0] <= 30 and 60 <= d[1] <= 200 and d[2] >= 500)(_sd(i))]
+for axd in (0, 1):   # axd = eixo da profundidade (as ripas têm a largura de 150 nesse eixo)
+    grp = {}
+    for i in _rip:
+        b = i['bb']
+        if 60 <= b[axd + 3] - b[axd] <= 200: grp.setdefault((round(b[axd] / 10), round(b[axd + 3] / 10)), []).append(i)
+    for key_, rs in grp.items():
+        if len(rs) < 6 or any(i.get('_div') for i in rs): continue
+        # REGRA (João, 28/09/2026 - bloco vistas): divisória ripada = 6+ ripas IGUAIS (mesmo comprimento ±20 mm, mesma
+        # direção). Tiras de acabamento de 70 mm com comprimentos diferentes (moldura de painel na parede) NÃO são
+        # divisória: continuam na vista da parede.
+        _cmp = lambda i: (_sd(i)[2], 'z' if (i['bb'][5] - i['bb'][2]) >= _sd(i)[2] - 1 else 'h')
+        _grp_ = {}
+        for i in rs:
+            L_, o_ = _cmp(i); k2 = next((k for k in _grp_ if k[1] == o_ and abs(k[0] - L_) <= 20), (L_, o_)); _grp_.setdefault(k2, []).append(i)
+        _gm = max(_grp_.values(), key=len)
+        if len(_gm) < 6: continue
+        # ripado = ripas próximas umas das outras (vão mediano <= 150 mm); postes de moldura espaçados pelos módulos não são ripado
+        # e ENFILEIRADAS lado a lado ao longo da divisória (6+ posições diferentes). Tiras empilhadas na frente de
+        # módulos (mesma posição, alturas diferentes) não são ripado.
+        _al = 1 - axd; _pos = sorted({round(i['bb'][_al] / 10) * 10: i for i in _gm}.values(), key=lambda i: i['bb'][_al])
+        if len(_pos) < 6: continue
+        _vaos = sorted(max(0, b_['bb'][_al] - a_['bb'][_al + 3]) for a_, b_ in zip(_pos, _pos[1:]))
+        if _vaos[len(_vaos) // 2] > 150: continue
+        d0, d1 = min(i['bb'][axd] for i in rs), max(i['bb'][axd + 3] for i in rs)
+        conj = list(rs); topo = max(i['bb'][5] for i in rs)
+        for i in rs: i['_div'] = True
+        mudou = True
+        while mudou:
+            mudou = False
+            for c in _comps:
+                if c.get('_div'): continue
+                b = c['bb']; dentro = b[axd] >= d0 - 30 and b[axd + 3] <= d1 + 30
+                faixa = b[2] <= 100 or b[5] >= topo - 130 or (b[5] - b[2]) >= 0.8 * topo
+                if (dentro or faixa) and any(_toca(c, o) for o in conj):
+                    conj.append(c); c['_div'] = True; topo = max(topo, b[5]); mudou = True
+        DIVISORIAS.append(dict(itens=conj, axd=axd, d0=d0, d1=d1))
+# 2) DIVISOR DE GAVETA (joias/talheres): 4+ peças finas (<= 18) e baixas (<= 100) de até 450 mm, nos dois sentidos,
+#    encostadas, acima do piso. Sai da listagem da parede e ganha uma PRANCHA PRÓPRIA (vista de cima com cotas).
+DIVISORES = []
+# REGRA (v26): divisor de TALHER de gaveta de cozinha tem peças até 750 mm (conjunto até 800 x 800);
+#    as peças ficam DEITADAS (altura <= 100 mm de verdade no DXF) -> fechamento/tamponamento em pé não entra.
+_dv = [i for i in _comps if not i.get('_div') and i['bb'][2] > 150 and i['bb'][5] - i['bb'][2] <= 100 and (lambda d: d[0] <= 18 and d[1] <= 100 and d[2] <= 750)(_sd(i))]
+_vis = set()
+for i in _dv:
+    if id(i) in _vis: continue
+    g_ = [i]; _vis.add(id(i)); k_ = 0
+    while k_ < len(g_):
+        for o in _dv:
+            if id(o) not in _vis and _toca(g_[k_], o, 3): g_.append(o); _vis.add(id(o))
+        k_ += 1
+    ori = {0 if (o['bb'][3] - o['bb'][0]) > (o['bb'][4] - o['bb'][1]) else 1 for o in g_}
+    U_ = [min(o['bb'][0] for o in g_), min(o['bb'][1] for o in g_), max(o['bb'][3] for o in g_), max(o['bb'][4] for o in g_)]
+    if len(g_) >= 4 and len(ori) == 2 and U_[2] - U_[0] <= 800 and U_[3] - U_[1] <= 800:
+        DIVISORES.append(g_)
+# 3) GAVETA / MÓDULO MONTADO COM PAINÉIS (não é módulo do Promob): peça horizontal (fundo, >= 0,1 m²) acima de 300 mm
+#    + peças do MESMO material encostadas, até 140 mm acima do fundo, 3+ em pé. Sai da parede -> prancha própria.
+GAVETAS = []
+_usad = {id(i) for g_ in DIVISORES for i in g_}
+for fb in _comps:
+    if fb.get('_div') or id(fb) in _usad or fb['bb'][2] <= 300: continue
+    b = fb['bb']; dx_, dy_, dz_ = b[3] - b[0], b[4] - b[1], b[5] - b[2]
+    if not (dz_ <= 30 and dx_ * dy_ >= 1e5 and max(dx_, dy_) <= 1000): continue
+    mat_ = P[fb['pecas'][0]].get('mat')
+    g_ = [fb]; k_ = 0
+    while k_ < len(g_):
+        for o in _comps:
+            if o in g_ or o.get('_div') or id(o) in _usad: continue
+            ob = o['bb']
+            if P[o['pecas'][0]].get('mat') != mat_ or ob[2] < b[2] - 5 or ob[5] > b[2] + 140: continue
+            if _toca(g_[k_], o, 3): g_.append(o)
+        k_ += 1
+    em_pe = [o for o in g_ if o['bb'][5] - o['bb'][2] >= 60]
+    if len(g_) >= 4 and len(em_pe) >= 3:
+        GAVETAS.append(g_); _usad |= {id(o) for o in g_}
+_fora = {id(i) for d in DIVISORIAS for i in d['itens']} | {id(i) for g_ in DIVISORES for i in g_} | {id(i) for g_ in GAVETAS for i in g_}
+if _fora:
+    for w in paredes: w['itens'] = [i for i in w['itens'] if id(i) not in _fora]
+    paredes = [w for w in paredes if w['itens']]
+for d in DIVISORIAS:   # parede "virtual" da divisória: vista pelo lado do painel (peça larga e fina), senão pelo lado do ambiente
+    axd = d['axd']; its = d['itens']
+    lrg = [i for i in its if _sd(i)[1] > 300 and d['d0'] - 30 <= i['bb'][axd] and i['bb'][axd + 3] <= d['d1'] + 30]
+    mid = (d['d0'] + d['d1']) / 2
+    if lrg: menor = sum((i['bb'][axd] + i['bb'][axd + 3]) / 2 for i in lrg) / len(lrg) < mid
+    else: menor = sum((i['bb'][axd] + i['bb'][axd + 3]) / 2 for i in inst) / len(inst) < mid
+    key = ('x+' if menor else 'x-') if axd == 0 else ('y+' if menor else 'y-')
+    pl = d['d1'] if menor else d['d0']
+    w = dict(key=key, plano=pl, itens=its, id=f"DIVISORIA@{round(pl)}", divisoria=True)
+    for i in its: i['parede'] = w['id']
+    paredes.append(w); d['parede'] = w['id']
 # 4) CONDIÇÃO (v22, planta do João): PERNA DO L dentro de uma parede (ex.: penteadeira em L) = VISTA PRÓPRIA.
 #    Peças soltas da parede que vão bem mais fundo que os módulos (> 300 mm além da frente deles), formando um trecho de
 #    600 mm+ na profundidade, viram outra "parede" vista de lado (pelo lado de dentro do L).
@@ -671,7 +696,109 @@ for w, partes in _cortadas:
         nw = dict(key=w['key'], plano=w['plano'], itens=its_, id=f"{w['id']}{'abcdef'[k_]}", cortada=True)
         for i in its_: i['parede'] = nw['id']
         paredes.append(nw)
-agrupar_paineis(globals())
+# 6) CONDIÇÃO (v26): CONJUNTO DE PAINÉIS SEM MÓDULO (painel com nichos na ponta da parede, painel
+#    no teto, barrotes/cunhas, agastadores). Paredes só com painéis que se ENCOSTAM formam UM BLOCO PRÓPRIO no fim
+#    (como a divisória): listagem com o móvel sozinho (3D frontal + 3D lateral reta) e cotas frontal + lateral.
+_so = [w for w in paredes if not w.get('divisoria') and not any(i['tipo'] == 'mod' for i in w['itens'])]
+_blocos = []
+for w in _so:
+    junto = [b for b in _blocos if any(_toca(i, j, 10) for o in b for i in o['itens'] for j in w['itens'])]
+    novo_ = [w] + [o for b in junto for o in b]
+    _blocos = [b for b in _blocos if b not in junto] + [novo_]
+BLOCOS = []
+for b in _blocos:
+    its_ = [i for o in b for i in o['itens']]
+    if len(b) < 2 or len(its_) < 4: continue
+    # frente = parede do MAIOR painel em pé (visto de frente); plano = face da parede real logo atrás (até 150 mm)
+    def _af(o):
+        f_ = FV[o['key']]; ad = 0 if f_[0] else 1; al = 1 - ad
+        return max([(i['bb'][al + 3] - i['bb'][al]) * (i['bb'][5] - i['bb'][2]) for i in o['itens'] if i['bb'][ad + 3] - i['bb'][ad] <= 30] or [0])
+    fr_ = max(b, key=_af); f_ = FV[fr_['key']]; ad = 0 if f_[0] else 1; sg_ = f_[ad]; pl = fr_['plano']
+    for fc in _faces_parede():
+        vs = [v[ad] for v in fc]
+        if max(vs) - min(vs) <= 1 and 0 < (vs[0] - pl) * sg_ <= 150: pl_ = vs[0]; break
+    else: pl_ = pl
+    for o in b: paredes.remove(o)
+    nicho_ = any(re.match(r'tampon', i['desc'], re.I) for i in its_) and any(_sd(i)[0] <= 8 for i in its_)
+    nw = dict(key=fr_['key'], plano=pl_, itens=its_, id=f"BLOCO@{round(pl_)}", divisoria=True, bloco='PAINEL COM NICHOS' if nicho_ else 'CONJUNTO DE PAINÉIS')
+    for i in its_: i['parede'] = nw['id']
+    paredes.append(nw); BLOCOS.append(nw)
+# 6b) CONDIÇÃO (v35, João): MÓVEL DIVERSO — peças soltas (sem módulo) que formam um MÓVEL COM PORTA/FRENTE/GAVETA.
+#    Detecção: grupo de componentes encostados onde pelo menos uma peça fina (≤30mm na profundidade da parede)
+#    cobre ≥40% da face frontal do conjunto = tem porta/frente. Esse móvel SAI das vistas normais e ganha
+#    prancha própria "MÓVEIS DIVERSOS" no final (após todas as vistas). Layout: listagem + ambiente pequeno
+#    (sem portas) à esquerda, móvel isolado grande na diagonal com balões à direita. SEM COTAS.
+MOVEIS_DIVERSOS = []
+def _tem_frente_solto(its_, w_):
+    """Testa se um grupo de peças soltas tem porta/frente (≥40% da face frontal coberta por peça fina)."""
+    f_ = FV[w_['key']]; ad = 0 if f_[0] else 1; al = 1 - ad; sg_ = f_[ad]
+    # bounding box do conjunto
+    al0 = min(i['bb'][al] for i in its_); al1 = max(i['bb'][al + 3] for i in its_)
+    z0 = min(i['bb'][2] for i in its_); z1 = max(i['bb'][5] for i in its_)
+    area_frontal = (al1 - al0) * (z1 - z0)
+    if area_frontal <= 0: return False
+    # frente do conjunto
+    fr = min(min(i['bb'][ad] * sg_, i['bb'][ad + 3] * sg_) for i in its_)
+    # peças finas na frente (até 60mm da frente do conjunto)
+    cob = 0.0
+    for i in its_:
+        b = i['bb']
+        if b[ad + 3] - b[ad] > 30: continue  # não é fina
+        perto = min(b[ad] * sg_, b[ad + 3] * sg_)
+        if abs(perto - fr) > 60: continue  # não está na frente
+        ov_al = max(0, min(b[al + 3], al1) - max(b[al], al0))
+        ov_z = max(0, min(b[5], z1) - max(b[2], z0))
+        cob += ov_al * ov_z
+    return cob >= NICHO_MIN_RATIO * area_frontal
+
+# Varrer todas as paredes (incluindo blocos) em busca de grupos de componentes com porta/frente
+_fora_md = set()
+for w in list(paredes):
+    comps_w = [i for i in w['itens'] if i['tipo'] == 'comp' and id(i) not in _fora]
+    if not comps_w: continue
+    # Agrupar componentes encostados (flood fill com tolerância de 6mm)
+    _vis_md = set()
+    for i in comps_w:
+        if id(i) in _vis_md: continue
+        g_ = [i]; _vis_md.add(id(i)); k_ = 0
+        while k_ < len(g_):
+            for o in comps_w:
+                if id(o) not in _vis_md and _toca(g_[k_], o, 6):
+                    g_.append(o); _vis_md.add(id(o))
+            k_ += 1
+        # Mínimo 3 peças e tem porta/frente
+        if len(g_) >= 3 and _tem_frente_solto(g_, w):
+            MOVEIS_DIVERSOS.append(dict(itens=g_, parede_id=w['id'], key=w['key'], plano=w['plano']))
+            _fora_md |= {id(i) for i in g_}
+# Remover dos BLOCOS os que viraram MÓVEL DIVERSO
+for md in MOVEIS_DIVERSOS:
+    for blk in list(BLOCOS):
+        if any(id(i) in _fora_md for i in blk['itens']):
+            blk['itens'] = [i for i in blk['itens'] if id(i) not in _fora_md]
+            if not blk['itens']:
+                BLOCOS.remove(blk); paredes.remove(blk)
+# Remover das paredes normais
+if _fora_md:
+    for w in paredes: w['itens'] = [i for i in w['itens'] if id(i) not in _fora_md]
+    paredes = [w for w in paredes if w['itens']]
+if MOVEIS_DIVERSOS:
+    print(f"MÓVEIS DIVERSOS: {len(MOVEIS_DIVERSOS)} móvel(is) de peças soltas com porta/frente detectado(s)")
+PW = {w['id']: w for w in paredes}
+
+# GANCHO DE TESTE (Fase 1 - classificacao.py) — nunca ativo em producao.
+# So roda com a variavel de ambiente COMPIERE_TESTE_CLASSIFICACAO=1, e termina
+# ANTES de qualquer codigo de desenho/render3d/PDF (nada abaixo desta linha e executado nesse modo).
+if os.environ.get('COMPIERE_TESTE_CLASSIFICACAO'):
+    import classificacao
+    for _w in paredes:
+        _ctx = dict(P=P, lim=geo.limites(inst), paredes_existentes={_x['key'] for _x in paredes},
+                    eixo_vista=geo.PAREDES.get(_w['key']))
+        for _it in _w['itens']:
+            _tipo = classificacao.classificar_peca(_it, _ctx)
+            print(f"CLASSIFICACAO\t{_tipo}\t{_it['desc']}\t{_it['dim']}")
+    sys.exit(0)
+
+_MD_I = {pi for md in MOVEIS_DIVERSOS for i in md['itens'] for pi in i['pecas']}
 # 7) CONDIÇÃO (v26): PAINEL USINADO. Painel em pé na FRENTE de uma estrutura de nichos aberta (2 laterais + 3 ou mais
 #    prateleiras logo atrás, até 150 mm) = painel com VÃOS usinados alinhados aos nichos (o DXF traz o painel inteiro).
 #    Vão = largura livre entre as laterais x altura livre entre prateleiras (> 150 mm). O painel é desenhado com os vãos.
@@ -707,8 +834,7 @@ for w in paredes:
             if z1_ - z0_ > 0.5: sub(o0, o1, z0_, z1_)
         P[pi]['fq'] = [fq_ for c_ in cxs for fq_ in _caixa_fq(c_)]
         print('PAINEL USINADO:', pn['desc'], pn['dim'], '->', len(vz), 'vão(s)')
-separar_catalogo(globals())
-grupos = geo.agrupar_vistas2(paredes)
+grupos = geo.agrupar_vistas2([w for w in paredes if not w.get('divisoria')])
 
 # REGRA (ENGENHARIA seção 5): sequência espacial por tipo de ambiente. O caderno deve começar
 # pelo grupo de parede que contém o elemento-âncora do ambiente (ex.: cozinha começa pela pia).
@@ -740,6 +866,56 @@ if _rx_ancora and grupos:
         grupos = grupos[_idx_ancora:] + grupos[:_idx_ancora]
         print(f"SEQUÊNCIA ESPACIAL: ambiente '{cfg['dados'].get('ambiente')}' -> início na parede com a âncora (grupo {_idx_ancora})")
 
+_DIVW = [w['id'] for w in paredes if w.get('divisoria')]
+nao_achados = [(d, dm) for n, (d, dm) in enumerate(linhas, 1) if not any(i['n'] == n for i in inst)]
+
+# REGRA (v35.3): itens que não são peças de mobiliário (ferragens, acessórios, kits) existem no XML
+# mas NUNCA terão geometria no DXF. Filtrá-los antes da Regra 1 evita bloqueio falso.
+# Critérios: (a) alguma dimensão ≤ 5mm (é acessório/ferragem); (b) nome indica acessório.
+_RE_ACESS = re.compile(r'\bkit\b|\btapa[- ]?furo\b|\bcorredi[cç]a\b|\bmetalon\b|\bsuporte\s+fixa[cç][aã]o\b'
+                        r'|\bdesliz\b|\bpuxador\b|\btrilho\b|\bdobradi[cç]a\b|\bparafuso\b'
+                        r'|\bamortecedor\b|\bsapata\b|\bcantoneira\b|\brebite\b', re.I)
+def _eh_acessorio(desc_, dim_):
+    """True se o item é acessório/ferragem/fundo que não aparece no DXF."""
+    if _RE_ACESS.search(desc_): return True
+    try:
+        vals = [float(v.replace(',', '.')) for v in dim_.split('x')]
+        if any(v <= 5 for v in vals): return True              # dimensão ≤5mm = acessório
+        # REGRA (João, 28/09/2026 - bloco 1): espessura <=25mm NÃO é critério de acessório.
+        # Painel, tamponamento e frente têm 18/25mm; se não forem achados no DXF são FALTA real.
+    except Exception: pass
+    return False
+_acessorios = [(d, dm) for d, dm in nao_achados if _eh_acessorio(d, dm)]
+_faltando_real = [(d, dm) for d, dm in nao_achados if not _eh_acessorio(d, dm)]
+if _acessorios:
+    print(f'AVISO: {len(_acessorios)} acessório(s)/ferragem(ns) do XML sem geometria no DXF (normal, ignorados):')
+    for _d, _dm in _acessorios: print(f'  - {_d}  {_dm}')
+
+# REGRA 1 (v35.4): BLOQUEIO TOTAL apenas quando a incompatibilidade é significativa.
+# Bloqueia somente quando AMBOS os limites são ultrapassados simultaneamente:
+#   - mais de 3 peças reais faltando E mais de 10% do total.
+# Isso evita falsos positivos em ambientes pequenos (poucos itens) e tolerará
+# fundos/rodapés/tiras que o DXF frequentemente não exporta.
+_REGRA1_MAX = 3; _REGRA1_PCT = 0.10
+_pct = len(_faltando_real) / max(1, len(linhas))
+if _faltando_real and (len(_faltando_real) > _REGRA1_MAX and _pct > _REGRA1_PCT):
+    print('=' * 70, file=sys.stderr)
+    print(f'ERRO CRITICO: {len(_faltando_real)} item(ns) do XML nao foram localizados no DXF.', file=sys.stderr)
+    print(f'CADERNO NAO GERADO (Regra 1: Bloqueio Total).', file=sys.stderr)
+    print(f'Ambiente: {cfg["dados"]["cliente"]} / {cfg["dados"]["ambiente"]}', file=sys.stderr)
+    print('-' * 70, file=sys.stderr)
+    print('ITENS FALTANDO NO DXF:', file=sys.stderr)
+    for _d, _dm in _faltando_real:
+        print(f'  - {_d}  {_dm}', file=sys.stderr)
+    print('-' * 70, file=sys.stderr)
+    print('Acao sugerida: reexportar XML+DXF do Promob, ou verificar se todas as pecas', file=sys.stderr)
+    print('do XML foram exportadas no DXF (blocos aninhados / solidos 3D podem ter falhado).', file=sys.stderr)
+    print('=' * 70, file=sys.stderr)
+    raise SystemExit(2)
+elif _faltando_real:
+    print(f'AVISO: {len(_faltando_real)} peça(s) do XML não localizada(s) no DXF (abaixo do limiar de bloqueio):')
+    for _d, _dm in _faltando_real: print(f'  - {_d}  {_dm}')
+
 # vistas: liga cada grupo à imagem 3D do config pela peça de referência
 V = []
 livres = list(grupos)
@@ -764,6 +940,8 @@ for g in livres:
     for b in blocos:
         ls = [letras[_nl + k] for k in range(len(b))]; _nl += len(b)
         V.append(dict(letra=ls[0], letras=ls, img3d=None, paredes=b))
+for wid in _DIVW:   # REGRA (v18): divisória ripada = bloco próprio no fim
+    V.append(dict(letra=letras[_nl], letras=[letras[_nl]], img3d=None, paredes=[wid], divisoria=True)); _nl += 1
 # REGRA (v22, planta do João): a vista da PERNA DO L vem logo DEPOIS da vista da parede dela (b -> c); letras em sequência
 for v in [v for v in V if len(v['paredes']) == 1 and PW[v['paredes'][0]].get('perna_l')]:
     pai_ = PW[v['paredes'][0]]['pai']; V.remove(v)
@@ -777,13 +955,10 @@ for v in V:
 for v in V:
     v.setdefault('letras', [v['letra'] + (str(j + 1) if len(v['paredes']) > 1 else '') for j in range(len(v['paredes']))])
     v['titulo'] = 'VISTA ' + v['letras'][0] if len(v['letras']) == 1 else 'VISTAS ' + ' E '.join(v['letras'])
+    if v.get('divisoria'): v['titulo'] = PW[v['paredes'][0]].get('bloco') or 'DIVISÓRIA RIPADA'
     # REGRA (João): LISTAGEM sempre FRONTAL e POR PAREDE (só os móveis daquela parede); o bloco junta só as cotas.
     v['subs'] = [v] if len(v['paredes']) == 1 else [dict(letra=l_, letras=[l_], titulo='VISTA ' + l_, img3d=None, paredes=[w_]) for w_, l_ in zip(v['paredes'], v['letras'])]
 VW = [s_ for v in V for s_ in v['subs']]
-# Ordem aprovada: cada vista termina sua listagem e suas cotas antes da próxima.
-# As mesmas vistas e seus detalhes funcionais são mantidos; só separa o ciclo.
-V = list(VW)
-for v in V: v['subs'] = [v]
 
 # REGRA (v33, João): SEM ASTERISCO. Item que o motor não localizou no DXF não é desenhado,
 # logo não aparece na imagem frontal e, pela regra da peça escondida, não é listado.
@@ -966,21 +1141,16 @@ def cotar(page, G, ox, fy, k):
         for pi in it['pecas']:
             bb = P[pi]['bb']; pu0, pz0, pu1, pz1 = geo.caixa_elev(bb, G['f'])
             if prof(bb) < 150: continue                      # portas, frentes, tamponamentos, ferragens
-            if pu1 - pu0 <= 30 and pz1 - pz0 >= 300: vert.append((pu0, pu1, pz0, pz1))
+            if pu1 - pu0 <= 30 and pz1 - pz0 >= 300: vert.append((pu0, pu1))
             elif 12 <= pz1 - pz0 <= 30 and pu1 - pu0 >= 150: hor.append((pu0, pz0, pu1, pz1))
-        vaos = vaos_prateleiras(vert,hor,b['z1']-b['z0'])
-        cotados = set()
+        vert = sorted(vert)
+        vaos = [(a[1], c[0]) for a, c in zip(vert, vert[1:]) if c[0] - a[1] > 100]
         for cu0, cu1 in vaos:
             larg = cu1 - cu0
             niv = sorted((z0_, z1_) for u0_, z0_, u1_, z1_ in hor if u0_ <= cu0 + 10 and u1_ >= cu1 - 10)
             gaps = [(a[1], c[0]) for a, c in zip(niv, niv[1:]) if c[0] - a[1] > 40]
             xv = X(cu0 + larg * 0.5)
-            assinatura = assinatura_vaos(gaps)
-            if assinatura not in cotados:
-                for g0,g1 in gaps: cadeia_v(page,[g0,g1],xv,None,Y,fs=5.5,fundo=True)
-                cotados.add(assinatura)
-            globals().setdefault('_auditoria_vaos_cotas',[]).append(dict(
-                modulo=it['desc'],dim=it['dim'],vao=(cu0,cu1),gaps=gaps,assinatura=assinatura))
+            for g0, g1 in gaps: cadeia_v(page, [g0, g1], xv, None, Y, fs=5.5, fundo=True)
             zt = (gaps[-1][1] if gaps else b['z1']) - 70
             cadeia_h(page, [cu0, cu1], Y(zt), Y(zt), X, fs=5.5, fundo=True)
 
@@ -1002,9 +1172,7 @@ def _desenho2d(page, faces, XY):
                 for (a_, b_), f_ in zip(zip(q, q[1:] + q[:1]), ft):
                     if f_: sh.draw_line(a_, b_)
                 sh.finish(color=(0.2, 0.2, 0.2), width=0.3, closePath=False)
-        sh.commit()
-        contornos(globals(),page,faces,XY)
-        return
+        sh.commit(); return
     R = fz.Rect(min(x for q in [i[0] for i in its] for x, _ in q), min(y for q in [i[0] for i in its] for _, y in q),
                 max(x for q in [i[0] for i in its] for x, _ in q), max(y for q in [i[0] for i in its] for _, y in q)) & page.rect
     if R.is_empty: return
@@ -1034,7 +1202,6 @@ def _desenho2d(page, faces, XY):
     import io as _io
     bio = _io.BytesIO(); img.save(bio, format='PNG', optimize=True)
     page.insert_image(R, stream=bio.getvalue())
-    contornos(globals(),page,faces,XY)
 
 # ---------------- pranchas ----------------
 lay = fz.open(cfg['layout'])
@@ -1092,7 +1259,7 @@ def desenhar(page, G, ox, fy, k, baloes=None, letra=None):
 
 
 # ===== REGRAS FIXAS (João, 28/09/2026 - skill P1/P2): LISTAGEM = 3D FRONTAL, PORTAS FECHADAS, COM PAREDES (referência de localização)
-#       | COTAS = 2D FRONTAL, MÓVEL ISOLADO (sem paredes, piso, eletros e móveis de outras paredes; pedra real de referência), SEM PORTAS, EM ESCALA, DENTRO DO QUADRO =====
+#       | COTAS = 2D FRONTAL, MÓVEL ISOLADO (sem paredes, piso, pedra, eletros e móveis de outras paredes), SEM PORTAS, EM ESCALA, DENTRO DO QUADRO =====
 PAREDES_PECAS = [p_ for p_ in P if p_['dim'][2] >= 2000 and 80 <= min(p_['dim'][0], p_['dim'][1]) <= 400 and max(p_['dim'][0], p_['dim'][1]) >= 1000]
 def caixa_faces(b):
     x0, y0, z0, x1, y1, z1 = b
@@ -1151,66 +1318,32 @@ def _portas_cota(w):
     # REGRA (v31 + bloco cotas 28/09/2026): COTAS = SEM PORTAS. Usa a definição única _eh_porta.
     # Porta avulsa do XML (POR_) fica presa ao item mais próximo (às vezes um painel): sai também.
     out = {pi for it in w['itens'] for pi in it['pecas'] if pi in PORTAS_XML}
-    protegidas = {pi for it in w['itens'] if it['tipo']=='comp' and
-                  re.search(r'fechamento|vista|tampon|painel|rodap|afastador|cunha|porta falsa',it['desc'],re.I)
-                  for pi in it['pecas'] if pi not in PORTAS_XML}
     for m in [i for i in w['itens'] if i['tipo'] == 'mod']:
         for pi in m['pecas']:
-            if pi not in protegidas and _eh_porta(P[pi]['bb'], m['bb'], w): out.add(pi)
-    # Regra rígida: prateleiras horizontais de armário canto L nunca são
-    # confundidas com porta e permanecem em todas as elevações cotadas.
-    for m in [i for i in w['itens'] if i['tipo'] == 'mod' and re.search(r'canto\s+l\b', i['desc'], re.I)]:
-        out.difference_update(pi for pi in m['pecas'] if P[pi]['bb'][5] - P[pi]['bb'][2] <= 30)
+            if _eh_porta(P[pi]['bb'], m['bb'], w): out.add(pi)
     return out
 
 def geom_parede(w):
-    # Cotas: conjunto montado, somente portas retiradas; pedra real como referência.
-    f = FV[w['key']]; faces = []; boxes = []; mantidas = set()
+    f = FV[w['key']]; faces = []; boxes = []
     dep = lambda vs: sum(v[0] * f[0] + v[1] * f[1] for v in vs) / len(vs)
     _pc = _portas_cota(w)
     for it in w['itens']:
         cor = MADEIRA if it['tipo'] == 'comp' else BRANCO
-        ids = []
         for pi in it['pecas']:
-            if pi in _pc: continue
+            if pi in _pc: continue   # porta/frente não aparece nas cotas
             sd_ = sorted(P[pi]['dim'])
-            # Componentes construtivos atribuídos (inclusive vistas estreitas) são preservados.
-            # Ferragens internas do módulo seguem a regra de representação, sem cotas.
-            if it['tipo']=='mod' and (sd_[1] < 50 or sd_[0] > 60): continue
-            if pi not in mantidas:
-                for uq,nv,ft in P[pi]['fq']:
-                    faces.append((dep(uq),[(uu(v[0],v[1],f),v[2]) for v in uq],
-                                  P[pi].get('rgb',cor),ft,P[pi].get('mat'),pi))
-                mantidas.add(pi)
-            ids.append(pi)
-        if ids:
-            u0,z0,u1,z1 = geo.caixa_elev(it['bb'],f)
-            boxes.append(dict(it=it,u0=u0,z0=z0,u1=u1,z1=z1))
-    if not boxes: raise ValueError('Cotas sem geometria construtiva após retirar portas')
+            if sd_[1] < 50 or sd_[0] > 60: continue  # REGRA: só MDF (sem dobradiças/suportes/cabideiros)
+            for uq, nv, ft in P[pi]['fq']:
+                faces.append((dep(uq), [(uu(v[0], v[1], f), v[2]) for v in uq], P[pi].get('rgb', cor), ft, P[pi].get('mat'), pi))
+        u0, z0, u1, z1 = geo.caixa_elev(it['bb'], f)
+        boxes.append(dict(it=it, u0=u0, z0=z0, u1=u1, z1=z1))
+    # REGRA (João, 28/09/2026 - skill P2): cota = MÓVEL ISOLADO. Fica SÓ o conjunto de móveis listados da vista:
+    # sem paredes, piso, janelas, portas do cômodo, pedra, eletros e móveis de outras paredes (substitui a v15
+    # "a cota não elimina as paredes"). Enquadramento = o próprio conjunto + 100 mm de cada lado.
     umin_ = min(b['u0'] for b in boxes); umax_ = max(b['u1'] for b in boxes); zmax_ = max(b['z1'] for b in boxes)
-    # Pedra não entra na listagem/cadeias. Entra inteira na projeção, sem recorte.
-    pedras = []
-    bbs = [b['it']['bb'] for b in boxes]
-    for p_ in (p for p in P if p['i'] in AMB_I):
-        if p_['i'] in mantidas or not any(geo.dist_caixas(p_['bb'],b)<=180 for b in bbs): continue
-        su0,sz0,su1,sz1 = geo.caixa_elev(p_['bb'],f)
-        sobreposicao = min(su1,umax_)-max(su0,umin_)
-        if sobreposicao < .6*max(1,su1-su0): continue  # pedra do outro trecho não amplia esta vista
-        pedras.append(p_['i'])
-        for fc,ft in zip(p_['faces'],p_['ft']):
-            faces.append((dep(fc),[(uu(v[0],v[1],f),v[2]) for v in fc],
-                          (.91,.91,.91),ft,None,p_['i']))
-    limites = [(b['u0'],b['z0'],b['u1'],b['z1']) for b in boxes]
-    limites += [geo.caixa_elev(P[pi]['bb'],f) for pi in pedras]
-    vmin_ = min(b[0] for b in limites)-100
-    vmax_ = max(b[2] for b in limites)+100
-    ztop_ = max(b[3] for b in limites)+50
-    faces.sort(key=lambda t:-t[0])
-    globals().setdefault('_auditoria_geometria_cotas',[]).append(dict(
-        parede=w['id'],mantidas=sorted(mantidas),portas=sorted(_pc),pedras=pedras,
-        sem_cortes=True))
-    return dict(w=w,f=f,faces=faces,boxes=boxes,umin=umin_,umax=umax_,zmax=zmax_,
-                vmin=vmin_,vmax=vmax_,ztop=ztop_,pecas_cotas=mantidas,portas_cotas=_pc,pedras_cotas=pedras)
+    vmin_, vmax_, ztop_ = umin_ - 100, umax_ + 100, zmax_ + 50
+    faces.sort(key=lambda t: -t[0])
+    return dict(w=w, f=f, faces=faces, boxes=boxes, umin=umin_, umax=umax_, zmax=zmax_, vmin=vmin_, vmax=vmax_, ztop=ztop_)
 
 def _ordem_pecas(fcs, bbs, cam):
     # Ordem de desenho POR PEÇA (pintor): A antes de B quando B está na frente de A.
@@ -1278,8 +1411,7 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
         q, c_, ft, pc, vs, fs_ = f_[2], f_[3], f_[4], f_[5], f_[6], f_[7]
         Q = [px(x, y) for x, y in q]
         if area2(Q) < 0.5: continue
-        alpha=f_[8] if len(f_)>8 else 1.
-        tex = textura(pmat.get(pc)) if alpha>=.999 and cfg.get('textura',True) and pc is not None and pc >= 0 and len(vs) == 4 else None
+        tex = textura(pmat.get(pc)) if pc is not None and pc >= 0 and len(vs) == 4 else None
         x0_ = int(max(0, min(a for a, _ in Q))); y0_ = int(max(0, min(b for _, b in Q)))
         x1_ = int(min(W_, max(a for a, _ in Q) + 1)); y1_ = int(min(H_, max(b for _, b in Q) + 1))
         if tex is not None and x1_ - x0_ >= 3 and y1_ - y0_ >= 3:
@@ -1308,38 +1440,11 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
             except Exception:
                 dr.polygon(Q, fill=tuple(int(255 * v) for v in c_))
         else:
-            if alpha<.999:
-                mask=_Im.new('L',img.size,0); _ImD.Draw(mask).polygon(Q,fill=int(255*alpha))
-                tint=_Im.new('RGB',img.size,tuple(int(255*v) for v in c_))
-                img.paste(tint,(0,0),mask)
-            else: dr.polygon(Q, fill=tuple(int(255 * v) for v in c_))
+            dr.polygon(Q, fill=tuple(int(255 * v) for v in c_))
         for (a_, b_), fl_ in zip(zip(Q, Q[1:] + Q[:1]), ft):
-            if fl_:
-                esp_ = 0.85 if f_[0] == 0 else 0.35
-                dr.line([a_, b_], fill=(35, 35, 35), width=max(1, int(esp_ * s_)))
-    # Perfil tonal calibrado pela mediana visual dos tres PDFs de referencia:
-    # brilho alto controlado, contraste moderado e tonalidade levemente quente.
-    _arr_original = _np.asarray(img).astype(_np.float32) / 255.0
-    _arr = _arr_original.copy()
-    _lum = .2126 * _arr[:, :, 0] + .7152 * _arr[:, :, 1] + .0722 * _arr[:, :, 2]
-    _mask = (_lum > .08) & (_lum < .985)
-    if int(_mask.sum()) >= 500:
-        _amostra = _lum[_mask]
-        _media = float(_amostra.mean())
-        _desvio = float(_amostra.std())
-        _ganho = min(1.25, max(.82, .195 / max(.06, _desvio)))
-        _novo_lum = _np.clip((_lum - _media) * _ganho + .70, .03, .975)
-        _escala = _novo_lum / _np.maximum(_lum, .03)
-        _arr[_mask] *= _escala[_mask, None]
-        _arr[_mask] *= _np.array([1.02, 1.0, .97], dtype=_np.float32)
-        _cinza = (.2126 * _arr[:, :, 0] + .7152 * _arr[:, :, 1] +
-                  .0722 * _arr[:, :, 2])[:, :, None]
-        _arr[_mask] = (_cinza + 1.04 * (_arr - _cinza))[_mask]
-        _arr = _np.clip(_arr, 0.0, 1.0)
-        _arr[~_mask] = _arr_original[~_mask]
-        img = _Im.fromarray((_arr * 255.0 + .5).astype(_np.uint8), 'RGB')
+            if fl_: dr.line([a_, b_], fill=(50, 50, 50), width=max(1, int(0.35 * s_)))
     import io as _io
-    bio = _io.BytesIO(); img.save(bio, format='JPEG', quality=92)
+    bio = _io.BytesIO(); img.save(bio, format='JPEG', quality=88)
     page.insert_image(rect, stream=bio.getvalue())
 
 
@@ -1353,7 +1458,7 @@ def _raster3d(page, rect, fcs, T, pmat, dpi=170):
 # (dobradiças do DXF), 40 mm da borda; alto (armário) na altura da mão (~1,05 m), balcão perto do topo, aéreo perto de baixo.
 # Gaveta/basculante (mais larga que alta): HORIZONTAL centrado, perto do topo (aéreo: perto de baixo).
 def _puxador_xml():
-    for e in XML_TREE.iter('ITEM'):
+    for e in ET.parse(cfg['xml']).iter('ITEM'):
         d_ = e.get('DESCRIPTION', '')
         if d_.lower().startswith('puxador'):
             if re.search(r'perfil|cava|aba|embutid|usinad', d_, re.I): return None
@@ -1440,9 +1545,23 @@ def tem_porta(m, w):
     return bool(m.get('xml_tem_porta'))  # cristaleira/vitrô: porta de vidro → XML diz que tem porta, DXF não tem
 
 def detalhes(w):
-    # Engenharia: subimagem nasce de nicho identificado pela geometria/dimensão.
-    # A ausência de uma porta no DXF é erro de leitura e não cria uma regra visual paralela.
-    gs = [list(g) for g in nichos(w) + abertos(w)]
+    # nichos de painéis + módulos abertos; grupos que se encostam viram UM detalhe só
+    # ORDEM 006 (v37.2): módulos com porta ausente no DXF (xml_tem_porta=True) viram subimagem própria.
+    def _portas_faltando(w):
+        out = []
+        f_ = FV[w['key']]; ad = 0 if f_[0] else 1; al = 1 - ad
+        for m in [i for i in w['itens'] if i['tipo'] == 'mod' and i.get('xml_tem_porta')]:
+            mb = m['bb']; area_ = (mb[al + 3] - mb[al]) * (mb[5] - mb[2])
+            if area_ <= 0: continue
+            cob = 0.0
+            for p_ in P:
+                if not _eh_porta(p_['bb'], mb, w): continue
+                b = p_['bb']
+                cob += max(0, min(b[al + 3], mb[al + 3]) - max(b[al], mb[al])) * max(0, min(b[5], mb[5]) - max(b[2], mb[2]))
+            if cob >= NICHO_MIN_RATIO * area_: continue   # tem porta real: não precisa subimagem
+            out.append([m])
+        return out
+    gs = [list(g) for g in nichos(w) + abertos(w) + _portas_faltando(w)]
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -5 for k in range(3))
     mudou = True
     while mudou:
@@ -1454,24 +1573,6 @@ def detalhes(w):
             if mudou: break
     return gs
 
-def grupos_baloes(w):
-    """Conjuntos fisicamente concentrados que produziriam três ou mais balões juntos."""
-    f_ = FV[w['key']]; al_ = 1 if f_[0] else 0
-    itens_ = sorted(w['itens'], key=lambda i: ((i['bb'][al_] + i['bb'][al_+3]) / 2,
-                                               (i['bb'][2] + i['bb'][5]) / 2))
-    grupos_, usados_ = [], set()
-    for i_, item_ in enumerate(itens_):
-        if id(item_) in usados_: continue
-        c0_ = ((item_['bb'][al_] + item_['bb'][al_+3]) / 2,
-               (item_['bb'][2] + item_['bb'][5]) / 2)
-        grupo_ = [j_ for j_ in itens_ if id(j_) not in usados_
-                  and abs((j_['bb'][al_] + j_['bb'][al_+3]) / 2 - c0_[0]) <= 420
-                  and abs((j_['bb'][2] + j_['bb'][5]) / 2 - c0_[1]) <= 420]
-        if len(grupo_) >= 3:
-            grupos_.append(grupo_)
-            usados_.update(id(j_) for j_ in grupo_)
-    return grupos_
-
 def abertos(w):
     # REGRA (João): NICHO = estrutura ABERTA, SEM PORTA (sem porta/basculante/gaveta), com ou sem prateleira.
     # Módulo sem porta (até 2 m x 1,2 m) + tamponamentos/painéis encostados = DETALHE. Armário com porta NUNCA é nicho.
@@ -1480,7 +1581,6 @@ def abertos(w):
         for i in g: ja.add(id(i))
     for m in w['itens']:
         if m['tipo'] != 'mod' or id(m) in ja: continue
-        if not re.search(r'\bnicho\b', m.get('desc', ''), re.I): continue
         mb = m['bb']
         if mb[al + 3] - mb[al] > 2000 or mb[5] - mb[2] > 1200 or tem_porta(m, w): continue
         g = [m] + [o for o in w['itens'] if o['tipo'] == 'comp' and id(o) not in ja
@@ -1494,8 +1594,7 @@ def abertos(w):
 def nichos(w):
     # REGRA (João): TODO NICHO ABERTO vira detalhe. Nicho = conjunto de painéis/tamponamentos encostados entre si
     # (peças "Vista" de acabamento não entram no agrupamento), com 3+ peças e 2+ horizontais, até 2 m de largura e 1,2 m de altura.
-    cs = [i for i in w['itens'] if i['tipo'] == 'comp'
-          and re.search(r'painel|tamponamento', i.get('desc', ''), re.I)]; grupos_ = []
+    cs = [i for i in w['itens'] if i['tipo'] == 'comp' and not re.match(r'vista\b', i['desc'], re.I)]; grupos_ = []
     toca = lambda A, B: all(min(A[k + 3], B[k + 3]) - max(A[k], B[k]) > -3 for k in range(3))
     for i in cs:
         junto = [g for g in grupos_ if any(toca(i['bb'], j['bb']) for j in g)]
@@ -1508,7 +1607,7 @@ def nichos(w):
         ext = [U_[k + 3] - U_[k] for k in range(3)]
         hz = sum(1 for i in g if i['bb'][5] - i['bb'][2] <= 30)
         ax_ = 1 if FV[w['key']][0] else 0
-        if not (len(g) >= 4 and hz >= 2 and ext[ax_] <= 2000 and ext[2] <= 1200): continue
+        if not (len(g) >= 3 and hz >= 2 and ext[ax_] <= 2000 and ext[2] <= 1200): continue
         # REGRA (v31): nicho tem a FRENTE ABERTA. Chapas do conjunto em pé de frente p/ a câmera, na face da frente,
         # cobrindo >= 40% da frente = caixa fechada -> não é nicho.
         ad_ = 1 - ax_; sg_ = FV[w['key']][ad_]; perto = lambda bb: min(bb[ad_] * sg_, bb[ad_ + 3] * sg_)
@@ -1527,41 +1626,27 @@ def nichos(w):
 def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, contexto=False, **kw):
     # contexto=True (REGRA João): mostra o AMBIENTE em volta (móveis e pedra das paredes vizinhas, perto desta parede)
     # para orientar; balões/listagem continuam só nos móveis da parede da vista.
-    # Vista dividida: o alvo acompanha a listagem; vizinhos continuam como contexto.
-    # itens_vista não transforma a imagem principal em subimagem isolada.
-    its = kw.get('itens_vista')
-    if its is None:
-        its = itens if itens is not None else [i for w in pids for i in PW[w]['itens']]
-    if not its: return
+    its = itens or [i for w in pids for i in PW[w]['itens']]
     U = list(its[0]['bb'])
     for i in its: U = geo.uniao(U, i['bb'])
     E = [U[0] - 80, U[1] - 80, U[2] - 80, U[3] + 80, U[4] + 80, U[5] + 80]
-    f = FV[kw.get('camera_key', PW[pids[0]]['key'])]; a = 0.0
-    if len(pids) > 1 and kw.get('papel') == 'geral':
-        f2 = FV[PW[pids[1]]['key']]
-        cruz = f[0] * f2[1] - f[1] * f2[0]
-        if cruz: a = math.radians(22 if cruz > 0 else -22)  # conjunto em L: complemento geral
+    f = FV[PW[pids[0]]['key']]; a = 0.0
+    if len(pids) > 1:
+        f2 = FV[PW[pids[1]]['key']]; a = math.radians(22 if f[0] * f2[1] - f[1] * f2[0] >= 0 else -22)
     if ang is not None: a = math.radians(ang)
     hx = f[0] * math.cos(a) - f[1] * math.sin(a); hy = f[0] * math.sin(a) + f[1] * math.cos(a)
     # REGRA (v33, João): a vista frontal fica EXATAMENTE no centro - sem inclinação nenhuma.
     # Câmera na altura do meio do móvel e sem elevação: as arestas verticais saem no prumo.
-    e = math.radians(kw.get('elev', 0))
+    e = math.radians(kw.get('elev', 0 if (contexto and not itens) else 9))
     fw = (hx * math.cos(e), hy * math.cos(e), -math.sin(e))
     rn = math.hypot(hy, hx); r = (hy / rn, -hx / rn, 0.0)
     up = (r[1] * fw[2] - r[2] * fw[1], r[2] * fw[0] - r[0] * fw[2], r[0] * fw[1] - r[1] * fw[0])
     dot = lambda a_, b_: a_[0] * b_[0] + a_[1] * b_[1] + a_[2] * b_[2]
-    ctx = contexto and len(pids) == 1 and not kw.get('isolado')
-    tc, D, cam = posicionar(U, fw, dmin, ambiente=ctx,
-                            caixas=[p['bb'] for p in P] if ctx else ())
-    if kw.get('camera_frontal_1500'):
-        # Regra rígida das imagens 3D de listagem: câmera e foco no mesmo
-        # nível, exatamente 1,50 m acima do piso, sem inclinação vertical.
-        tc = (tc[0], tc[1], ZP + 1500)
-        cam = (cam[0], cam[1], ZP + 1500)
-        fw = (hx, hy, 0.0); up = (0.0, 0.0, 1.0)
-    _tg = {pi for i in its for pi in i['pecas']}
-    _retirados = obstaculos(inst, P, _tg, fw) if contexto else set()
-    _retirados.difference_update(_tg)
+    tc = ((U[0] + U[3]) / 2, (U[1] + U[4]) / 2, (U[2] + U[5]) / 2)
+    D = max(max(U[3] - U[0], U[4] - U[1], U[5] - U[2]) * 1.9, dmin)
+    if contexto and not itens and len(pids) == 1: D = max(D, 7000)   # com ambiente: câmera mais longe (menos distorção)  # parede pequena: câmera não chega perto demais (sem distorção)
+    cam = (tc[0] - fw[0] * D, tc[1] - fw[1] * D, tc[2] - fw[2] * D)
+    ctx = contexto and not itens and len(pids) == 1
     if ctx:
         w0 = PW[pids[0]]; axd = 0 if f[0] else 1; axl = 1 - axd; sg = f[axd]
         prof_ = lambda bb: min((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg)
@@ -1570,18 +1655,14 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         # sem ninguem ter que acertar posicao de corte.
         _pf_mov = max((w0['plano'] - U[axd]) * sg, (w0['plano'] - U[axd + 3]) * sg)
         _na_frente = lambda bb: min((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg) > _pf_mov + 50
-        _donos = {}
-        for item in sorted(inst, key=lambda i: i['tipo'] != 'mod'):
-            for pi_ in item['pecas']: _donos.setdefault(pi_, item['bb'])
+        _tg = {pi for i in its for pi in i['pecas']}
         def dentro_(bb, pi=None):
+            if not (prof_(bb) <= 1000 and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
             if pi in _tg: return True
-            if pi in _retirados: return False
-            bb = _donos.get(pi, bb)  # vizinho é selecionado inteiro, nunca chapa por chapa
-            if not kw.get('ambiente_completo') and not (prof_(bb) <= max(1800, _pf_mov+900) and bb[axl + 3] >= U[axl] - 1800 and bb[axl] <= U[axl + 3] + 1800): return False
             # REGRA (v26, só parede cortada / bloco): o que fica todo ATRÁS do plano da vista (outro ambiente) não aparece
             if (w0.get('cortada') or w0.get('bloco')) and max((w0['plano'] - bb[axd]) * sg, (w0['plano'] - bb[axd + 3]) * sg) < -100: return False
             cz = sum(((bb[k_] + bb[k_ + 3]) / 2 - cam[k_]) * fw[k_] for k_ in range(3))
-            return cz > 200  # obstáculos são retirados por entidade, sem apagar vizinhos por distância
+            return cz > D * 0.8   # vizinho não fica entre a câmera e a parede
     cor = {}
     for i in inst:
         for pi in i['pecas']: cor[pi] = MADEIRA if i['tipo'] == 'comp' else (0.97, 0.97, 0.97)
@@ -1591,33 +1672,22 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         b = p_['bb']
         sd_ = sorted(p_['dim'])
         if _iso is not None and p_['i'] not in _iso: continue
-        _protegidas_canto = kw.get('prateleiras_canto', set())
-        if kw.get('sem_portas') and p_['i'] not in _protegidas_canto and (p_['i'] in _portas() or p_['i'] in kw.get('ocultar_pecas',())): continue
-        if p_['i'] in DUP_I or p_['i'] in _retirados: continue
-        # Especial vizinho pode orientar no ambiente; tabela/balões permanecem só dos alvos da vista.
-        _referencia_especial = ctx and p_['i'] in _ESPECIAL_I and p_['i'] not in _tg
+        if kw.get('sem_portas') and p_['i'] in _portas(): continue
+        if p_['i'] in DUP_I: continue
+        # REGRA (João, 28/09/2026 - skill P3): móvel diverso SAI da imagem da vista (vai para a prancha extra)
+        if ctx and p_['i'] in _MD_I and p_['i'] not in _tg: continue
         if p_['i'] in AMB_I or p_['i'] in ELETRO_I:
-            if itens and not ctx and not kw.get('representacao_interna'): continue   # detalhe (nicho/costas): só os móveis, sem pedra/eletros
+            if itens: continue   # detalhe (nicho/costas): só os móveis, sem pedra/eletros
             if (dentro_(b, p_['i']) if ctx else all(b[k] <= E[k + 3] and b[k + 3] >= E[k] for k in range(3))):
                 c0_ = PEDRA_COR if p_['i'] in AMB_I else ELETRO_COR
                 for fc, fl in zip(p_['faces'], p_['ft']): src.append((fc, c0_, fl, 1, len(shell)))
-                _pidx[len(shell)] = p_['i']
                 shell.append(b)
             continue
-        if not kw.get('representacao_interna') and not _referencia_especial and (sd_[1] < 50 or sd_[0] > 60): continue  # REGRA: 3D só com MDF (chapas); suportes, dobradiças, cabideiros, pés = fora
+        if sd_[1] < 50 or sd_[0] > 60: continue  # REGRA: 3D só com MDF (chapas); suportes, dobradiças, cabideiros, pés = fora
         if (dentro_(b, p_['i']) if ctx else (all(b[k] >= E[k] for k in range(3)) and all(b[k + 3] <= E[k + 3] for k in range(3)))):
             base = p_.get('rgb') or cor.get(p_['i'], (0.80, 0.80, 0.83))
             _pmat[len(shell)] = p_.get('mat'); _pidx[len(shell)] = p_['i']
-            visual=p_.get('_visual_vidro')
-            if visual:
-                if visual.get('_sem_perfil'):
-                    fc=max(p_['fq'],key=lambda v:sum(p[2] for p in v[0])/len(v[0]))[0]
-                    src.append((fc,visual['rgb'],[True]*len(fc),1,len(shell),visual['alpha']))
-                else:
-                    for fc,rgb,alpha in faces_porta(b,f,visual):
-                        src.append((fc,rgb,[True]*4,1,len(shell),alpha))
-            else:
-                for uq, nv, ft in p_['fq']: src.append((uq, base, ft, 1, len(shell)))
+            for uq, nv, ft in p_['fq']: src.append((uq, base, ft, 1, len(shell)))
             shell.append(b)
     for px_ in PUXADORES:   # REGRA (v23): puxador aparece junto com a porta dele
         if px_['porta'] in _pidx.values():
@@ -1646,30 +1716,26 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             if _cob >= NICHO_MIN_RATIO * _area_m: continue
             _sg = f[_axd]
             _xf = _mb[_axd + 3] if _sg < 0 else _mb[_axd]
-            if _m['pecas']: _pidx[len(shell)] = _m['pecas'][0]
+            # Cor da face sintética: usa o material lido do XML (xml_mat_porta) para diferenciar vidro/espelho/MDF
             _mat_ = _m.get('xml_mat_porta', 'mdf')
-            visual=_m.get('_porta_visual')
-            if _mat_ in ('vidro','espelho','aluminio') and visual:
-                if _mat_=='aluminio':
-                    visual=dict(visual,rgb=visual['perfil_rgb'],alpha=1.)
-                folhas=faces_porta(_mb,f,visual)
-                for _face,_cor_m,_alpha in folhas:
-                    src.append((_face,_cor_m,[True]*4,1,len(shell),_alpha))
-                sb=list(_mb); sb[_axd]=_xf-.2; sb[_axd+3]=_xf+.2
-                shell.append(sb)
+            if _mat_ == 'vidro':
+                _cor_m = (0.70, 0.87, 0.95)       # azul-translúcido (vidro)
+            elif 'espelho' in _mat_:
+                _cor_m = (0.80, 0.82, 0.86)       # prateado (espelho)
+            elif _mat_ == 'aluminio':
+                _cor_m = (0.75, 0.76, 0.78)       # alumínio escovado (005.A.4)
             else:
-                _cor_m = next((pp_.get('rgb') for pp_ in P if pp_['i'] in _m['pecas'] and pp_.get('rgb')), (0.97,0.97,0.97))
-                if _axd==0:
-                    _face=[(_xf,_mb[1],_mb[2]),(_xf,_mb[4],_mb[2]),(_xf,_mb[4],_mb[5]),(_xf,_mb[1],_mb[5])]
-                else:
-                    _face=[(_mb[0],_xf,_mb[2]),(_mb[3],_xf,_mb[2]),(_mb[3],_xf,_mb[5]),(_mb[0],_xf,_mb[5])]
-                src.append((_face,_cor_m,[True]*4,1,len(shell)))
-                shell.append(list(_mb))
+                _cor_m = next((pp_.get('rgb') for pp_ in P if pp_['i'] in _m['pecas'] and pp_.get('rgb')), (0.97, 0.97, 0.97))
+            if _axd == 0:
+                _face = [(_xf, _mb[1], _mb[2]), (_xf, _mb[4], _mb[2]), (_xf, _mb[4], _mb[5]), (_xf, _mb[1], _mb[5])]
+            else:
+                _face = [(_mb[0], _xf, _mb[2]), (_mb[3], _xf, _mb[2]), (_mb[3], _xf, _mb[5]), (_mb[0], _xf, _mb[5])]
+            src.append((_face, _cor_m, [True, True, True, True], 1, len(shell)))
+            shell.append([_mb[0] - 1, _mb[1] - 1, _mb[2] - 1, _mb[3] + 1, _mb[4] + 1, _mb[5] + 1])
     mg = kw.get('margem', 700); R = [U[0] - mg, U[1] - mg, 0 if mg >= 700 else U[2] - mg, U[3] + mg, U[4] + mg, U[5] + min(150, mg)]
     if ctx and MALHA_PAR:
         _cob = []; _ilha = U[5] <= 1200   # móvel baixo solto (ilha/bancada): sem parede inventada nem laterais distantes
         for p_ in MALHA_PAR:
-            if _na_frente(p_['bb']): continue  # retira a parede inteira, nunca corta faces do móvel
             for fc, fl in zip(p_['faces'], p_['ft']):
                 c_ = [sum(v[k_] for v in fc) / len(fc) for k_ in range(3)]
                 if min((w0['plano'] - v[axd]) * sg for v in fc) > 1300: continue
@@ -1699,17 +1765,14 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             for fc in caixa_faces(b): src.append((fc, PAREDE_COR, [True] * 4, 0, -1))
     elif _iso is None:
         if ctx: R[axl] -= 1800; R[axl + 3] += 1800
-        for p_ in PAREDES_PECAS:
-            b = p_['bb']
-            if p_['i'] in _retirados or (ctx and _na_frente(b)): continue
-            if not all(b[k] <= R[k+3] and b[k+3] >= R[k] for k in range(3)): continue
+        for b in paredes_recorte(R):
             for fc in caixa_faces(b): src.append((fc, PAREDE_COR, [True] * 4, 0, -1))
     # REGRA (João, 2026-09-28, REAPLICADO): piso não depende mais de "vista com 1 parede só" (ctx).
     # Antes o piso usava eixo/plano de PW[pids[0]] -> em vista de canto (2 paredes, L), ctx era False
     # e o piso não saía (bug: "gerei 11 suíte e não saiu com piso"). Agora é uma laje plana sob toda
     # a área visível (bounding box dos itens + margem), independente de quantas paredes tem a vista.
     # Lógica de parede (_na_frente/etc.) não foi tocada.
-    if contexto and not kw.get('isolado'):
+    if contexto and not itens:
         _pz = [U[0] - 4000, U[1] - 4000, -20, U[3] + 4000, U[4] + 4000, 0]
         src.append((caixa_faces(_pz)[1], PISO_COR, [True] * 4, 0, -1))
     L = (0.35, -0.45, 0.82); nl = math.sqrt(dot(L, L))
@@ -1717,13 +1780,11 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         rel = (v[0] - cam[0], v[1] - cam[1], v[2] - cam[2]); z = dot(rel, fw)
         return (dot(rel, r) / z, dot(rel, up) / z, z)
     fcs = []
-    for entrada in src:
-        vs,base,ft,gr,pc=entrada[:5]
-        alpha=entrada[5] if len(entrada)>5 else 1.
+    for vs, base, ft, gr, pc in src:
         pp = [pj(v) for v in vs]
         if min(t[2] for t in pp) < 50: continue
         nm = _n(vs[0], vs[1], vs[2]); fs_ = 0.72 + 0.28 * abs(dot(nm, L)) / nl
-        fcs.append((gr, sum(t[2] for t in pp) / len(pp), [(t[0], t[1]) for t in pp], tuple(min(1, x * fs_) for x in base), ft, pc, vs, fs_, alpha))
+        fcs.append((gr, sum(t[2] for t in pp) / len(pp), [(t[0], t[1]) for t in pp], tuple(min(1, x * fs_) for x in base), ft, pc, vs, fs_))
     if not fcs: return
     fcs = _ordem_pecas(fcs, shell, cam)
     xs = [x for f_ in fcs for x, _ in f_[2]]; ys = [y for f_ in fcs for _, y in f_[2]]
@@ -1732,39 +1793,19 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         cc = [pj((b_[i0], b_[1 + j0], b_[2 + k0])) for pc_, b_ in _bi.items() if _pidx.get(pc_) in _alvo for i0 in (0, 3) for j0 in (0, 3) for k0 in (0, 3)]
         cc = [c_ for c_ in cc if c_[2] > 50]
         if cc: xs = [c_[0] for c_ in cc]; ys = [c_[1] for c_ in cc]
-    if ctx:  # conjunto completo e contexto próximo, com vizinhos enquadrados por inteiro
-        vizinhos = [i['bb'] for i in inst if not set(i['pecas']) & _retirados
-                    and any(pi in _pidx.values() for pi in i['pecas'])]
-        Uq = enquadrar(U, axl, vizinhos)
+    if ctx:   # REGRA (v15, João): a imagem PREENCHE o quadro todo. Enquadra os móveis com folga curta
+        # (300 mm dos lados, piso até 150 mm acima do móvel); o ambiente (paredes, piso) completa o resto e é recortado.
+        Uq = list(U); Uq[axl] -= 300; Uq[axl + 3] += 300; Uq[2] = 0; Uq[5] += 150
+        # móvel pequeno: enquadramento mínimo 2,2 m x 2,0 m (mostra o ambiente, não vira close do móvel)
+        _fx = max(0, 2200 - (Uq[axl + 3] - Uq[axl])) / 2; Uq[axl] -= _fx; Uq[axl + 3] += _fx; Uq[5] = max(Uq[5], 2000)
         cc = [pj((Uq[i0], Uq[1 + j0], Uq[2 + k0])) for i0 in (0, 3) for j0 in (0, 3) for k0 in (0, 3)]
         cc = [c_ for c_ in cc if c_[2] > 50]
         xs = [c_[0] for c_ in cc]; ys = [c_[1] for c_ in cc]
-    # O bbox XML pode ser maior que as faces efetivamente exportadas no DXF.
-    # Enquadra também o envelope completo do conjunto, em todas as categorias.
-    _proj_alvo = [pj(v) for v in cantos(U)]
-    xs += [q[0] for q in _proj_alvo]; ys += [q[1] for q in _proj_alvo]
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
-    mgf = kw.get('margem_pontos', 22 if itens else 4 if ctx else 16)
+    mgf = 22 if itens else 4 if ctx else 16
     k = min((rect.width - mgf) / (x1 - x0), (rect.height - mgf) / (y1 - y0))
     ox = rect.x0 + (rect.width - (x1 - x0) * k) / 2; oy = rect.y0 + (rect.height - (y1 - y0) * k) / 2
     T = lambda x, y: (ox + (x - x0) * k, oy + (y1 - y) * k)
-    _enquadrado = all(rect.x0-.1 <= T(q[0],q[1])[0] <= rect.x1+.1 and
-                      rect.y0-.1 <= T(q[0],q[1])[1] <= rect.y1+.1 for q in _proj_alvo)
-    if not _enquadrado: raise ValueError('Câmera recortou o conjunto listado')
-    globals().setdefault('_auditoria_cameras', []).append(dict(
-        paredes=list(pids), contexto=ctx, ang=math.degrees(a), elev=math.degrees(e),
-        camera=cam, foco=tc, camera_key=kw.get('camera_key',PW[pids[0]]['key']),
-        alvo=U, enquadrado=_enquadrado,
-        retirados=sorted(_retirados), alvos=sorted(_tg), quadro=tuple(rect)))
-    if kw.get('caixas_projetadas') is not None:
-        for face in fcs:
-            pi = _pidx.get(face[5])
-            if pi is None: continue
-            for x_,y_ in face[2]:
-                px_,py_ = T(x_,y_)
-                b_ = kw['caixas_projetadas'].setdefault(pi,[px_,py_,px_,py_])
-                b_[0]=min(b_[0],px_); b_[1]=min(b_[1],py_)
-                b_[2]=max(b_[2],px_); b_[3]=max(b_[3],py_)
     if kw.get('visiveis') is not None and _Im is not None:
         # REGRA (v25): quais peças APARECEM nesta imagem (buffer de identificação, desenho na mesma ordem das faces)
         _s = 2.0; _W = max(1, int(rect.width * _s)); _H = max(1, int(rect.height * _s))
@@ -1784,10 +1825,8 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             if v_ <= 0 or pc_ not in _pidx or pc_ not in _bx: continue
             b_ = _bx[pc_]; area_ = max(1.0, (b_[2] - b_[0]) * (b_[3] - b_[1]) * _s * _s)
             if c_ >= 40 and c_ / area_ >= 0.05: kw['visiveis'].add(_pidx[pc_])   # peça aparece DE VERDADE (15%+ dela)
-        if callable(kw.get('visibilidade_callback')):
-            kw['visibilidade_callback'](_ib,_pidx,rect,kw['visiveis'])
         if kw.get('so_visiveis'): return
-    if _Im is not None and (any(len(f_)>8 and f_[8]<.999 for f_ in fcs) or (cfg.get('textura', True) and any(textura(m_) for m_ in _pmat.values()))):
+    if _Im is not None and cfg.get('textura', True) and any(textura(m_) for m_ in _pmat.values()):
         _raster3d(page, rect, fcs, T, _pmat)
     else:
         if ctx: _tmp = fz.open(); _tp = _tmp.new_page(width=page.rect.width, height=page.rect.height); sh = _tp.new_shape()
@@ -1796,7 +1835,7 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
             q, c_, ft = f_[2], f_[3], f_[4]
             Q = [T(x, y) for x, y in q]
             if area2(Q) < 0.1: continue
-            sh.draw_polyline(Q + [Q[0]]); sh.finish(color=c_, fill=c_, width=0.5, closePath=True,fill_opacity=f_[8] if len(f_)>8 else 1.)
+            sh.draw_polyline(Q + [Q[0]]); sh.finish(color=c_, fill=c_, width=0.5, closePath=True)
             if any(ft):
                 for (a_, b_), fl_ in zip(zip(Q, Q[1:] + Q[:1]), ft):
                     if fl_: sh.draw_line(a_, b_)
@@ -1804,22 +1843,32 @@ def render3d(page, rect, pids, letra=None, itens=None, ang=None, dmin=4200, cont
         sh.commit()
         if ctx: page.show_pdf_page(rect, _tmp, 0, clip=rect)
     if letra:
-        _marcados = []; _pontos = {}
+        _bal = []; _ja_bal = set()
         for i in its:
             nb = i.get('num_' + letra)
             if not nb or id(i) in kw.get('sem_balao', ()): continue
-            # Regra atual: itens iguais compartilham o número, mas CADA ocorrência
-            # recebe seu próprio balão, inclusive em paredes divisórias.
-            b = i['bb']; fi = FV[kw.get('camera_key', PW[i['parede']]['key'])]; axi = 0 if fi[0] else 1
+            if PW.get(i.get('parede'), {}).get('divisoria'):   # REGRA (v18): divisória = UM balão por tipo de peça
+                if nb in _ja_bal: continue
+                _ja_bal.add(nb)
+            b = i['bb']; fi = FV[PW[i['parede']]['key']]; axi = 0 if fi[0] else 1
             c3 = [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]
             c3[axi] = b[axi] if (fi[axi] > 0) != bool(kw.get('costas')) else b[axi + 3]
             _us = USINADOS.get(i['pecas'][0])
             if _us: c3[_us['al']] = (b[_us['al']] + _us['u'][0]) / 2   # painel usinado: balão na faixa cheia, não no vão
             t3 = pj(c3); cx, cy = T(t3[0], t3[1]); t_ = str(nb); wv = fz.get_text_length(t_, 'hebo', 7) + 4
             if kw.get('posicoes') is not None: kw['posicoes'][id(i)] = (cx, cy)
-            _marcados.append(i); _pontos[id(i)] = (cx,cy)
-        from visual_comum import baloes
-        baloes(globals(),page,rect,_marcados,letra,_pontos)
+            # REGRA: balões não ficam um em cima do outro -> desloca o novo e liga ao ponto com traço fino
+            bx, by = cx, cy
+            for tent in range(24):
+                rr = fz.Rect(bx - wv / 2 - 1, by - 6.5, bx + wv / 2 + 1, by + 6.5)
+                if not any(rr.intersects(o_) for o_ in _bal): break
+                ang_ = tent * 0.9; dist_ = 10 + 3 * tent
+                bx, by = cx + dist_ * math.cos(ang_), cy + dist_ * math.sin(ang_)
+            if (bx, by) != (cx, cy):
+                page.draw_line((cx, cy), (bx, by), color=PRETO, width=0.35); page.draw_circle((cx, cy), 0.9, color=PRETO, fill=PRETO)
+            _bal.append(fz.Rect(bx - wv / 2 - 1, by - 6.5, bx + wv / 2 + 1, by + 6.5))
+            page.draw_rect(fz.Rect(bx - wv / 2, by - 5.5, bx + wv / 2, by + 5.5), color=PRETO, fill=(1, 1, 0), width=0.4)
+            page.insert_text((bx - wv / 2 + 2, by + 2.5), t_, fontname='hebo', fontsize=7)
 
 
 # puxador por regra DESLIGADO (João: posições erradas). Só liga com "puxadores_regra": true no config.
@@ -1827,9 +1876,8 @@ PUXADORES = _gerar_puxadores() if cfg.get('puxadores_regra') else []
 print('PUXADORES:', len(PUXADORES), '(regra desligada; o DXF não traz puxador)' if not PUXADORES else 'gerados')
 # REGRA (v33, João): PEÇA ESCONDIDA NÃO É LISTADA. Antes de montar a tabela, o motor desenha a
 # imagem frontal da vista num rascunho e anota quais peças realmente aparecem nela. Item que não
-# tem nenhuma peça visível fica FORA da tabela e não ganha balão. Exceção funcional:
-# apoio/fixação ou detalhe previsto no documento pode aparecer em subimagem montada,
-# com referência ao hospedeiro e balões somente das ocorrências visíveis no detalhe.
+# tem nenhuma peça visível fica FORA da tabela e não ganha balão. Nada de tirar a peça de onde ela
+# está para fazer uma imagem só dela.
 # (precisa vir depois de render3d estar definido)
 # DECISÃO D1 (João, 28/09/2026): elementos com mesma (desc, dim) → mesmo número em TODAS as vistas.
 # Na tabela: uma linha, sem quantidade. Na imagem: cada ocorrência tem balão próprio com mesmo número.
@@ -1839,37 +1887,29 @@ def _numerar(ordenados, letra, agrupar=False):
         k = (i['desc'], i['dim'])
         if agrupar and k in lin: i['num_' + letra] = lin.index(k) + 1; continue
         lin.append(k); i['num_' + letra] = len(lin)
-    legendas={(i['desc'],i['dim']):i.get('_legenda_normal','') for i in ordenados}
-    return [(d+(' - '+legendas[(d,dm)] if legendas[(d,dm)] else ''),dm,'') for d,dm in lin]
+    return [(d, dm, '') for d, dm in lin]
 
 for v in VW:
     its = [i for w in v['paredes'] for i in PW[w]['itens']]
     _vis_v = set()
     _tmp_v = fz.open(); _pg_v = _tmp_v.new_page(width=842, height=595)
     render3d(_pg_v, fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1), v['paredes'],
-             contexto=True, visiveis=_vis_v, so_visiveis=True,
-             camera_frontal_1500=True, ambiente_completo=True)
+             contexto=True, visiveis=_vis_v, so_visiveis=True)
     # REGRA (João, 28/09/2026 - bloco 1): só PEÇA SOLTA pode ser escondida (base sob módulo,
     # tamponamento sob superior). MÓDULO da vista nunca é escondido nem sai da listagem.
     _fora_v = [i for i in its if i['tipo'] != 'mod' and not any(pi in _vis_v for pi in i['pecas'])]
-    from normal.ocultas import planejar
-    v['_detalhes_ocultos'] = planejar(globals(),v,_fora_v)
-    _em_detalhe = {id(i) for plano in v['_detalhes_ocultos'] for i in plano['listados']}
-    _fora_v = [i for i in _fora_v if id(i) not in _em_detalhe]
-    _tmp_v.close()
     if _fora_v:
         print('ESCONDIDAS (fora da listagem) em %s: %d' % (v['titulo'], len(_fora_v)))
         for i in _fora_v: print('    %s %s' % (i['desc'], i['dim']))
-        its = [i for i in its if i not in _fora_v]
+        its = [i for i in its if i not in _fora_v] or its
     v['itens_listados'] = its
     ordem = sorted(its, key=lambda i: (i['tipo'] != 'mod', i['n']))
-    # Peças ou módulos iguais compartilham o número; todas as ocorrências recebem balão.
-    v['linhas'] = _numerar(ordem, v['letra'], agrupar=True)
+    v['linhas'] = _numerar(ordem, v['letra'], agrupar=True)  # D1: agrupar sempre (iguais = mesmo nº)
 
 # ---------------- montagem ----------------
 doc = fz.open(); n = 0; relat = []
 n += 1; p = nova_prancha(doc, n, 'CAPA')
-render3d(p, fz.Rect(AREA_IN.x0, AREA_IN.y0 + 34, AREA_IN.x1, AREA_IN.y1), [w['id'] for w in paredes], contexto=True, papel='geral')
+render3d(p, fz.Rect(AREA_IN.x0, AREA_IN.y0 + 34, AREA_IN.x1, AREA_IN.y1), [w['id'] for w in paredes])
 t = f"CADERNO DE {cfg['tipo_caderno']} - {cfg['dados']['ambiente'].upper()}"
 p.insert_text((419.5 - fz.get_text_length(t, 'hebo', 18) / 2, AREA_IN.y0 + 22), t, fontname='hebo', fontsize=18, color=RED)
 
@@ -1888,7 +1928,7 @@ confere = not _faltando_real
 # REGRA (João): especificações no modelo fixo, preenchidas com o que está no XML (nome exato). Sem item no projeto = em branco.
 def _espec(xml):
     lim = lambda t: re.sub(r'[^\w)\]]+$', '', re.sub(r'\s+', ' ', t or '')).strip()
-    root_ = XML_TREE.getroot() if xml == cfg['xml'] else ET.parse(xml).getroot()
+    root_ = ET.parse(xml).getroot()
     cor_, esp_ = {}, {}
     def add(cl, c, e):
         cor_.setdefault(cl, _col.Counter())[c] += 1
@@ -1915,8 +1955,7 @@ def _espec(xml):
     pux_n, pux_c = [], []
     for d, it in todos_:
         if re.match(r'puxador', d, re.I):
-            refs_ = it.find('REFERENCES')
-            rf = {g.tag: g.get('REFERENCE') for g in refs_} if refs_ is not None else {}
+            rf = {g.tag: g.get('REFERENCE') for g in (it.find('REFERENCES') or [])}
             n_ = lim(d); lg = rf.get('LARGURA')
             if lg and lg + 'mm' not in n_: n_ += f' - {lg}mm'
             if n_ not in pux_n: pux_n.append(n_)
@@ -2055,63 +2094,48 @@ for v in V:                # setas das vistas (uma por parede); se encostar em o
 lab = f'PLANTA BAIXA - ESC. 1:{S}'
 p.insert_text((pr.x0 + pr.width / 2 - fz.get_text_length(lab, 'hebo', 8) / 2, pr.y1 - 3), lab, fontname='hebo', fontsize=8)
 
-# VISÃO GERAL: no máximo quatro imagens limpas, sem balões ou cotas.
-_vg = ([x for x in VW if not PW[x['paredes'][0]].get('divisoria')] or VW)[:4]
-for _ini in range(0, len(_vg), 4):
-    n += 1; p = nova_prancha(doc, n, 'VISÃO GERAL DOS MÓVEIS')
-    com_img = [dict(titulo=x['titulo'], paredes=x['paredes'], img3d=None) for x in _vg]
-    m = len(com_img); a = AREA_IN; xm = a.x0 + a.width / 2; ym = a.y0 + a.height / 2
-    if m == 1:
-        cel = [a]
-    elif m == 2:
-        # Duas imagens: divisão vertical, uma metade para cada vista.
-        cel = [fz.Rect(a.x0, a.y0, xm, a.y1), fz.Rect(xm, a.y0, a.x1, a.y1)]
-    elif m == 3:
-        # Três imagens: esquerda inteira; direita dividida em duas.
-        cel = [fz.Rect(a.x0, a.y0, xm, a.y1),
-               fz.Rect(xm, a.y0, a.x1, ym), fz.Rect(xm, ym, a.x1, a.y1)]
-    else:
-        cel = [fz.Rect(a.x0, a.y0, xm, ym), fz.Rect(xm, a.y0, a.x1, ym),
-               fz.Rect(a.x0, ym, xm, a.y1), fz.Rect(xm, ym, a.x1, a.y1)]
-    for v, c in zip(com_img, cel):
-        render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
-        p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
-    if m >= 2:
-        p.draw_line((xm, a.y0), (xm, a.y1), color=PRETO, width=0.6)
-    if m == 3:
-        p.draw_line((xm, ym), (a.x1, ym), color=PRETO, width=0.6)
-    elif m == 4:
-        p.draw_line((a.x0, ym), (a.x1, ym), color=PRETO, width=0.6)
+# PRANCHA 4: visão geral
+n += 1; p = nova_prancha(doc, n, 'VISÃO GERAL DOS MÓVEIS')
+# REGRA (João, 28/09/2026 - skill V5): de 1 a 4 imagens, observador DENTRO do ambiente (com contexto), sem balão e
+# sem cota. Mais de 4 vistas: as vistas vizinhas se juntam em 4 grupos; cada imagem olha a 1ª parede do grupo
+# com o ambiente em volta (substitui a v28, que montava o par de paredes visto de fora).
+_vg = [x for x in VW if not PW[x['paredes'][0]].get('divisoria')] or VW
+_ng = min(4, len(_vg)); _tam = [len(_vg) // _ng + (1 if k < len(_vg) % _ng else 0) for k in range(_ng)]
+com_img = []; _k0 = 0
+for t_ in _tam:
+    g_ = _vg[_k0:_k0 + t_]; _k0 += t_
+    com_img.append(dict(titulo=' + '.join(x['titulo'] for x in g_), paredes=[g_[0]['paredes'][0]], img3d=None))
+m = len(com_img); a = AREA_IN
+_nc = 1 if m == 1 else 2 if m <= 4 else 3; _nr = -(-m // _nc)
+cel = [fz.Rect(a.x0 + (i % _nc) * a.width / _nc, a.y0 + (i // _nc) * a.height / _nr, a.x0 + (i % _nc + 1) * a.width / _nc, a.y0 + (i // _nc + 1) * a.height / _nr) for i in range(m)]
+for v, c in zip(com_img, cel):
+    render3d(p, fz.Rect(c.x0 + 4, c.y0 + 16, c.x1 - 4, c.y1 - 4), v['paredes'], contexto=True)
+    p.insert_text((c.x0 + 6, c.y0 + 11), v['titulo'], fontname='hebo', fontsize=10, color=RED)
+for j in range(1, _nc): p.draw_line((a.x0 + j * a.width / _nc, AREA.y0), (a.x0 + j * a.width / _nc, AREA.y1), color=PRETO, width=0.6)
+for j in range(1, _nr): p.draw_line((AREA.x0, a.y0 + j * a.height / _nr), (AREA.x1, a.y0 + j * a.height / _nr), color=PRETO, width=0.6)
 
 # REGRA (v26, João): LISTAGEM POLUÍDA (mais de 15 linhas) = DUAS pranchas: SUPERIORES (armários de cima e altos) e
 # INFERIORES (balcões). Cada uma com a tabela e os balões só das suas peças (numeração própria). Sem os dois grupos:
 # divide a parede ao meio (PARTE 1 / PARTE 2).
-LIST_MAX = 25; _extra = 0   # Nova regra: acima de 25 linhas, dividir a listagem.
+LIST_MAX = 15; LIST_TOL = 2; _extra = 0   # REGRA (ajuste, pedido João): tolerância de +2 (15 a 17
+                                            # numa prancha só) - só divide de fato a partir de 18,
+                                            # pra não partir uma listagem quase no limite ao meio.
 def _partes(s_):
     global _extra
     # REGRA (v34, João): usa a lista JÁ FILTRADA (sem as peças escondidas). Antes esta função relia a
     # lista original e as escondidas voltavam com balão quando a listagem se dividia em duas pranchas.
-    its = s_['itens_listados'] if 'itens_listados' in s_ else [i for w in s_['paredes'] for i in PW[w]['itens']]
-    if len(s_['linhas']) <= LIST_MAX or not its: return [s_]
+    its = s_.get('itens_listados') or [i for w in s_['paredes'] for i in PW[w]['itens']]
+    if len(s_['linhas']) <= LIST_MAX + LIST_TOL or not its: return [s_]
     sup = [i for i in its if (i['bb'][2] + i['bb'][5]) / 2 > 1300]; inf = [i for i in its if i not in sup]
     if sup and inf: gs = [('SUPERIORES', sup), ('INFERIORES', inf)]
     else:
         f_ = FV[PW[s_['paredes'][0]]['key']]; al = 1 if f_[0] else 0
         o_ = sorted(its, key=lambda i: (i['bb'][al] + i['bb'][al + 3]) / 2); h_ = len(o_) // 2
         gs = [('PARTE 1', o_[:h_]), ('PARTE 2', o_[h_:])]
-    # Qualquer grupo ainda maior que 15 é repartido novamente.
-    # A paginação não possui máximo fixo: prevalecem legibilidade e integridade.
-    blocos = []
-    for nome, g in gs:
-        partes = [g[i:i + LIST_MAX] for i in range(0, len(g), LIST_MAX)]
-        for j, parte in enumerate(partes, 1):
-            sufixo = f' {j}' if len(partes) > 1 else ''
-            blocos.append((nome + sufixo, parte))
-    gs = blocos
     out = []
     for k_, (nome, g) in enumerate(gs):
         key = f"{s_['letra']}{k_ + 1}"
-        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key, agrupar=True)
+        lin = _numerar(sorted(g, key=lambda i: (i['tipo'] != 'mod', i['n'])), key)
         out.append(dict(letra=key, titulo=f"{s_['titulo']} - {nome}", linhas=lin, paredes=s_['paredes'], ids={id(i) for i in g}, primeiro=k_ == 0, base=s_))
     _extra += len(out) - 1
     return out
@@ -2135,48 +2159,45 @@ def _cotas_em(p, GS, R, rotulos):
         p.insert_text((cx0 + cw / 2 - fz.get_text_length(lab, 'hebo', 8.5) / 2, min(fy + 44, R.y1 - 2)), lab, fontname='hebo', fontsize=8.5)
         if j: p.draw_line((cx0, R.y0 - IN), (cx0, R.y1 + IN), color=PRETO, width=0.6)
 
-# por bloco: listagem de cada parede (frontal); cotas são paginadas depois.
-COTAS_FILA = []
+# por bloco: listagem de cada parede (frontal) e depois as cotas do bloco (paredes lado a lado)
 for v in V:
     GS = [geom_parede(PW[w]) for w in v['paredes']]
-    for s_ in [q_ for s0_ in v['subs'] for q_ in _partes(s0_)]:
+    if v.get('divisoria'):
+        # REGRA (v18b): móvel complexo (divisória ripada em L) = SOZINHO, sem o ambiente, em DUAS imagens na
+        # diagonal (uma de cada lado do L), cada uma na sua prancha; tabela completa nas duas; um balão por tipo de peça.
+        its_ = PW[v['paredes'][0]]['itens']
+        # REGRA (v20, João): 1ª prancha = 3D FRONTAL (como a cota, com todas as ripas); 2ª = 3D LATERAL pegando o L
+        w_ = PW[v['paredes'][0]]; f_ = FV[w_['key']]; ax_ = 1 if f_[0] else 0; axd_ = 1 - ax_
+        rd_ = (f_[1], -f_[0])
+        cm_ = sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in its_) / len(its_)
+        dd_ = [i for i in its_ if abs((i['bb'][axd_] + i['bb'][axd_ + 3]) / 2 - w_['plano']) > 120]   # peças fora da faixa = perna do L
+        lado_ = (sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in dd_) / len(dd_) - cm_) * rd_[ax_] if dd_ else 1
+        if w_.get('bloco'):   # REGRA (v26): bloco de painéis = lateral vista pelo lado onde estão os móveis (de dentro do ambiente)
+            _ms = [i for i in inst if i['tipo'] == 'mod']
+            if _ms: lado_ = (sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in _ms) / len(_ms) - cm_) * rd_[ax_]
+        # REGRA (João, 28/09/2026 - skill P3): prancha EXTRA = UMA estrutura por prancha, LISTAGEM E COTAS JUNTAS.
+        # Esquerda: tabela + 3D isolado (fundo branco, só as peças, com balões). Direita: elevação 2D com cotas
+        # (isolada, sem portas). Sai a 2ª prancha com a lateral a 90° e listagem própria (v24/v25).
+        n += 1; p = nova_prancha(doc, n, f"MÓDULOS, PAINÉIS E MEDIDAS - {v['titulo']}")
+        yb = tabela(p, v['linhas'], AREA_IN.x0, AREA_IN.y0)
+        r3 = fz.Rect(AREA_IN.x0, yb + 10, AREA_IN.x0 + 248, AREA_IN.y1)
+        p.draw_rect(r3, color=PRETO, width=0.5)
+        render3d(p, fz.Rect(r3.x0 + 2, r3.y0 + 2, r3.x1 - 2, r3.y1 - 2), v['paredes'], letra=v['letra'], itens=its_,
+                 ang=(25 if lado_ > 0 else -25), elev=12, dmin=3000, margem=60, isolado=True)
+        _cotas_em(p, GS, fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1), [v['titulo']])
+    for s_ in ([] if v.get('divisoria') else [q_ for s0_ in v['subs'] for q_ in _partes(s0_)]):
         n += 1; p = nova_prancha(doc, n, f"MÓDULOS E PAINÉIS - {s_['titulo']}")
         yb = tabela(p, s_['linhas'], AREA_IN.x0, AREA_IN.y0)
-        # Engenharia: somente nichos identificados por XML + geometria/dimensão
-        # geram subimagem no motor padrão. Não há exceções semânticas por nome de produto.
-        nis = [(w,c,{'rotulo':'DETALHE - NICHO','sem_lista':False}) for w in s_['paredes'] for c in detalhes(PW[w])]
-        for w in s_['paredes']:
-            for grupo_ in grupos_baloes(PW[w]):
-                ids_ = {id(i) for i in grupo_}
-                if any(ids_.intersection(id(i) for i in g) for _,g,_ in nis): continue
-                nis.append((w, grupo_, {'rotulo':'DETALHE - GRUPO DE BALÕES',
-                                        'sem_lista':False, 'grupo_baloes':True}))
-        # Canto reto e canto L recuperam as câmeras funcionais anteriores.
-        from normal.regras import subimagens
-        for w in s_['paredes']:
-            for grupo, rotulo, sem_lista in subimagens(globals(), PW[w]):
-                if not re.search(r'canto\s+(?:reto|l)\b', rotulo, re.I):
-                    continue
-                ids_ = {id(i) for i in grupo}
-                nis = [(ww,g,t) for ww,g,t in nis if not ids_.intersection(id(i) for i in g)]
-                nis.append((w, grupo, {'rotulo':'DETALHE - ' + rotulo.upper(), 'sem_lista':False, 'canto':True}))
-        planos = s_.get('_detalhes_ocultos',s_.get('base',{}).get('_detalhes_ocultos',[]))
-        for plano in planos:
-            ids = {id(i) for i in plano['itens']}
-            nis = [(ww,g,t) for ww,g,t in nis if not ids.intersection(id(i) for i in g)]
-            nis.append((plano['w'],plano['listados'],dict(rotulo=plano['rotulo'],sem_lista=False,oculto=plano)))
+        # REGRA (v33, João): SO NICHO gera segunda imagem na prancha de listagem. Sairam o detalhe
+        # das costas, o de rodape/base, o de modulo pequeno e a subimagem de peca escondida.
+        # A subimagem fica na MESMA prancha da vista; havendo mais de um nicho, a prancha e
+        # replicada com a vista principal apenas como referencia (item 9 da ENGENHARIA).
+        nis = [(w, c, 'nicho') for w in s_['paredes'] for c in detalhes(PW[w])]
         if s_.get('ids') is not None:
             nis = [(w, c, t) for w, c, t in nis if any(id(i) in s_['ids'] for i in c)]
-        _sb = {id(i) for _,c,t in nis if not t['sem_lista'] for i in c}
+        _sb = {id(i) for _, c, _ in nis for i in c}
         _RI = fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1)
-        _alvos_vista = None
-        if s_.get('ids') is not None:
-            _alvos_vista = [i for w in s_['paredes'] for i in PW[w]['itens'] if id(i) in s_['ids']]
-        _caixas_main = {}
-        render3d(p, _RI, s_['paredes'], letra=s_['letra'], contexto=True,
-                 itens_vista=_alvos_vista, sem_balao=_sb, ang=0, elev=0,
-                 caixas_projetadas=_caixas_main, camera_frontal_1500=True,
-                 ambiente_completo=True)
+        render3d(p, _RI, s_['paredes'], letra=s_['letra'], contexto=True, sem_balao=_sb)
         # REGRA (João, 28/09/2026 - skill P1.1): TODOS os nichos da vista ficam na MESMA prancha (caixa dividida),
         # com os números da listagem. Não existe prancha "NICHO k" com listagem própria.
         def _dq(p, w, c, tp_, r_):
@@ -2185,132 +2206,107 @@ for v in V:
             # ORDEM 006 (v37.2): módulo com porta ausente no DXF (xml_tem_porta=True) vai FRONTAL (ang=0)
             # para mostrar a face sintética; nicho/aberto segue com ângulo.
             p.draw_rect(r_, color=PRETO, width=0.5)
-            p.insert_text((r_.x0 + 4, r_.y0 + 10), tp_['rotulo'], fontname='hebo', fontsize=7.5, color=RED)
-            if tp_.get('oculto'):
-                from normal.ocultas import renderizar
-                permitidos = s_.get('ids',{id(i) for i in s_.get('itens_listados',[])})
-                renderizar(globals(),p,fz.Rect(r_.x0+2,r_.y0+14,r_.x1-2,r_.y1-2),tp_['oculto'],s_['letra'],permitidos)
-                return
-            from normal.cameras import orientar, portas_do_canto, tampas_modulos_deitados
-            portas_detalhe = portas_do_canto(globals(), c)
-            if tp_.get('rotulo') == 'DETALHE - NICHO' or tp_.get('grupo_baloes'):
-                # Nicho e grupo de balões: câmera frontal e enquadramento central.
-                op = dict(camera_key=PW[w]['key'], ang=0, elev=0)
-            else:
-                op = orientar(c, P, PW[w]['key'], _portas() | portas_detalhe)
-            tampas_deitadas = tampas_modulos_deitados(c, P)
-            if tampas_deitadas:
-                # Frente aberta está acima na geometria DXF deitada. Somente
-                # no detalhe, a câmera olha para o interior e oculta as tampas.
-                op['elev'] = 75
-            if tp_.get('canto'):
-                op['prateleiras_canto'] = sorted(pi for i in c for pi in i['pecas']
-                                                 if P[pi]['bb'][5] - P[pi]['bb'][2] <= 30)
-            if portas_detalhe or tampas_deitadas:
-                op['ocultar_pecas'] = sorted(portas_detalhe | tampas_deitadas)
-            globals().setdefault('_auditoria_subimagens', []).append(dict(
-                pagina=p.number+1, vista=s_['letra'], rotulo=tp_['rotulo'],
-                itens=[dict(n=i['n'],desc=i['desc'],bb=i['bb'],pecas=i['pecas']) for i in c],
-                camera=op, sem_lista=tp_['sem_lista']))
-            render3d(p, fz.Rect(r_.x0 + 2, r_.y0 + 14, r_.x1 - 2, r_.y1 - 2), [w], letra=None if tp_['sem_lista'] else s_['letra'], itens=c,
-                     representacao_interna=tp_['sem_lista'], dmin=3200, margem=60, isolado=True,sem_portas=True,**op)
-
-        def _seta_referencia_oculta(pg_, caixa_det_, tp_, caixas_):
-            plano_ = tp_.get('oculto')
-            if not plano_: return
-            host_ = plano_['hospedeiro']
-            bb_ = [caixas_[pi] for pi in host_['pecas'] if pi in caixas_]
-            if not bb_: return
-            alvo_ = fz.Rect(min(q[0] for q in bb_), min(q[1] for q in bb_),
-                            max(q[2] for q in bb_), max(q[3] for q in bb_))
-            fim_ = (alvo_.x0 - 5, alvo_.y0 + alvo_.height * .72)
-            ini_ = (caixa_det_.x1, caixa_det_.y0 + caixa_det_.height * .55)
-            guia_ = min(_RI.x0 - 5, fim_[0] - 12)
-            # Rota ortogonal escolhida por colisão: a seta nunca atravessa caixa de balão.
-            obst_ = [fz.Rect(q) + (-2, -2, 2, 2)
-                     for q in globals().get('_baloes_por_pagina', {}).get(pg_.number + 1, [])]
-            def _toca_balao(a_, b_):
-                sr_ = fz.Rect(min(a_[0], b_[0]) - .6, min(a_[1], b_[1]) - .6,
-                              max(a_[0], b_[0]) + .6, max(a_[1], b_[1]) + .6)
-                return any(sr_.intersects(o_) for o_ in obst_)
-            niveis_ = [fim_[1], ini_[1], _RI.y0 + 8, _RI.y1 - 8]
-            niveis_ += [ini_[1] + d_ for d_ in (-48, -32, -16, 16, 32, 48)]
-            rotas_ = []
-            for ny_ in niveis_:
-                ny_ = min(max(ny_, AREA_IN.y0 + 6), AREA_IN.y1 - 6)
-                pts_c_ = [ini_, (guia_, ini_[1]), (guia_, ny_),
-                           (fim_[0] - 12, ny_), (fim_[0] - 12, fim_[1]), fim_]
-                col_ = sum(_toca_balao(a_, b_) for a_, b_ in zip(pts_c_, pts_c_[1:]))
-                comp_ = sum(math.dist(a_, b_) for a_, b_ in zip(pts_c_, pts_c_[1:]))
-                rotas_.append((col_, comp_, pts_c_))
-            colisoes_, _, pts_ = min(rotas_, key=lambda q: (q[0], q[1]))
-            if colisoes_:
-                raise ValueError('Sem rota livre para seta de referência: dividir a prancha')
-            pg_.draw_polyline(pts_, color=RED, width=1)
-            pg_.draw_polyline([(fim_[0]-7, fim_[1]-3), fim_, (fim_[0]-7, fim_[1]+3)], color=RED, width=1)
-
+            _porta_ausente = any(i.get('xml_tem_porta') for i in c)
+            _rotulo_sub = 'DETALHE - PORTA AUSENTE' if _porta_ausente else 'DETALHE - NICHO'
+            p.insert_text((r_.x0 + 4, r_.y0 + 10), _rotulo_sub, fontname='hebo', fontsize=7.5, color=RED)
+            fw_ = FV[PW[w]['key']]; ax_ = 1 if fw_[0] else 0
+            cm_ = sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in PW[w]['itens']) / len(PW[w]['itens'])
+            cn_ = sum((i['bb'][ax_] + i['bb'][ax_ + 3]) / 2 for i in c) / len(c)
+            r_dir = (fw_[1], -fw_[0])
+            lado = (cm_ - cn_) * r_dir[ax_]
+            larg_ = max(i['bb'][ax_ + 3] for i in c) - min(i['bb'][ax_] for i in c)
+            _ang_sub = 0 if _porta_ausente else (-1 if lado > 0 else 1) * (28 if larg_ < 1000 else 14)
+            render3d(p, fz.Rect(r_.x0 + 2, r_.y0 + 14, r_.x1 - 2, r_.y1 - 2), [w], letra=s_['letra'], itens=c,
+                     ang=_ang_sub, dmin=2200, margem=60, isolado=True)
         if nis:
-            # Exatamente uma subimagem por prancha.
+            # REGRA (ajuste, pedido João): largura da tabela é sempre fixa (248pt, já era assim).
+            # A altura da tabela acompanha a quantidade de itens (até 15 linhas por prancha, já
+            # garantido a montante por _partes()/LIST_MAX). A caixa "DETALHE - NICHO" (2ª imagem)
+            # acompanha esse vão: sobe quando a listagem é curta, encolhe quando é longa - nunca
+            # esbarra, porque nunca começa antes do fim da tabela (yb).
             y0_ = yb + 18
-            if AREA_IN.y1 - y0_ >= 90:
-                w, c, tp_ = nis[0]
-                rd_ = fz.Rect(AREA_IN.x0, y0_, AREA_IN.x0 + 248, AREA_IN.y1)
-                _dq(p, w, c, tp_, rd_)
-                _seta_referencia_oculta(p, rd_, tp_, _caixas_main)
-                extras_nicho = nis[1:]
-            else:
-                extras_nicho = nis
-            for k2_, (w, c, tp_) in enumerate(extras_nicho, 1):
-                n += 1
-                pd = nova_prancha(doc, n, f"{tp_['rotulo']} — {s_['titulo']}")
-                if tp_.get('oculto'):
-                    rd_ = fz.Rect(AREA_IN.x0, AREA_IN.y0, AREA_IN.x0 + 330, AREA_IN.y1)
-                    rr_ = fz.Rect(AREA_IN.x0 + 342, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1)
-                    caixas_ = {}
-                    render3d(pd, rr_, s_['paredes'], contexto=True, sem_balao={id(i) for i in _alvos_vista or []},
-                             itens_vista=_alvos_vista, ang=0, elev=0, caixas_projetadas=caixas_)
-                    _dq(pd, w, c, tp_, rd_)
-                    _seta_referencia_oculta(pd, rd_, tp_, caixas_)
-                else:
-                    _dq(pd, w, c, tp_, AREA_IN)
-    COTAS_FILA.append((v, GS))
+            if AREA_IN.y1 - y0_ < 60:
+                print(f"AVISO: caixa do nicho ficou pequena ({AREA_IN.y1 - y0_:.0f}pt) em '{s_['titulo']}'.")
+            _hn = (AREA_IN.y1 - y0_ - 4 * (len(nis) - 1)) / len(nis)
+            for k2_, (w, c, tp_) in enumerate(nis):
+                _y = y0_ + k2_ * (_hn + 4)
+                _dq(p, w, c, tp_, fz.Rect(AREA_IN.x0, _y, AREA_IN.x0 + 248, _y + _hn))
+    if v.get('divisoria'): continue   # extra: listagem + cotas já saíram na mesma prancha
+    # cotas
+    n += 1; p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v['titulo']}")
+    _cotas_em(p, GS, AREA_IN, [f"VISTA {l_}" for l_ in v['letras']])
 
-# Cotas: duas vistas na mesma folha somente quando uma delas cabe, legível,
-# dentro de um terço do quadro. Caso contrário cada vista recebe folha própria.
-def _cabe_em_terco(G_):
-    largura_ = G_['vmax'] - G_['vmin']; altura_ = G_['ztop']
-    S_, _ = escala_para(largura_, altura_, AREA_IN.width / 3 - 48, AREA_IN.height - 62, cheio=True)
-    return S_ <= 50
 
-_i_cota = 0
-while _i_cota < len(COTAS_FILA):
-    v1_, gs1_ = COTAS_FILA[_i_cota]
-    par_ = None
-    if _i_cota + 1 < len(COTAS_FILA) and len(gs1_) == 1:
-        v2_, gs2_ = COTAS_FILA[_i_cota + 1]
-        if len(gs2_) == 1 and (_cabe_em_terco(gs1_[0]) or _cabe_em_terco(gs2_[0])):
-            par_ = (v2_, gs2_)
-    if par_:
-        v2_, gs2_ = par_
-        if _cabe_em_terco(gs1_[0]) and not _cabe_em_terco(gs2_[0]):
-            vg_, gg_, vp_, gp_ = v2_, gs2_, v1_, gs1_
-        else:
-            vg_, gg_, vp_, gp_ = v1_, gs1_, v2_, gs2_
-        n += 1
-        p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {vg_['titulo']} / {vp_['titulo']}")
-        corte_ = AREA_IN.x0 + AREA_IN.width * 2 / 3
-        _cotas_em(p, gg_, fz.Rect(AREA_IN.x0, AREA_IN.y0, corte_, AREA_IN.y1),
-                  [f"VISTA {l_}" for l_ in vg_['letras']])
-        _cotas_em(p, gp_, fz.Rect(corte_, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1),
-                  [f"VISTA {l_}" for l_ in vp_['letras']])
-        p.draw_line((corte_, AREA.y0), (corte_, AREA.y1), color=PRETO, width=0.8)
-        _i_cota += 2
-    else:
-        n += 1
-        p = nova_prancha(doc, n, f"MEDIDAS E ALTURAS - {v1_['titulo']}")
-        _cotas_em(p, gs1_, AREA_IN, [f"VISTA {l_}" for l_ in v1_['letras']])
-        _i_cota += 1
+# REGRA (v18): DIVISOR DE GAVETA (joias) = prancha própria: listagem das peças, 3D do divisor e
+# VISTA DE CIMA com as cotas de todos os vãos (largura e profundidade) + altura das peças.
+def _prancha_peca(g_, titulo, rotulo):
+    global n, _nl
+    n += 1; p = nova_prancha(doc, n, titulo)
+    lt_ = letras[_nl]; _nl += 1
+    yb = tabela(p, _numerar(sorted(g_, key=lambda i: i['n']), lt_), AREA_IN.x0, AREA_IN.y0)
+    wid_ = g_[0].get('parede') if g_[0].get('parede') in PW else paredes[0]['id']
+    for i in g_: i['parede'] = wid_
+    # REGRA (v20, João): 3D SÓ das peças (isolado), com os balões da listagem
+    _h = (AREA_IN.y1 - yb - 12); r3 = fz.Rect(AREA_IN.x0, yb + 12, AREA_IN.x0 + 248, yb + 12 + _h * 0.58)
+    p.draw_rect(r3, color=PRETO, width=0.5)
+    # REGRA (v28, João): imagem pequena ONDE FICA (a peça dentro do móvel/gaveta, sem portas)
+    _U = [min(i['bb'][k] for i in g_) - 80 for k in range(3)] + [max(i['bb'][k + 3] for i in g_) + 80 for k in range(3)]
+    _mv = [o for o in inst if o not in g_ and all(o['bb'][k] <= _U[k + 3] and o['bb'][k + 3] >= _U[k] for k in range(3))]
+    r4 = fz.Rect(AREA_IN.x0, r3.y1 + 6, AREA_IN.x0 + 248, AREA_IN.y1)
+    p.draw_rect(r4, color=PRETO, width=0.5); p.insert_text((r4.x0 + 4, r4.y0 + 10), 'ONDE FICA', fontname='hebo', fontsize=7.5, color=RED)
+    if _mv: render3d(p, fz.Rect(r4.x0 + 2, r4.y0 + 14, r4.x1 - 2, r4.y1 - 2), [wid_], itens=g_ + _mv, ang=30, elev=45, dmin=2200, margem=60, isolado=True, sem_portas=True)
+    render3d(p, fz.Rect(r3.x0 + 2, r3.y0 + 2, r3.x1 - 2, r3.y1 - 2), [wid_], letra=lt_, itens=g_, ang=30, elev=35, dmin=1800, margem=60, isolado=True)
+    x0_ = min(i['bb'][0] for i in g_); x1_ = max(i['bb'][3] for i in g_); y0_ = min(i['bb'][1] for i in g_); y1_ = max(i['bb'][4] for i in g_)
+    ra = fz.Rect(AREA_IN.x0 + 262, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1 - 20)
+    Sd, kd = next(((S_, MM / S_) for S_ in (2, 2.5, 5, 10, 15, 20) if (x1_ - x0_) * MM / S_ <= ra.width - 90 and (y1_ - y0_) * MM / S_ <= ra.height - 70), (20, MM / 20))
+    ox_ = ra.x0 + (ra.width - (x1_ - x0_) * kd) / 2; oy_ = ra.y0 + (ra.height - (y1_ - y0_) * kd) / 2
+    X_ = lambda x: ox_ + (x - x0_) * kd
+    Y_ = lambda y: oy_ + (y1_ - y) * kd
+    fcs_ = []
+    for i in g_:
+        for pi in i['pecas']:
+            b = P[pi]['bb']
+            fcs_.append((b[5], [(b[0], b[1]), (b[3], b[1]), (b[3], b[4]), (b[0], b[4])], P[pi].get('rgb', MADEIRA), [True] * 4, P[pi].get('mat'), pi))
+    fcs_.sort(key=lambda t: t[0])
+    _desenho2d(p, fcs_, lambda x, y: (X_(x), Y_(y)))
+    fin = lambda i: (i['bb'][3] - i['bb'][0]) <= 40 or (i['bb'][4] - i['bb'][1]) <= 40
+    vx = [v for i in g_ if fin(i) and i['bb'][3] - i['bb'][0] < i['bb'][4] - i['bb'][1] for v in (i['bb'][0], i['bb'][3])]
+    vy = [v for i in g_ if fin(i) and i['bb'][3] - i['bb'][0] >= i['bb'][4] - i['bb'][1] for v in (i['bb'][1], i['bb'][4])]
+    cadeia_h(p, [x0_, x1_] + vx, Y_(y0_) + 16, Y_(y0_) + 2, X_)
+    cadeia_h(p, [x0_, x1_], Y_(y1_) - 14, Y_(y1_) - 2, X_)
+    cadeia_v(p, [y0_, y1_] + vy, X_(x1_) + 18, X_(x1_) + 2, lambda y: Y_(y))
+    cadeia_v(p, [y0_, y1_], X_(x0_) - 14, X_(x0_) - 2, lambda y: Y_(y))
+    alt_ = round(max(i['bb'][5] for i in g_) - min(i['bb'][2] for i in g_))
+    lab = f'{rotulo} - VISTA DE CIMA - ESC. 1:{Sd:g}   |   ALTURA: {alt_} mm'
+    p.insert_text((ra.x0 + ra.width / 2 - fz.get_text_length(lab, 'hebo', 8.5) / 2, AREA_IN.y1 - 6), lab, fontname='hebo', fontsize=8.5)
 
+# REGRA (v18/v20): DIVISOR DE GAVETA e GAVETA/MÓDULO MONTADO COM PAINÉIS = prancha própria (tabela + 3D isolado + vista de cima)
+for g_ in GAVETAS: _prancha_peca(g_, 'GAVETA MONTADA COM PAINÉIS', 'GAVETA')
+for g_ in DIVISORES: _prancha_peca(g_, 'DIVISOR DE GAVETA', 'DIVISOR')
+
+# REGRA (v35, João): MÓVEIS DIVERSOS — prancha própria para cada móvel montado por peças soltas
+# com porta/frente/gaveta. Layout: esquerda = listagem + imagem pequena do ambiente (sem portas);
+# direita = imagem grande do móvel isolado na diagonal com balões. SEM COTAS.
+# REGRA (João, 28/09/2026 - skill P3): móvel diverso = prancha EXTRA com LISTAGEM E COTAS JUNTAS, imagem ISOLADA
+# (sem parede, sem chão, sem outros móveis, fundo branco). Esquerda: tabela + 3D isolado com balões.
+# Direita: elevação 2D frontal com cotas (sem portas). Sai a "visão do ambiente" (v35).
+for k_md, md in enumerate(MOVEIS_DIVERSOS, 1):
+    its_ = md['itens']
+    n += 1; p = nova_prancha(doc, n, 'MÓVEIS DIVERSOS')
+    lt_ = letras[_nl] if _nl < len(letras) else chr(ord('A') + _nl)
+    _nl += 1
+    wid_ = f"DIVERSO{k_md}"
+    # vista FRONTAL do móvel = olhando para o lado mais comprido dele (a mesa aparece com o tampo inteiro na cota)
+    _dx = max(i['bb'][3] for i in its_) - min(i['bb'][0] for i in its_); _dy = max(i['bb'][4] for i in its_) - min(i['bb'][1] for i in its_)
+    _k = md['key'] if (md['key'][0] == 'y') == (_dx >= _dy) else ('y+' if _dx >= _dy else 'x+')
+    _pl = geo.plano(_k, [min(i['bb'][0] for i in its_), min(i['bb'][1] for i in its_), 0, max(i['bb'][3] for i in its_), max(i['bb'][4] for i in its_), 0])
+    PW[wid_] = dict(key=_k, plano=md['plano'] if _k == md['key'] else _pl, itens=its_, id=wid_)
+    for i in its_: i['parede'] = wid_
+    yb = tabela(p, _numerar(sorted(its_, key=lambda i: i['n']), lt_), AREA_IN.x0, AREA_IN.y0)
+    r3 = fz.Rect(AREA_IN.x0, yb + 10, AREA_IN.x0 + 248, AREA_IN.y1)
+    p.draw_rect(r3, color=PRETO, width=0.5)
+    render3d(p, fz.Rect(r3.x0 + 2, r3.y0 + 2, r3.x1 - 2, r3.y1 - 2), [wid_], letra=lt_, itens=its_, ang=30, elev=20, dmin=2400, margem=60, isolado=True)
+    _cotas_em(p, [geom_parede(PW[wid_])], fz.Rect(AREA_IN.x0 + 258, AREA_IN.y0, AREA_IN.x1, AREA_IN.y1), ['MÓVEL DIVERSO'])
 
 # ===== CAPA (design fixo: quadro externo + logo + cliente + EXECUTIVO - AMBIENTE) =====
 _W, _H = doc[0].rect.width, doc[0].rect.height
@@ -2339,8 +2335,9 @@ except Exception:
     import time as _t; cfg['saida'] = os.path.splitext(cfg['saida'])[0] + _t.strftime('_%H%M%S') + '.pdf'; doc.save(cfg['saida'], garbage=3, deflate=True)
 
 # ---------------- QUALIDADE (nível 1, por script) ----------------
+esperado = 4 + len(VW) + _extra + len(V) - sum(1 for v in V if v.get('divisoria')) + len(DIVISORES) + len(GAVETAS) + len(MOVEIS_DIVERSOS)
 q = [f"# QUALIDADE — {cfg['dados']['cliente']} / {cfg['dados']['ambiente']} (gerado por script)", '',
-     f"- APROVADO | {n} pranchas na ordem final, incluindo paginação dinâmica de vistas, listagens e nichos",
+     f"- {'APROVADO' if n == esperado else 'REPROVADO'} | nº de pranchas {n} = 4 + {len(VW)} listagens + {len(V)} cotas" + (f" + {len(DIVISORES)} divisor(es) de gaveta" if DIVISORES else '') + (f" + {len(GAVETAS)} gaveta(s) em painéis" if GAVETAS else '') + (f" + {len(MOVEIS_DIVERSOS)} móvel(is) diverso(s)" if MOVEIS_DIVERSOS else '') + (f" | divisória ripada: {len(DIVISORIAS)}" if DIVISORIAS else ''),
      f"- {'APROVADO' if not _faltando_real else 'INCERTO'} | itens localizados no DXF: {len(linhas) - len(nao_achados)}/{len(linhas)}" + (f" ({len(_acessorios)} acessório(s) sem DXF — normal)" if _acessorios else '')]
 for d, dm in _faltando_real: q.append(f"  - FORA DA LISTAGEM: {d} {dm} (não localizado no DXF, logo não aparece na imagem)")
 for d, dm in _acessorios: q.append(f"  - ACESSÓRIO (sem DXF, normal): {d} {dm}")
@@ -2356,12 +2353,6 @@ for v in VW:
     q.append(f"- {v['titulo']}: paredes {', '.join(v['paredes'])} | {len(v['linhas'])} linhas de listagem" + (' | CONDIÇÕES -> ' + ', '.join(_ex) if _ex else ''))
 q += [f"  {v['letra']}{i}: {d} {dm}" for v in VW for i, (d, dm, m_) in enumerate(v['linhas'], 1)]
 open(os.path.splitext(cfg['saida'])[0] + '_QUALIDADE.md', 'w', encoding='utf-8').write('\n'.join(q))
-with open(os.path.splitext(cfg['saida'])[0] + '_CAMERAS.json', 'w', encoding='utf-8') as _ca:
-    json.dump(dict(cameras=globals().get('_auditoria_cameras',[]),
-                   subimagens=globals().get('_auditoria_subimagens',[]),
-                   ocultas=globals().get('_auditoria_ocultas',[]),
-                   baloes=globals().get('_auditoria_baloes',[]),
-                   cotas=globals().get('_auditoria_geometria_cotas',[])), _ca, ensure_ascii=False, indent=2)
 print('\n'.join(q))
 for i in range(len(doc)):
     doc[i].get_pixmap(dpi=80).save(os.path.join(os.path.dirname(cfg['saida']), f'_prev_{i + 1}.png'))

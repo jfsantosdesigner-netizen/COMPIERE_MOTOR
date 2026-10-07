@@ -34,16 +34,14 @@ def laterais(P, zmin=150):
             out.append(p)
     return out
 
-def casar(P, linhas, qtd=None, fontes=None):
+def casar(P, linhas, qtd=None):
     """linhas: [(desc, 'LxAxP')]. Retorna instâncias: dict(n, desc, dim, bb, tipo, pecas)."""
     # REGRA (v26): módulo BAIXO (adega/nicho de 150 mm) tem laterais de 100-150 mm -> entram só para módulo até 200 mm
-    fontes = fontes or {}
-    contagem = {}
     L = laterais(P, 100)
     usados = set(); inst = []
     # 1) componentes: peça única
     for n, (desc, dm) in enumerate(linhas, 1):
-        if not (eh_componente(desc) or (fontes.get((desc, dm), {}).get("componente") and not fontes.get((desc, dm), {}).get("acessorio"))): continue
+        if not eh_componente(desc): continue
         alvo = sorted(parse_dim(dm)); lim = (qtd or {}).get((desc, dm)); pegou = 0
         for p in P:
             if lim is not None and pegou >= lim: break
@@ -54,102 +52,24 @@ def casar(P, linhas, qtd=None, fontes=None):
     # 2) módulos: par de laterais
     cands = []
     for n, (desc, dm) in enumerate(linhas, 1):
-        if eh_componente(desc) or (fontes.get((desc, dm), {}).get("componente") and not fontes.get((desc, dm), {}).get("acessorio")): continue
+        if eh_componente(desc): continue
         w, h, d = parse_dim(dm)
         orients = [(w, h, 0)]
         # REGRA (v26): módulo GIRADO no Promob (adega deitada: XML 150 x 870 x 600 = 870 de largura, 150 de altura)
         if h > 2 * w and w <= 300: orients.append((h, w, 5))
         for w, h, pen in orients: cands += _cands_mod(L, n, desc, dm, w, h, d, pen)
-        if (desc, dm) in fontes:
-            cands += _cands_fonte(P, n, desc, dm, fontes[(desc, dm)])
     cands.sort(key=lambda c: c[0])
     ocupado = []
     for e, n, desc, dm, ia, ib, U, wr in cands:
-        if contagem.get(n, 0) >= (qtd or {}).get((desc, dm), float("inf")): continue
         if ia in usados or ib in usados: continue
         if any(_sobrepoe(U, O) for O in ocupado): continue
         usados.update((ia, ib)); ocupado.append(U)
-        contagem[n] = contagem.get(n, 0) + 1
-        tipo = 'comp' if min(parse_dim(dm)) <= 26 else 'mod'
-        inst.append(dict(n=n, desc=desc, dim=dm, bb=U, tipo=tipo, pecas=[ia, ib], larg=wr))
+        inst.append(dict(n=n, desc=desc, dim=dm, bb=U, tipo='mod', pecas=[ia, ib], larg=wr))
     # peças internas de cada módulo (para o desenho), portas ficam fora porque estão à frente das laterais
     for it in inst:
-        if it['tipo'] == 'mod' or len(it['pecas']) > 1:
+        if it['tipo'] == 'mod':
             it['pecas'] = [p['i'] for p in P if dentro(p['bb'], it['bb'])]
     return inst
-
-
-def _medidas_batem(a, b, tol=1.6):
-    return all(abs(x-y) <= tol for x,y in zip(sorted(a), sorted(b)))
-
-
-def _cands_fonte(P, n, desc, dm, fonte):
-    """Alternativas comprovadas pelas peças filhas do XML e coordenadas reais do DXF.
-
-    Abrange módulo girado, laterais assimétricas, frente avulsa e conjunto
-    de perfis. Não aumenta a tolerância geral nem altera medidas do XML.
-    """
-    if fonte.get('acessorio'): return []
-    alvo = parse_dim(dm)
-    filhos = fonte.get('filhos', [])
-    cands = []
-    # Peça avulsa ou módulo curvo exportado em uma camada com o volume inteiro.
-    for p in P:
-        if _medidas_batem(p['dim'], alvo):
-            cands.append((6, n, desc, dm, p['i'], p['i'], p['bb'], alvo[0]))
-    lat = [f for f in filhos if re.search(r'^(lat\b|lateral)', f['desc'], re.I)]
-    bases = [f for f in filhos if re.search(r'^base', f['desc'], re.I)]
-    if len(lat) >= 2:
-        A = [p for p in P if _medidas_batem(p['dim'], lat[0]['dim'])]
-        B = [p for p in P if _medidas_batem(p['dim'], lat[1]['dim'])]
-        for a in A:
-            for b in B:
-                if a['i'] == b['i']: continue
-                U = uniao(a['bb'], b['bb'])
-                dims = [U[k+3]-U[k] for k in range(3)]
-                exato = _medidas_batem(dims, alvo, TOL)
-                # Canto reto: largura da caixa = base + duas espessuras.
-                # O afastador pertence ao conjunto, não à largura da caixa.
-                caixa = False
-                if 'canto' in desc.lower() and bases:
-                    esp = min(lat[0]['dim']) + min(lat[1]['dim'])
-                    caixa = any(_medidas_batem(dims, (f['dim'][0]+esp, alvo[1], sorted(lat[0]['dim'])[1]), TOL) for f in bases)
-                if not (exato or caixa): continue
-                membros = [p for p in P if dentro(p['bb'], U)]
-                # Uma base física confirma que não ligamos laterais de móveis vizinhos.
-                if bases and not any(_medidas_batem(p['dim'], f['dim']) for p in membros for f in bases): continue
-                if caixa:
-                    # Porta cega e afastador têm medidas próprias no XML.
-                    # Incluímos as peças reais adjacentes, sem ampliar uma caixa artificial.
-                    for f in sorted(filhos, key=lambda f: 'porta cega' not in f['desc'].lower()):
-                        if not re.search(r'porta cega|afastador', f['desc'], re.I): continue
-                        proximos = []
-                        for p in P:
-                            if not _medidas_batem(p['dim'], f['dim']) or dentro(p['bb'], U): continue
-                            dist = max(max(U[k]-p['bb'][k+3], p['bb'][k]-U[k+3], 0) for k in range(3))
-                            E = uniao(U, p['bb'])
-                            if dist <= 20 and all(x <= y+TOL for x,y in zip(sorted(E[k+3]-E[k] for k in range(3)), sorted(alvo))):
-                                proximos.append((dist, p['i'], E))
-                        if proximos: U = min(proximos)[2]
-                cands.append((8, n, desc, dm, a['i'], b['i'], U, alvo[0]))
-    # Conjunto sem laterais: perfis cuja união reproduz o tamanho do item.
-    if filhos and not lat and len(filhos) <= 12:
-        pool = [p for p in P if any(_medidas_batem(p['dim'], f['dim']) for f in filhos)]
-        for a,b in itertools.combinations(pool,2):
-            U = uniao(a['bb'],b['bb'])
-            if not _medidas_batem([U[k+3]-U[k] for k in range(3)],alvo): continue
-            membros = [p for p in pool if dentro(p['bb'],U)]
-            restantes = list(membros)
-            for f in filhos:
-                for _ in range(f['qtd']):
-                    p = next((p for p in restantes if _medidas_batem(p['dim'],f['dim'])),None)
-                    if p is None: break
-                    restantes.remove(p)
-                else: continue
-                break
-            else:
-                cands.append((8,n,desc,dm,a['i'],b['i'],U,alvo[0]))
-    return cands
 
 def _cands_mod(L, n, desc, dm, w, h, d, pen=0):
         cands = []

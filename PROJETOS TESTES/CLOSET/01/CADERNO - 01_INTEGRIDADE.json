@@ -1,0 +1,185 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Kit Tapa-furo 13mm c/ 27un Nude PARAFUSO",
+      "dimensoes_xml": "75x2x130",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 2,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "500x670x530",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 3,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1290x2380x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "1252x2380x580",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 5,
+      "descricao": "Amário Canto Reto Direito",
+      "dimensoes_xml": "1100x2380x663",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Amário Canto Reto Esquerdo",
+      "dimensoes_xml": "1100x2380x663",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 7,
+      "descricao": "Painel",
+      "dimensoes_xml": "1300x18x110",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 8,
+      "descricao": "Painel",
+      "dimensoes_xml": "1632x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel",
+      "dimensoes_xml": "1632x18x150",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel",
+      "dimensoes_xml": "2152x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel",
+      "dimensoes_xml": "2500x18x90",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel",
+      "dimensoes_xml": "750x18x550",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel",
+      "dimensoes_xml": "2170x25x550",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel",
+      "dimensoes_xml": "610x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel",
+      "dimensoes_xml": "1850x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel",
+      "dimensoes_xml": "1518x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel",
+      "dimensoes_xml": "600x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel",
+      "dimensoes_xml": "560x18x60",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

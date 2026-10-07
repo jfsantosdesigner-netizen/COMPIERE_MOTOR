@@ -1,0 +1,625 @@
+{
+  "aprovado": true,
+  "itens": [
+    {
+      "n": 1,
+      "descricao": "Balcão Inferior",
+      "dimensoes_xml": "1560x675x390",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 2,
+      "descricao": "Balcão 1 Gaveta",
+      "dimensoes_xml": "700x250x350",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 3,
+      "descricao": "Gaveta Corrediça Telescópica",
+      "dimensoes_xml": "354x90x400",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": false,
+      "status": "DISPENSADO"
+    },
+    {
+      "n": 4,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "2424x2540x560",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 5,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "2820x2540x550",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 6,
+      "descricao": "Armário c/ Portas de Giro c/ Rodapé",
+      "dimensoes_xml": "400x2540x550",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 7,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "810x25x80",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 8,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "810x25x100",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 9,
+      "descricao": "Painel Branco MDF",
+      "dimensoes_xml": "1629x25x80",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 10,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "784x18x480",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 11,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "790x15x99",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 12,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "465x18x99",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 13,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "784x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 14,
+      "descricao": "Painel Branco MDP",
+      "dimensoes_xml": "135x18x480",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 15,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "997x25x150",
+      "quantidade_xml": 14,
+      "quantidade_dxf": 14,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 16,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "641x25x150",
+      "quantidade_xml": 14,
+      "quantidade_dxf": 14,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 17,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1260x18x150",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 18,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "295x15x150",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 19,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "2444x25x150",
+      "quantidade_xml": 9,
+      "quantidade_dxf": 9,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 20,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1995x15x150",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 21,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "734x18x150",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 22,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "734x15x1224",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 23,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "2645x25x150",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 24,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1010x15x840",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 25,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "1010x15x1650",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 26,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "287x15x70",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 27,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "333x15x70",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 28,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "363x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 29,
+      "descricao": "Painel Freijo Puro MDF",
+      "dimensoes_xml": "136x15x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 30,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "135x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 31,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "868x18x396",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 32,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "670x18x540",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 33,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "1660x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 34,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "1660x18x432",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 35,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "1276x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 36,
+      "descricao": "Painel Nude MDP",
+      "dimensoes_xml": "862x18x500",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 37,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "427x18x100",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 38,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "659x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 39,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1977x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 40,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "445x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 41,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "641x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 42,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "295x18x70",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 43,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1845x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 44,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1995x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 45,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2645x15x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 46,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2480x25x120",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 47,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "700x18x370",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 48,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2428x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 49,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2645x18x70",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 50,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2645x18x100",
+      "quantidade_xml": 4,
+      "quantidade_dxf": 4,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 51,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2424x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 52,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1660x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 53,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "755x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 54,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "341x18x80",
+      "quantidade_xml": 3,
+      "quantidade_dxf": 3,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 55,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1550x18x80",
+      "quantidade_xml": 2,
+      "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 56,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1217x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 57,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1603x18x80",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 58,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "2645x18x595",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 59,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1605x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 60,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "1615x18x100",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 61,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "702x18x370",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    },
+    {
+      "n": 62,
+      "descricao": "Tamponamento Inferior",
+      "dimensoes_xml": "135x18x500",
+      "quantidade_xml": 1,
+      "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
+      "obrigatorio": true,
+      "status": "OK_DXF"
+    }
+  ]
+}

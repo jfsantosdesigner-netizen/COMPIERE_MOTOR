@@ -1,0 +1,19 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "ADRIANA OJEDA",
+  "ambiente": "Suíte Casal",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "fontes_frescas": true,
+ "layout": "C:\\COMPIERE\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\SUÍTE CASAL\\EXECUTIVO - DORMITÓRIO CASAL 10000338.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\SUÍTE CASAL\\SUÍTE CASAL.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\SUÍTE CASAL\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\ADRIANA OJEDA\\SUÍTE CASAL\\CADERNO - SUÍTE CASAL.pdf"
+}

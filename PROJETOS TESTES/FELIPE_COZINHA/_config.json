@@ -1,0 +1,18 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "PROJETOS TESTES",
+  "ambiente": "Felipe_Cozinha",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "layout": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\EXECUTIVO COZINHA - 10000334.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\COZINJHA.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE_ARQUIVO_20261006\\AGENTES_core_motor\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\FELIPE_COZINHA\\CADERNO - FELIPE_COZINHA.pdf"
+}

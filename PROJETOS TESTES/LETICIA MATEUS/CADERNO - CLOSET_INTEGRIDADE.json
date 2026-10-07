@@ -7,6 +7,7 @@
       "dimensoes_xml": "75x2x130",
       "quantidade_xml": 10,
       "quantidade_dxf": 0,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": false,
       "status": "DISPENSADO"
     },
@@ -16,8 +17,9 @@
       "dimensoes_xml": "802x405x580",
       "quantidade_xml": 1,
       "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 3,
@@ -25,8 +27,9 @@
       "dimensoes_xml": "2902x2605x580",
       "quantidade_xml": 1,
       "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 4,
@@ -34,8 +37,9 @@
       "dimensoes_xml": "1026x2605x580",
       "quantidade_xml": 1,
       "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 5,
@@ -43,8 +47,9 @@
       "dimensoes_xml": "550x2605x580",
       "quantidade_xml": 2,
       "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 6,
@@ -52,8 +57,9 @@
       "dimensoes_xml": "580x2605x580",
       "quantidade_xml": 1,
       "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 7,
@@ -61,8 +67,9 @@
       "dimensoes_xml": "1000x2605x1000",
       "quantidade_xml": 3,
       "quantidade_dxf": 3,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 8,
@@ -70,8 +77,9 @@
       "dimensoes_xml": "937,5x70x18",
       "quantidade_xml": 6,
       "quantidade_dxf": 6,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 9,
@@ -79,8 +87,9 @@
       "dimensoes_xml": "2700x18x150",
       "quantidade_xml": 5,
       "quantidade_dxf": 5,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 10,
@@ -88,8 +97,9 @@
       "dimensoes_xml": "802x18x560",
       "quantidade_xml": 1,
       "quantidade_dxf": 1,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     },
     {
       "n": 11,
@@ -97,8 +107,9 @@
       "dimensoes_xml": "2182x18x560",
       "quantidade_xml": 2,
       "quantidade_dxf": 2,
+      "quantidade_reconstruida_xml": 0,
       "obrigatorio": true,
-      "status": "OK"
+      "status": "OK_DXF"
     }
   ]
 }

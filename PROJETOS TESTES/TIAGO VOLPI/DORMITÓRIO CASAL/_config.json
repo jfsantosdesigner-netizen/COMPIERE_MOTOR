@@ -1,0 +1,19 @@
+{
+ "tipo_caderno": "MONTAGEM E INSTALAÇÃO",
+ "dados": {
+  "cliente": "TIAGO VOLPI",
+  "ambiente": "Dormitório Casal",
+  "projetista": "JOÃO FELIPE SANTOS",
+  "arquiteta": "FERNANDA"
+ },
+ "fontes_frescas": true,
+ "layout": "C:\\COMPIERE\\assets\\LAYOUT_FIXO.pdf",
+ "contrato_fonte": "C:\\COMPIERE\\assets\\CONTRATO.pdf",
+ "xml": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\TIAGO VOLPI\\DORMITÓRIO CASAL\\FINAL_DORMITORIO CASAL.xml",
+ "dxf": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\TIAGO VOLPI\\DORMITÓRIO CASAL\\DORMINTÓRIO CASAL.dxf",
+ "pecas_json": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\TIAGO VOLPI\\DORMITÓRIO CASAL\\_pecas_dxf.json",
+ "vistas": [],
+ "logo": "C:\\COMPIERE\\assets\\LOGO.png",
+ "materiais": "MATERIAIS",
+ "saida": "C:\\Users\\samsung 01\\OneDrive\\Desktop\\PROJETOS TESTES\\TIAGO VOLPI\\DORMITÓRIO CASAL\\CADERNO - DORMITÓRIO CASAL.pdf"
+}

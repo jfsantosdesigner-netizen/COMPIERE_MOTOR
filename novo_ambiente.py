@@ -5,7 +5,7 @@ import sys, os, glob, json, re, subprocess
 
 sys.stdout.reconfigure(encoding='utf-8')
 M = os.path.dirname(os.path.abspath(__file__))
-pad = {'tipo_caderno': 'MONTAGEM E INSTALAÇÃO', 'projetista': 'JOÃO FELIPE SANTOS', 'arquiteta': 'FERNANDA', 'materiais': 'MATERIAIS'}
+pad = json.load(open(os.path.join(M, 'padrao.json'), encoding='utf-8'))
 _ASSETS = os.path.join(M, 'assets')
 
 
@@ -27,21 +27,20 @@ def processar(pasta):
         return False
     cliente = re.sub(r'^PROJETO\s+', '', os.path.basename(os.path.dirname(pasta)), flags=re.I).upper()
     amb = re.sub(r'^EXECUTIVO\s*-?\s*', '', os.path.basename(pasta), flags=re.I).strip().title()
-    if os.path.basename(os.path.dirname(pasta)).upper() == 'PROJETOS TESTES':
-        cliente = os.path.basename(pasta).split('_')[0].upper()
-        amb = 'Cozinha' if 'COZINHA' in os.path.basename(pasta).upper() else 'Closet'
     dados = {'cliente': cliente, 'ambiente': amb, 'projetista': pad['projetista'], 'arquiteta': pad['arquiteta']}
+    for extra in (os.path.join(os.path.dirname(pasta), 'dados.json'), os.path.join(pasta, 'dados.json')):
+        if os.path.exists(extra): dados.update(json.load(open(extra, encoding='utf-8')))
     # Layout/contrato/logo SEMPRE relativos à própria pasta do motor (M).
-    # Configuração nova; nenhum JSON anterior é entrada deste fluxo.
-    cfg = {'tipo_caderno': pad['tipo_caderno'], 'dados': dados, 'fontes_frescas': True,
+    # padrao.json pode sobrescrever com um caminho explícito se quiser.
+    cfg = {'tipo_caderno': pad['tipo_caderno'], 'dados': dados,
            'layout': pad.get('layout') or os.path.join(_ASSETS, 'LAYOUT_FIXO.pdf'),
            'contrato_fonte': pad.get('contrato_fonte') or os.path.join(_ASSETS, 'CONTRATO.pdf'),
            'xml': max(mont, key=os.path.getmtime), 'dxf': max(dxfs, key=os.path.getmtime),
            'pecas_json': os.path.join(pasta, '_pecas_dxf.json'), 'vistas': [],
            'logo': pad.get('logo') or os.path.join(_ASSETS, 'LOGO.png'), 'materiais': pad.get('materiais'),
            'saida': os.path.join(pasta, f'CADERNO - {amb.upper()}.pdf')}
-    for cache in (cfg['pecas_json'], cfg['pecas_json'] + '.md5'):
-        if os.path.isfile(cache): os.remove(cache)
+    if os.path.exists(cfg['pecas_json']) and os.path.getmtime(cfg['pecas_json']) < os.path.getmtime(cfg['dxf']):
+        os.remove(cfg['pecas_json'])
     cj = os.path.join(pasta, '_config.json')
     json.dump(cfg, open(cj, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     print('Gerando:', dados['cliente'], '/', amb, '...')
